@@ -1,4 +1,4 @@
-import type { ListVisaDocumentsInput } from "@vcj/shared-types";
+import type { ListVisaDocumentsInput } from "@ssw/shared-types";
 import { describe, expect, it } from "vitest";
 import { lookupDocuments } from "../../../src/tools/list-visa-documents/document-catalog.js";
 

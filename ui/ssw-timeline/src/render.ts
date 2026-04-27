@@ -1,4 +1,4 @@
-import type { GetDeadlineTimelineOutput, SupportedLanguage } from "@vcj/shared-types";
+import type { GetDeadlineTimelineOutput, SupportedLanguage } from "@ssw/shared-types";
 import DOMPurify from "dompurify";
 
 /**
@@ -112,12 +112,12 @@ export function render(
 
   const fullHtml = `
     <small class="notice-l1" role="note" aria-label="service scope notice">${escapeAttr(l1)}</small>
-    <section aria-labelledby="vcj-timeline-heading">
-      <h2 id="vcj-timeline-heading" class="sr-only">${escapeAttr(t.timelineHeading)}</h2>
+    <section aria-labelledby="ssw-timeline-heading">
+      <h2 id="ssw-timeline-heading" class="sr-only">${escapeAttr(t.timelineHeading)}</h2>
       <ul class="timeline">${deadlineHtml}</ul>
     </section>
-    <section class="refs" aria-labelledby="vcj-refs-heading">
-      <h4 id="vcj-refs-heading">${escapeAttr(t.referencesHeading)}</h4>
+    <section class="refs" aria-labelledby="ssw-refs-heading">
+      <h4 id="ssw-refs-heading">${escapeAttr(t.referencesHeading)}</h4>
       ${referencesHtml}
     </section>
     <p role="note" class="disclaimer">${escapeAttr(result.disclaimer)}</p>

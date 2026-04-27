@@ -1,6 +1,6 @@
-import type { SearchVisaInput } from "@vcj/shared-types";
+import type { SearchVisaInput } from "@ssw/shared-types";
 
-export { SearchVisaInput, SearchVisaOutput } from "@vcj/shared-types";
+export { SearchVisaInput, SearchVisaOutput } from "@ssw/shared-types";
 
 export function buildQuery(args: SearchVisaInput): string {
   const parts: string[] = [args.category];

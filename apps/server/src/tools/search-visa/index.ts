@@ -3,7 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { searchVisa } from "./handler.js";
 import { SearchVisaInput } from "./schema.js";
 
-const UI_RESOURCE_URI = "ui://vcj-search/mcp-app.html";
+const UI_RESOURCE_URI = "ui://ssw-search/mcp-app.html";
 
 export function registerSearchVisaTool(server: McpServer): void {
   registerAppTool(

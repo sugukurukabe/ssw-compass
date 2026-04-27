@@ -10,7 +10,7 @@ import { registerSearchVisaTool } from "./tools/search-visa/index.js";
 import { registerSearchVisaUiResource } from "./tools/search-visa/ui.js";
 
 const SERVER_INFO = {
-  name: "vcj-mcp",
+  name: "ssw-mcp",
   version: "1.0.0",
 } as const;
 

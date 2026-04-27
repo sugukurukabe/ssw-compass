@@ -1,6 +1,6 @@
 import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
 
-const tracer = trace.getTracer("vcj-mcp", "1.0.0");
+const tracer = trace.getTracer("ssw-mcp", "1.0.0");
 
 interface ErrorLike {
   code: string | undefined;

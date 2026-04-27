@@ -47,7 +47,7 @@ importers:
       '@opentelemetry/sdk-node':
         specifier: ^0.55.0
         version: 0.55.0(@opentelemetry/api@1.9.1)
-      '@vcj/shared-types':
+      '@ssw/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
       express:
@@ -69,15 +69,15 @@ importers:
       '@modelcontextprotocol/inspector':
         specifier: ^0.21.0
         version: 0.21.2(@types/node@22.19.17)(typescript@5.9.3)
+      '@ssw/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
       '@types/express':
         specifier: ^4.17.0
         version: 4.17.25
       '@types/node':
         specifier: ^22.0.0
         version: 22.19.17
-      '@vcj/tsconfig':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
       tsx:
         specifier: ^4.19.0
         version: 4.21.0
@@ -94,7 +94,7 @@ importers:
         specifier: ^3.23.0
         version: 3.25.76
     devDependencies:
-      '@vcj/tsconfig':
+      '@ssw/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       typescript:
@@ -105,34 +105,34 @@ importers:
 
   packages/ui-bridge:
     devDependencies:
-      '@vcj/tsconfig':
+      '@ssw/tsconfig':
         specifier: workspace:*
         version: link:../tsconfig
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
 
-  ui/vcj-checklist:
+  ui/ssw-checklist:
     dependencies:
       '@modelcontextprotocol/ext-apps':
         specifier: ^1.6.0
         version: 1.7.0(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
-      '@vcj/shared-types':
+      '@ssw/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
-      '@vcj/ui-bridge':
+      '@ssw/ui-bridge':
         specifier: workspace:*
         version: link:../../packages/ui-bridge
       dompurify:
         specifier: ^3.4.1
         version: 3.4.1
     devDependencies:
+      '@ssw/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
       '@types/dompurify':
         specifier: ^3.0.0
         version: 3.2.0
-      '@vcj/tsconfig':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
@@ -143,27 +143,27 @@ importers:
         specifier: ^2.0.0
         version: 2.3.3(rollup@4.60.2)(vite@5.4.21(@types/node@22.19.17))
 
-  ui/vcj-classify:
+  ui/ssw-classify:
     dependencies:
       '@modelcontextprotocol/ext-apps':
         specifier: ^1.6.0
         version: 1.7.0(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
-      '@vcj/shared-types':
+      '@ssw/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
-      '@vcj/ui-bridge':
+      '@ssw/ui-bridge':
         specifier: workspace:*
         version: link:../../packages/ui-bridge
       dompurify:
         specifier: ^3.4.1
         version: 3.4.1
     devDependencies:
+      '@ssw/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
       '@types/dompurify':
         specifier: ^3.0.0
         version: 3.2.0
-      '@vcj/tsconfig':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
@@ -174,27 +174,27 @@ importers:
         specifier: ^2.0.0
         version: 2.3.3(rollup@4.60.2)(vite@5.4.21(@types/node@22.19.17))
 
-  ui/vcj-search:
+  ui/ssw-search:
     dependencies:
       '@modelcontextprotocol/ext-apps':
         specifier: ^1.6.0
         version: 1.7.0(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
-      '@vcj/shared-types':
+      '@ssw/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
-      '@vcj/ui-bridge':
+      '@ssw/ui-bridge':
         specifier: workspace:*
         version: link:../../packages/ui-bridge
       dompurify:
         specifier: ^3.4.1
         version: 3.4.1
     devDependencies:
+      '@ssw/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
       '@types/dompurify':
         specifier: ^3.0.0
         version: 3.2.0
-      '@vcj/tsconfig':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
       typescript:
         specifier: ^5.7.0
         version: 5.9.3
@@ -205,27 +205,27 @@ importers:
         specifier: ^2.0.0
         version: 2.3.3(rollup@4.60.2)(vite@5.4.21(@types/node@22.19.17))
 
-  ui/vcj-timeline:
+  ui/ssw-timeline:
     dependencies:
       '@modelcontextprotocol/ext-apps':
         specifier: ^1.6.0
         version: 1.7.0(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
-      '@vcj/shared-types':
+      '@ssw/shared-types':
         specifier: workspace:*
         version: link:../../packages/shared-types
-      '@vcj/ui-bridge':
+      '@ssw/ui-bridge':
         specifier: workspace:*
         version: link:../../packages/ui-bridge
       dompurify:
         specifier: ^3.4.1
         version: 3.4.1
     devDependencies:
+      '@ssw/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
       '@types/dompurify':
         specifier: ^3.0.0
         version: 3.2.0
-      '@vcj/tsconfig':
-        specifier: workspace:*
-        version: link:../../packages/tsconfig
       typescript:
         specifier: ^5.7.0
         version: 5.9.3

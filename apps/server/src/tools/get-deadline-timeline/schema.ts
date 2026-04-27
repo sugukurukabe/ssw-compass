@@ -1,9 +1,9 @@
-import type { GetDeadlineTimelineInput } from "@vcj/shared-types";
+import type { GetDeadlineTimelineInput } from "@ssw/shared-types";
 
 export {
   GetDeadlineTimelineInput,
   GetDeadlineTimelineOutput,
-} from "@vcj/shared-types";
+} from "@ssw/shared-types";
 
 /**
  * Build the Vertex AI Search query for a get_deadline_timeline request.

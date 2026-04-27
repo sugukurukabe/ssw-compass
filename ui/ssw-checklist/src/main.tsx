@@ -5,8 +5,8 @@ import {
   applyHostStyleVariables,
   PostMessageTransport,
 } from "@modelcontextprotocol/ext-apps";
-import type { ListVisaDocumentsOutput, SupportedLanguage } from "@vcj/shared-types";
-import { getElement } from "@vcj/ui-bridge";
+import type { ListVisaDocumentsOutput, SupportedLanguage } from "@ssw/shared-types";
+import { getElement } from "@ssw/ui-bridge";
 import { render } from "./render.js";
 import { renderSkeleton } from "./skeleton.js";
 import {
@@ -41,7 +41,7 @@ let currentDocs: ListVisaDocumentsOutput | null = null;
 
 const root = getElement("root", HTMLDivElement);
 
-const app = new App({ name: "VCJ", version: "1.0.0" }, {});
+const app = new App({ name: "SSW", version: "1.0.0" }, {});
 
 function rerender(): void {
   if (currentDocs === null) return;

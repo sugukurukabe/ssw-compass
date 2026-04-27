@@ -1,5 +1,5 @@
 ---
-description: VCJ の MCP server 動作確認手順 (6 ホスト)
+description: SSW の MCP server 動作確認手順 (6 ホスト)
 ---
 
 # Testing checklist — manual host verification
@@ -40,7 +40,7 @@ Claude Desktop の Settings > Developer > Edit Config に追加:
 ```json
 {
   "mcpServers": {
-    "vcj-tunnel": {
+    "ssw-tunnel": {
       "command": "npx",
       "args": ["mcp-remote", "https://<TUNNEL>.trycloudflare.com/mcp"]
     }
@@ -49,13 +49,13 @@ Claude Desktop の Settings > Developer > Edit Config に追加:
 ```
 
 Claude Desktop 再起動 → 新規チャットで「特定技能2号 農業の必要書類は？」と入力。
-期待: VCJ の UI Resource が iframe としてインラインで表示される。
+期待: SSW の UI Resource が iframe としてインラインで表示される。
 カードが 3 件以上、disclaimer が footer に表示。
 
 ## 3. Claude Web (claude.ai)
 
 Settings > Connectors > Add Custom Connector:
-- Name: VCJ (dev)
+- Name: SSW (dev)
 - URL: https://<TUNNEL>.trycloudflare.com/mcp
 - Auth: None
 
@@ -68,7 +68,7 @@ Settings > Connectors > Add Custom Connector:
 ```json
 {
   "servers": {
-    "vcj": {
+    "ssw": {
       "type": "http",
       "url": "https://<TUNNEL>.trycloudflare.com/mcp"
     }
@@ -76,7 +76,7 @@ Settings > Connectors > Add Custom Connector:
 }
 ```
 
-Copilot Chat で `@vcj 特定技能2号の必要書類` と入力 → tool が呼ばれることを確認。
+Copilot Chat で `@ssw 特定技能2号の必要書類` と入力 → tool が呼ばれることを確認。
 
 ## 5. Goose
 

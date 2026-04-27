@@ -1,4 +1,4 @@
-import type { DeadlineEntry, DeadlineKind, GetDeadlineTimelineInput } from "@vcj/shared-types";
+import type { DeadlineEntry, DeadlineKind, GetDeadlineTimelineInput } from "@ssw/shared-types";
 
 type Lang = "ja" | "en" | "id";
 

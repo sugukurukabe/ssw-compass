@@ -1,4 +1,4 @@
-import type { ListVisaDocumentsOutput, SupportedLanguage } from "@vcj/shared-types";
+import type { ListVisaDocumentsOutput, SupportedLanguage } from "@ssw/shared-types";
 
 /**
  * Checklist state, treated as immutable in the UI. Pages are not persisted

@@ -1,4 +1,4 @@
-import type { ClassifyProcedureOutput, SupportedLanguage } from "@vcj/shared-types";
+import type { ClassifyProcedureOutput, SupportedLanguage } from "@ssw/shared-types";
 import DOMPurify from "dompurify";
 
 /**
@@ -80,8 +80,8 @@ export function render(
       <h4 class="sr-heading">${escapeAttr(t.nextStepsHeading)}</h4>
       <ol class="next-steps">${nextStepsHtml}</ol>
     </article>
-    <section class="refs" aria-labelledby="vcj-refs-heading">
-      <h4 id="vcj-refs-heading">${escapeAttr(t.referencesHeading)}</h4>
+    <section class="refs" aria-labelledby="ssw-refs-heading">
+      <h4 id="ssw-refs-heading">${escapeAttr(t.referencesHeading)}</h4>
       ${referencesHtml}
     </section>
     <p role="note" class="disclaimer">${escapeAttr(result.disclaimer)}</p>

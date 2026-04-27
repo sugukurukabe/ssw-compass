@@ -1,4 +1,4 @@
-import type { ListVisaDocumentsOutput, SupportedLanguage } from "@vcj/shared-types";
+import type { ListVisaDocumentsOutput, SupportedLanguage } from "@ssw/shared-types";
 import DOMPurify from "dompurify";
 import type { ChecklistState } from "./state.js";
 import { containsPii, isDirty } from "./state.js";
@@ -133,12 +133,12 @@ export function render(ctx: RenderContext, rootEl: HTMLElement, cb: RenderCallba
     <small class="notice-l1" role="note" aria-label="service scope notice">${escapeAttr(l1)}</small>
     <ul class="doc-list">${rowsHtml}</ul>
     <div class="notes">
-      <label for="vcj-notes">${escapeAttr(t.notesLabel)}</label>
-      <textarea id="vcj-notes" placeholder="${escapeAttr(t.notesPlaceholder)}">${escapeAttr(state.notes)}</textarea>
+      <label for="ssw-notes">${escapeAttr(t.notesLabel)}</label>
+      <textarea id="ssw-notes" placeholder="${escapeAttr(t.notesPlaceholder)}">${escapeAttr(state.notes)}</textarea>
     </div>
     <div class="toast${notesHasPii ? " visible" : ""}" role="alert" aria-live="assertive">${escapeAttr(t.piiWarning)}</div>
     <div class="commit-bar">
-      <button type="button" class="commit-btn" id="vcj-commit-btn"${commitDisabled ? " disabled" : ""}>
+      <button type="button" class="commit-btn" id="ssw-commit-btn"${commitDisabled ? " disabled" : ""}>
         ${escapeAttr(t.commit)}
       </button>
       <span class="commit-status">${escapeAttr(commitStatus)}</span>
@@ -159,14 +159,14 @@ export function render(ctx: RenderContext, rootEl: HTMLElement, cb: RenderCallba
     });
   }
 
-  const textarea = rootEl.querySelector<HTMLTextAreaElement>("#vcj-notes");
+  const textarea = rootEl.querySelector<HTMLTextAreaElement>("#ssw-notes");
   if (textarea !== null) {
     textarea.addEventListener("input", () => {
       cb.onNotesChange(textarea.value);
     });
   }
 
-  const commitBtn = rootEl.querySelector<HTMLButtonElement>("#vcj-commit-btn");
+  const commitBtn = rootEl.querySelector<HTMLButtonElement>("#ssw-commit-btn");
   if (commitBtn !== null) {
     commitBtn.addEventListener("click", () => {
       if (!commitBtn.disabled) cb.onCommit();

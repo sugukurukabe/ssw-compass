@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile:1.9
-# VCJ MCP server — multi-stage build on Node 22 LTS with distroless runtime.
-# Build context: monorepo root (vcj-public/).
+# SSW MCP server — multi-stage build on Node 22 LTS with distroless runtime.
+# Build context: monorepo root (ssw-public/).
 
 ARG NODE_VERSION=22
 ARG PNPM_VERSION=10.33.0
@@ -20,12 +20,12 @@ COPY turbo.json biome.json ./
 COPY packages/tsconfig ./packages/tsconfig
 COPY apps/server/package.json ./apps/server/package.json
 
-RUN pnpm install --frozen-lockfile --filter=@vcj/server...
+RUN pnpm install --frozen-lockfile --filter=@ssw/server...
 
 COPY apps/server ./apps/server
 
-RUN pnpm --filter=@vcj/server build
-RUN pnpm deploy --filter=@vcj/server --prod /app
+RUN pnpm --filter=@ssw/server build
+RUN pnpm deploy --filter=@ssw/server --prod /app
 
 ############################################
 # Stage 2: runtime (distroless)            #

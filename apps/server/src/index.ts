@@ -24,7 +24,7 @@ export function createApp(): Express {
   const transports = new Map<string, StreamableHTTPServerTransport>();
 
   app.get("/health", (_req: Request, res: Response) => {
-    res.status(200).json({ status: "ok", service: "vcj-mcp" });
+    res.status(200).json({ status: "ok", service: "ssw-mcp" });
   });
 
   app.get("/.well-known/mcp.json", (_req: Request, res: Response) => {
@@ -128,7 +128,7 @@ export async function startServer(port?: number): Promise<void> {
   const resolvedPort = port ?? Number(process.env["PORT"] ?? DEFAULT_PORT);
   await new Promise<void>((resolve) => {
     app.listen(resolvedPort, () => {
-      logger.info({ port: resolvedPort, service: "vcj-mcp" }, "server_listening");
+      logger.info({ port: resolvedPort, service: "ssw-mcp" }, "server_listening");
       resolve();
     });
   });

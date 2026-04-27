@@ -1,4 +1,4 @@
-import type { ClassifyProcedureInput, ClassifyProcedureType } from "@vcj/shared-types";
+import type { ClassifyProcedureInput, ClassifyProcedureType } from "@ssw/shared-types";
 
 /**
  * Rule-based procedure classifier (Sprint 2 Batch 2).

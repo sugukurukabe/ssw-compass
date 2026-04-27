@@ -1,4 +1,4 @@
-import type { GetDeadlineTimelineInput } from "@vcj/shared-types";
+import type { GetDeadlineTimelineInput } from "@ssw/shared-types";
 import { describe, expect, it } from "vitest";
 import {
   computeTimeline,

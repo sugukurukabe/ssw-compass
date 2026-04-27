@@ -1,9 +1,9 @@
 ---
 alwaysApply: true
 ---
-# VCJ Project Context
+# SSW Project Context
 
-You are working on **Visa Compass Japan (VCJ)** — a public, read-only,
+You are working on **SSW Compass (SSW)** — a public, read-only,
 anonymous MCP App that provides Japanese SSW visa procedural information.
 
 ## Critical constraints (NEVER violate)

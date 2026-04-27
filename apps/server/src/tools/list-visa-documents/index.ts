@@ -3,7 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { listVisaDocumentsHandler } from "./handler.js";
 import { ListVisaDocumentsInput } from "./schema.js";
 
-const UI_RESOURCE_URI = "ui://vcj-checklist/mcp-app.html";
+const UI_RESOURCE_URI = "ui://ssw-checklist/mcp-app.html";
 
 export function registerListVisaDocumentsTool(server: McpServer): void {
   registerAppTool(

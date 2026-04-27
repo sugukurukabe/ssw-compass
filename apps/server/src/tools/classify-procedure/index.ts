@@ -3,7 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { classifyProcedureHandler } from "./handler.js";
 import { ClassifyProcedureInput } from "./schema.js";
 
-const UI_RESOURCE_URI = "ui://vcj-classify/mcp-app.html";
+const UI_RESOURCE_URI = "ui://ssw-classify/mcp-app.html";
 
 export function registerClassifyProcedureTool(server: McpServer): void {
   registerAppTool(

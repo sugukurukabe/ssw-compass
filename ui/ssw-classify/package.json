@@ -1,9 +1,9 @@
 {
-  "name": "@vcj/ui-vcj-timeline",
+  "name": "@ssw/ui-ssw-classify",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "VCJ get_deadline_timeline result UI Resource (single-file HTML)",
+  "description": "SSW classify_procedure result UI Resource (single-file HTML)",
   "license": "ISC",
   "scripts": {
     "build": "vite build",
@@ -13,13 +13,13 @@
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.6.0",
-    "@vcj/shared-types": "workspace:*",
-    "@vcj/ui-bridge": "workspace:*",
+    "@ssw/shared-types": "workspace:*",
+    "@ssw/ui-bridge": "workspace:*",
     "dompurify": "^3.4.1"
   },
   "devDependencies": {
     "@types/dompurify": "^3.0.0",
-    "@vcj/tsconfig": "workspace:*",
+    "@ssw/tsconfig": "workspace:*",
     "typescript": "^5.7.0",
     "vite": "^5.4.0",
     "vite-plugin-singlefile": "^2.0.0"

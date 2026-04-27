@@ -8,7 +8,7 @@ export const logger: Logger = pino(
   createGcpLoggingPinoConfig(
     {
       serviceContext: {
-        service: "vcj-mcp",
+        service: "ssw-mcp",
         version: serviceVersion,
       },
     },

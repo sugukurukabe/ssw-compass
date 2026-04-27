@@ -3,14 +3,14 @@ import { SearchServiceClient } from "@google-cloud/discoveryengine";
 /**
  * Vertex AI Search client — Sprint 2 Batch 4.
  *
- * Two modes dispatched by the `VCJ_VERTEX_MODE` env var:
+ * Two modes dispatched by the `SSW_VERTEX_MODE` env var:
  * - "fixture" (default): returns hardcoded primary_source entries from
  *   moj.go.jp/isa so the tool pipeline is fully testable without GCP
  *   credentials. Used on localhost and in CI.
  * - "real": calls Vertex AI Search (`@google-cloud/discoveryengine`
  *   SearchServiceClient) against the configured data store. Required
- *   env: VCJ_VERTEX_PROJECT / VCJ_VERTEX_LOCATION / VCJ_VERTEX_COLLECTION
- *   / VCJ_VERTEX_DATA_STORE_ID / VCJ_VERTEX_SERVING_CONFIG_ID. Missing
+ *   env: SSW_VERTEX_PROJECT / SSW_VERTEX_LOCATION / SSW_VERTEX_COLLECTION
+ *   / SSW_VERTEX_DATA_STORE_ID / SSW_VERTEX_SERVING_CONFIG_ID. Missing
  *   any one throws immediately (silent fallback to fixture is rejected
  *   for auditability).
  *
@@ -73,7 +73,7 @@ const FIXTURE_CHUNKS: readonly GroundedChunk[] = [
 ];
 
 function resolveMode(): VertexMode {
-  const raw = process.env["VCJ_VERTEX_MODE"];
+  const raw = process.env["SSW_VERTEX_MODE"];
   return raw === "real" ? "real" : "fixture";
 }
 
@@ -86,23 +86,23 @@ interface RealSearchConfig {
 }
 
 function resolveRealConfig(): RealSearchConfig {
-  const project = process.env["VCJ_VERTEX_PROJECT"];
-  const location = process.env["VCJ_VERTEX_LOCATION"];
-  const collection = process.env["VCJ_VERTEX_COLLECTION"];
-  const dataStore = process.env["VCJ_VERTEX_DATA_STORE_ID"];
-  const servingConfig = process.env["VCJ_VERTEX_SERVING_CONFIG_ID"];
+  const project = process.env["SSW_VERTEX_PROJECT"];
+  const location = process.env["SSW_VERTEX_LOCATION"];
+  const collection = process.env["SSW_VERTEX_COLLECTION"];
+  const dataStore = process.env["SSW_VERTEX_DATA_STORE_ID"];
+  const servingConfig = process.env["SSW_VERTEX_SERVING_CONFIG_ID"];
   const missing: string[] = [];
-  if (project === undefined || project.length === 0) missing.push("VCJ_VERTEX_PROJECT");
-  if (location === undefined || location.length === 0) missing.push("VCJ_VERTEX_LOCATION");
-  if (collection === undefined || collection.length === 0) missing.push("VCJ_VERTEX_COLLECTION");
-  if (dataStore === undefined || dataStore.length === 0) missing.push("VCJ_VERTEX_DATA_STORE_ID");
+  if (project === undefined || project.length === 0) missing.push("SSW_VERTEX_PROJECT");
+  if (location === undefined || location.length === 0) missing.push("SSW_VERTEX_LOCATION");
+  if (collection === undefined || collection.length === 0) missing.push("SSW_VERTEX_COLLECTION");
+  if (dataStore === undefined || dataStore.length === 0) missing.push("SSW_VERTEX_DATA_STORE_ID");
   if (servingConfig === undefined || servingConfig.length === 0) {
-    missing.push("VCJ_VERTEX_SERVING_CONFIG_ID");
+    missing.push("SSW_VERTEX_SERVING_CONFIG_ID");
   }
   if (missing.length > 0) {
     throw new Error(
-      `VCJ_VERTEX_MODE=real requires env vars: ${missing.join(", ")}. ` +
-        "Set them or switch back to VCJ_VERTEX_MODE=fixture for local development.",
+      `SSW_VERTEX_MODE=real requires env vars: ${missing.join(", ")}. ` +
+        "Set them or switch back to SSW_VERTEX_MODE=fixture for local development.",
     );
   }
   // biome-ignore lint/style/noNonNullAssertion: the missing-guard above is exhaustive

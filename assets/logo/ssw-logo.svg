@@ -1,0 +1,4 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 56 56" role="img" aria-label="SSW Compass (placeholder)">
+  <circle cx="28" cy="28" r="26" fill="none" stroke="#0A2540" stroke-width="2"/>
+  <text x="28" y="34" text-anchor="middle" font-family="system-ui, -apple-system, sans-serif" font-size="14" font-weight="700" fill="#0A2540">SSW</text>
+</svg>

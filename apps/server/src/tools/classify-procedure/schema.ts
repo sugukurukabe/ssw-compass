@@ -1,10 +1,10 @@
-import type { ClassifyProcedureInput } from "@vcj/shared-types";
+import type { ClassifyProcedureInput } from "@ssw/shared-types";
 import type { ClassifyDecision } from "./decision-tree.js";
 
 export {
   ClassifyProcedureInput,
   ClassifyProcedureOutput,
-} from "@vcj/shared-types";
+} from "@ssw/shared-types";
 
 /**
  * Build the Vertex AI Search query for a classify_procedure request.

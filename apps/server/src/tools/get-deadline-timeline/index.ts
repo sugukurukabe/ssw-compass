@@ -3,7 +3,7 @@ import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { getDeadlineTimelineHandler } from "./handler.js";
 import { GetDeadlineTimelineInput } from "./schema.js";
 
-const UI_RESOURCE_URI = "ui://vcj-timeline/mcp-app.html";
+const UI_RESOURCE_URI = "ui://ssw-timeline/mcp-app.html";
 
 export function registerGetDeadlineTimelineTool(server: McpServer): void {
   registerAppTool(

@@ -1,9 +1,9 @@
 {
-  "name": "@vcj/ui-bridge",
+  "name": "@ssw/ui-bridge",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "DOM null-safe helpers shared by VCJ UI Resources",
+  "description": "DOM null-safe helpers shared by SSW UI Resources",
   "license": "ISC",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -19,7 +19,7 @@
     "lint": "biome check ."
   },
   "devDependencies": {
-    "@vcj/tsconfig": "workspace:*",
+    "@ssw/tsconfig": "workspace:*",
     "typescript": "^5.7.0"
   }
 }

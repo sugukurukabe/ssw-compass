@@ -1,4 +1,4 @@
-import type { SearchVisaOutput, SupportedLanguage } from "@vcj/shared-types";
+import type { SearchVisaOutput, SupportedLanguage } from "@ssw/shared-types";
 import DOMPurify from "dompurify";
 
 /**
@@ -63,8 +63,8 @@ export function render(
 
   const fullHtml = `
     <small class="notice-l1" role="note" aria-label="service scope notice">${escapeAttr(l1)}</small>
-    <section aria-labelledby="vcj-sources-heading">
-      <h2 id="vcj-sources-heading" class="sr-only">${escapeAttr(t.sources)}</h2>
+    <section aria-labelledby="ssw-sources-heading">
+      <h2 id="ssw-sources-heading" class="sr-only">${escapeAttr(t.sources)}</h2>
       ${cardsHtml}
     </section>
     <p role="note" class="disclaimer">${escapeAttr(result.disclaimer)}</p>

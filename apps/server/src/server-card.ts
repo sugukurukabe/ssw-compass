@@ -1,7 +1,7 @@
 /**
  * Server Card — public discovery document served at /.well-known/mcp.json.
  *
- * Field layout follows v2 §8.3 (the authoritative shape for VCJ submissions).
+ * Field layout follows v2 §8.3 (the authoritative shape for SSW submissions).
  * This is the same packet that will ship with the Anthropic Connectors
  * Directory and OpenAI Apps SDK submission in Sprint 4, so the fields are
  * fixed here to avoid drift.
@@ -47,7 +47,7 @@ export interface ServerCard {
 }
 
 const SERVER_CARD: ServerCard = {
-  name: "Visa Compass Japan",
+  name: "SSW Compass",
   version: "1.0.0",
   description:
     "Official-source-grounded informational app for Japanese specified-skilled-worker (SSW / 特定技能) and related visa procedures. Information only — does not constitute legal advice.",

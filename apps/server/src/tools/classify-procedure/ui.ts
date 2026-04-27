@@ -2,18 +2,18 @@ import { RESOURCE_MIME_TYPE, registerAppResource } from "@modelcontextprotocol/e
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { loadUiHtml } from "../../ui-assets.js";
 
-const UI_RESOURCE_URI = "ui://vcj-classify/mcp-app.html";
+const UI_RESOURCE_URI = "ui://ssw-classify/mcp-app.html";
 
 export function registerClassifyProcedureUiResource(server: McpServer): void {
   registerAppResource(
     server,
-    "vcj-classify-ui",
+    "ssw-classify-ui",
     UI_RESOURCE_URI,
     {
-      description: "Visa Compass Japan — procedure classification UI",
+      description: "SSW Compass — procedure classification UI",
     },
     async () => {
-      const text = await loadUiHtml("vcj-classify");
+      const text = await loadUiHtml("ssw-classify");
       return {
         contents: [
           {

@@ -1,4 +1,4 @@
-import type { ClassifyProcedureInput } from "@vcj/shared-types";
+import type { ClassifyProcedureInput } from "@ssw/shared-types";
 import { describe, expect, it } from "vitest";
 import { classifyProcedure } from "../../../src/tools/classify-procedure/decision-tree.js";
 

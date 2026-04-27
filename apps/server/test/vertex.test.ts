@@ -19,17 +19,17 @@ const BASE_ARGS: VertexSearchArgs = {
   sourceAllowlist: ["*.go.jp"],
 };
 
-const VCJ_ENV_KEYS = [
-  "VCJ_VERTEX_MODE",
-  "VCJ_VERTEX_PROJECT",
-  "VCJ_VERTEX_LOCATION",
-  "VCJ_VERTEX_COLLECTION",
-  "VCJ_VERTEX_DATA_STORE_ID",
-  "VCJ_VERTEX_SERVING_CONFIG_ID",
+const SSW_ENV_KEYS = [
+  "SSW_VERTEX_MODE",
+  "SSW_VERTEX_PROJECT",
+  "SSW_VERTEX_LOCATION",
+  "SSW_VERTEX_COLLECTION",
+  "SSW_VERTEX_DATA_STORE_ID",
+  "SSW_VERTEX_SERVING_CONFIG_ID",
 ] as const;
 
 function clearVcjEnv(): void {
-  for (const key of VCJ_ENV_KEYS) {
+  for (const key of SSW_ENV_KEYS) {
     delete process.env[key];
   }
 }
@@ -45,15 +45,15 @@ afterEach(() => {
 });
 
 describe("vertexSearch — fixture mode (default)", () => {
-  it("returns 2 MOJ fixture chunks when VCJ_VERTEX_MODE is unset", async () => {
+  it("returns 2 MOJ fixture chunks when SSW_VERTEX_MODE is unset", async () => {
     const result = await vertexSearch(BASE_ARGS);
     expect(result.chunks.length).toBe(2);
     expect(result.chunks[0]?.uri).toMatch(/^https:\/\/www\.moj\.go\.jp\/isa\//);
     expect(result.chunks.every((c) => c.confidence === 0.9)).toBe(true);
   });
 
-  it("explicit VCJ_VERTEX_MODE=fixture keeps the fixture behaviour", async () => {
-    process.env["VCJ_VERTEX_MODE"] = "fixture";
+  it("explicit SSW_VERTEX_MODE=fixture keeps the fixture behaviour", async () => {
+    process.env["SSW_VERTEX_MODE"] = "fixture";
     const result = await vertexSearch(BASE_ARGS);
     expect(result.chunks.length).toBe(2);
   });
@@ -61,19 +61,19 @@ describe("vertexSearch — fixture mode (default)", () => {
 
 describe("vertexSearch — real mode", () => {
   it("throws a clear error listing the missing env vars", async () => {
-    process.env["VCJ_VERTEX_MODE"] = "real";
+    process.env["SSW_VERTEX_MODE"] = "real";
     await expect(vertexSearch(BASE_ARGS)).rejects.toThrow(
-      /VCJ_VERTEX_MODE=real requires env vars:.*VCJ_VERTEX_PROJECT.*VCJ_VERTEX_LOCATION.*VCJ_VERTEX_COLLECTION.*VCJ_VERTEX_DATA_STORE_ID.*VCJ_VERTEX_SERVING_CONFIG_ID/s,
+      /SSW_VERTEX_MODE=real requires env vars:.*SSW_VERTEX_PROJECT.*SSW_VERTEX_LOCATION.*SSW_VERTEX_COLLECTION.*SSW_VERTEX_DATA_STORE_ID.*SSW_VERTEX_SERVING_CONFIG_ID/s,
     );
   });
 
   it("calls search() with the composed servingConfig path and returns mapped chunks", async () => {
-    process.env["VCJ_VERTEX_MODE"] = "real";
-    process.env["VCJ_VERTEX_PROJECT"] = "vcj-test-proj";
-    process.env["VCJ_VERTEX_LOCATION"] = "asia-northeast1";
-    process.env["VCJ_VERTEX_COLLECTION"] = "default_collection";
-    process.env["VCJ_VERTEX_DATA_STORE_ID"] = "visa_legal";
-    process.env["VCJ_VERTEX_SERVING_CONFIG_ID"] = "default_serving_config";
+    process.env["SSW_VERTEX_MODE"] = "real";
+    process.env["SSW_VERTEX_PROJECT"] = "ssw-test-proj";
+    process.env["SSW_VERTEX_LOCATION"] = "asia-northeast1";
+    process.env["SSW_VERTEX_COLLECTION"] = "default_collection";
+    process.env["SSW_VERTEX_DATA_STORE_ID"] = "visa_legal";
+    process.env["SSW_VERTEX_SERVING_CONFIG_ID"] = "default_serving_config";
 
     const mockClient: SearchClientLike = {
       projectLocationCollectionDataStoreServingConfigPath: vi.fn(
@@ -107,7 +107,7 @@ describe("vertexSearch — real mode", () => {
     const result = await vertexSearch(BASE_ARGS);
 
     expect(mockClient.projectLocationCollectionDataStoreServingConfigPath).toHaveBeenCalledWith(
-      "vcj-test-proj",
+      "ssw-test-proj",
       "asia-northeast1",
       "default_collection",
       "visa_legal",
@@ -116,7 +116,7 @@ describe("vertexSearch — real mode", () => {
     expect(mockClient.search).toHaveBeenCalledTimes(1);
     const callArg = (mockClient.search as ReturnType<typeof vi.fn>).mock.calls[0]?.[0];
     expect(callArg?.servingConfig).toBe(
-      "projects/vcj-test-proj/locations/asia-northeast1/collections/default_collection/dataStores/visa_legal/servingConfigs/default_serving_config",
+      "projects/ssw-test-proj/locations/asia-northeast1/collections/default_collection/dataStores/visa_legal/servingConfigs/default_serving_config",
     );
     expect(callArg?.query).toBe(BASE_ARGS.query);
 
@@ -130,12 +130,12 @@ describe("vertexSearch — real mode", () => {
   });
 
   it("drops results whose link falls outside the *.go.jp allowlist", async () => {
-    process.env["VCJ_VERTEX_MODE"] = "real";
-    process.env["VCJ_VERTEX_PROJECT"] = "vcj-test-proj";
-    process.env["VCJ_VERTEX_LOCATION"] = "asia-northeast1";
-    process.env["VCJ_VERTEX_COLLECTION"] = "default_collection";
-    process.env["VCJ_VERTEX_DATA_STORE_ID"] = "visa_legal";
-    process.env["VCJ_VERTEX_SERVING_CONFIG_ID"] = "default_serving_config";
+    process.env["SSW_VERTEX_MODE"] = "real";
+    process.env["SSW_VERTEX_PROJECT"] = "ssw-test-proj";
+    process.env["SSW_VERTEX_LOCATION"] = "asia-northeast1";
+    process.env["SSW_VERTEX_COLLECTION"] = "default_collection";
+    process.env["SSW_VERTEX_DATA_STORE_ID"] = "visa_legal";
+    process.env["SSW_VERTEX_SERVING_CONFIG_ID"] = "default_serving_config";
 
     const mockClient: SearchClientLike = {
       projectLocationCollectionDataStoreServingConfigPath: vi.fn(() => "dummy-path"),
@@ -178,12 +178,12 @@ describe("vertexSearch — real mode", () => {
   });
 
   it("skips results whose document payload has no usable link field", async () => {
-    process.env["VCJ_VERTEX_MODE"] = "real";
-    process.env["VCJ_VERTEX_PROJECT"] = "vcj-test-proj";
-    process.env["VCJ_VERTEX_LOCATION"] = "asia-northeast1";
-    process.env["VCJ_VERTEX_COLLECTION"] = "default_collection";
-    process.env["VCJ_VERTEX_DATA_STORE_ID"] = "visa_legal";
-    process.env["VCJ_VERTEX_SERVING_CONFIG_ID"] = "default_serving_config";
+    process.env["SSW_VERTEX_MODE"] = "real";
+    process.env["SSW_VERTEX_PROJECT"] = "ssw-test-proj";
+    process.env["SSW_VERTEX_LOCATION"] = "asia-northeast1";
+    process.env["SSW_VERTEX_COLLECTION"] = "default_collection";
+    process.env["SSW_VERTEX_DATA_STORE_ID"] = "visa_legal";
+    process.env["SSW_VERTEX_SERVING_CONFIG_ID"] = "default_serving_config";
 
     const mockClient: SearchClientLike = {
       projectLocationCollectionDataStoreServingConfigPath: vi.fn(() => "dummy-path"),

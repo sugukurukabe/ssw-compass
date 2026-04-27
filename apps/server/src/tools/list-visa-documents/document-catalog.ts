@@ -1,4 +1,4 @@
-import type { DocumentEntry, ListVisaDocumentsInput } from "@vcj/shared-types";
+import type { DocumentEntry, ListVisaDocumentsInput } from "@ssw/shared-types";
 
 /**
  * Document catalog (Sprint 2 Batch 5 fixture).

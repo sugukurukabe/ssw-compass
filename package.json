@@ -1,9 +1,9 @@
 {
-  "name": "vcj-public",
+  "name": "ssw-public",
   "version": "1.0.0",
   "private": true,
   "type": "module",
-  "description": "Visa Compass Japan — MCP App for Japanese SSW visa procedural information",
+  "description": "SSW Compass — MCP App for Japanese SSW visa procedural information",
   "scripts": {
     "build": "turbo run build",
     "dev": "turbo run dev",

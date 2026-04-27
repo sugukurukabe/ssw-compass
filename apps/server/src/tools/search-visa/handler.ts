@@ -1,5 +1,5 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { DISCLAIMER_BY_LANG } from "@vcj/shared-types";
+import { DISCLAIMER_BY_LANG } from "@ssw/shared-types";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";

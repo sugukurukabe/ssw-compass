@@ -1,9 +1,9 @@
 {
-  "name": "@vcj/shared-types",
+  "name": "@ssw/shared-types",
   "version": "0.0.0",
   "private": true,
   "type": "module",
-  "description": "Shared zod schemas and constants for VCJ",
+  "description": "Shared zod schemas and constants for SSW",
   "license": "ISC",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
@@ -22,7 +22,7 @@
     "zod": "^3.23.0"
   },
   "devDependencies": {
-    "@vcj/tsconfig": "workspace:*",
+    "@ssw/tsconfig": "workspace:*",
     "typescript": "^5.7.0"
   }
 }

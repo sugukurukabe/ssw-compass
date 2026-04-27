@@ -5,8 +5,8 @@ import {
   applyHostStyleVariables,
   PostMessageTransport,
 } from "@modelcontextprotocol/ext-apps";
-import type { ClassifyProcedureOutput, SupportedLanguage } from "@vcj/shared-types";
-import { getElement } from "@vcj/ui-bridge";
+import type { SearchVisaOutput, SupportedLanguage } from "@ssw/shared-types";
+import { getElement } from "@ssw/ui-bridge";
 import { render } from "./render.js";
 import { renderSkeleton } from "./skeleton.js";
 
@@ -30,7 +30,7 @@ let currentLang: SupportedLanguage = "ja";
 
 const root = getElement("root", HTMLDivElement);
 
-const app = new App({ name: "VCJ", version: "1.0.0" }, {});
+const app = new App({ name: "SSW", version: "1.0.0" }, {});
 
 app.onhostcontextchanged = (params: HostContextChangedParams) => {
   if (params.theme !== undefined) {
@@ -54,7 +54,7 @@ app.ontoolresult = (params) => {
   if (structured === undefined) {
     return;
   }
-  render(structured as ClassifyProcedureOutput, currentLang, root);
+  render(structured as SearchVisaOutput, currentLang, root);
 };
 
 await app.connect(new PostMessageTransport(window.parent, window.parent));
