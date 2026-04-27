@@ -1,3 +1,16 @@
 ---
-alwaysApply: true
+globs:
+  - "infra/terraform/**"
+  - "apps/server/src/vertex.ts"
+  - "apps/server/src/secrets.ts"
+  - "apps/server/src/otel.ts"
 ---
+# GCP integration rules
+
+- Region: asia-northeast1 only (APPI cross-border avoidance).
+- Service account: vcj-runtime@<project>.iam (BYOSA). Never default P4SA.
+- IAM: roles/discoveryengine.viewer scoped to specific data stores.
+- Secrets: Secret Manager + volume mount + version pinned (no :latest).
+- Vertex AI Search: confidence threshold 0.7, source allowlist *.go.jp.
+- Cloud Run: --max-instances=20, --vpc-egress=all-traffic via vcj-egress connector.
+- All resources tagged: env=prod|staging, owner=vcj, cost-center=visa-compass.
