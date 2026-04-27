@@ -1,3 +1,21 @@
 ---
 alwaysApply: true
 ---
+# Code standards
+
+## TypeScript
+- strict: true, noUncheckedIndexedAccess: true
+- No `any`. Use `unknown` + type narrowing.
+- Prefer `z.infer<typeof Schema>` over hand-written types.
+- All async functions return `Promise<T>` with explicit T.
+
+## Naming
+- Tools: snake_case verb_noun (search_visa, classify_procedure)
+- Files: kebab-case (search-visa.ts)
+- Types/Classes: PascalCase
+- Constants: SCREAMING_SNAKE
+
+## Commits
+- Conventional Commits: feat/fix/chore/docs/refactor/test
+- Scope: tool name or area (e.g., feat(search-visa): add freshness warning)
+```

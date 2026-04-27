@@ -1,5 +1,5 @@
 ---
-alwaysApply: true
+globs: ["ui/**"]
 ---
 # UI Resource rules
 
