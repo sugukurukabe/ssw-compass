@@ -9,12 +9,21 @@ locals {
     "cloudbuild.googleapis.com",
     "secretmanager.googleapis.com",
     "storage.googleapis.com",
+    # Batch 4: Vertex AI Search + foundation platform APIs.
+    "discoveryengine.googleapis.com",
+    "aiplatform.googleapis.com",
   ]
 }
 
 provider "google" {
   project = var.project_id
   region  = var.region
+  # discoveryengine.googleapis.com (Batch 4) requires an explicit quota
+  # project when authenticated via user ADC / short-lived access token.
+  # user_project_override=true + billing_project directs the provider to
+  # bill API calls to this project rather than the caller's default.
+  user_project_override = true
+  billing_project       = var.project_id
 }
 
 resource "google_project_service" "enabled" {
@@ -27,8 +36,9 @@ resource "google_project_service" "enabled" {
 }
 
 module "service_account" {
-  source     = "../../modules/service-account"
-  project_id = var.project_id
+  source                        = "../../modules/service-account"
+  project_id                    = var.project_id
+  enable_discoveryengine_viewer = true # Batch 4: bind ssw-runtime to roles/discoveryengine.viewer
 
   depends_on = [google_project_service.enabled]
 }
@@ -98,7 +108,9 @@ module "vertex_ai_search" {
   source     = "../../modules/vertex-ai-search"
   project_id = var.project_id
   location   = var.region
-  enabled    = false
+  enabled    = true # Batch 4: create 3 data stores (visa_legal / visa_faq / visa_secondary)
+
+  depends_on = [google_project_service.enabled]
 }
 
 module "vpc_egress" {
