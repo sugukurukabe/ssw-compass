@@ -1,0 +1,79 @@
+name: CD — prod (manual only)
+
+# Batch 3 delivers this workflow but explicitly does NOT run it.
+# Prod apply + first revision are gated to Batch 6 once Cloud Armor +
+# Cloudflare are in place. Until then, dispatching this workflow will
+# succeed the build/push stages but the deploy stage will place the
+# revision behind INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER — not
+# reachable from the internet, and the smoke-test step will fail.
+# That failure is by design during Batches 3–5.
+
+on:
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Image tag to deploy (typically the staging-verified SHA)"
+        required: true
+      i_understand_prod:
+        description: "Type 'yes' to confirm prod deploy intent"
+        required: true
+        default: "no"
+
+concurrency:
+  group: cd-prod
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: ssw-compass-prod-494613
+  REGION: asia-northeast1
+  SERVICE_NAME: ssw-mcp-prod
+  AR_REPO_URL: asia-northeast1-docker.pkg.dev/ssw-compass-prod-494613/ssw-images
+  IMAGE_NAME: server
+
+jobs:
+  confirm:
+    name: Confirm prod deploy intent
+    runs-on: ubuntu-latest
+    steps:
+      - name: Gate check
+        run: |
+          if [ "${{ github.event.inputs.i_understand_prod }}" != "yes" ]; then
+            echo "::error::i_understand_prod input was not 'yes' — aborting."
+            exit 1
+          fi
+
+  deploy:
+    name: gcloud run deploy (prod, internal-LB)
+    needs: confirm
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP via WIF
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.DEPLOY_SA_EMAIL }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Deploy
+        run: |
+          TAG="${{ github.event.inputs.image_tag }}"
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --image=${{ env.AR_REPO_URL }}/${{ env.IMAGE_NAME }}:${TAG} \
+            --quiet
+
+      - name: Describe (internal-LB, public URL not reachable until Batch 6)
+        run: |
+          gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='yaml(metadata.annotations."run.googleapis.com/ingress",spec.template.spec.serviceAccountName,status.latestReadyRevisionName)'

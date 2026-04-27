@@ -1,0 +1,208 @@
+name: CD — staging
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      image_tag:
+        description: "Custom image tag (defaults to commit SHA)"
+        required: false
+        default: ""
+
+concurrency:
+  group: cd-staging
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+env:
+  PROJECT_ID: ssw-compass-prod-494613
+  REGION: asia-northeast1
+  SERVICE_NAME: ssw-mcp-staging
+  AR_REPO_URL: asia-northeast1-docker.pkg.dev/ssw-compass-prod-494613/ssw-images
+  IMAGE_NAME: server
+
+jobs:
+  ci-gate:
+    name: CI gate (re-run lint/typecheck/test)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec biome check apps packages ui --max-diagnostics=200
+      - run: pnpm run typecheck
+      - run: pnpm -F @ssw/server test
+
+  build-push:
+    name: Build + push Docker image
+    needs: ci-gate
+    runs-on: ubuntu-latest
+    outputs:
+      image_uri: ${{ steps.set-tag.outputs.image_uri }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP via WIF
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.DEPLOY_SA_EMAIL }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Configure Docker for Artifact Registry
+        run: gcloud auth configure-docker ${{ env.REGION }}-docker.pkg.dev --quiet
+
+      - name: Determine image tag
+        id: set-tag
+        run: |
+          INPUT_TAG="${{ github.event.inputs.image_tag }}"
+          TAG="${INPUT_TAG:-${GITHUB_SHA}}"
+          echo "tag=${TAG}" >> "$GITHUB_OUTPUT"
+          echo "image_uri=${AR_REPO_URL}/${IMAGE_NAME}:${TAG}" >> "$GITHUB_OUTPUT"
+
+      - name: Build + push
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: apps/server/Dockerfile
+          push: true
+          tags: |
+            ${{ steps.set-tag.outputs.image_uri }}
+            ${{ env.AR_REPO_URL }}/${{ env.IMAGE_NAME }}:latest
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: gcloud run deploy (staging)
+    needs: build-push
+    runs-on: ubuntu-latest
+    outputs:
+      service_url: ${{ steps.deploy-out.outputs.service_url }}
+      prev_revision: ${{ steps.capture-prev.outputs.prev_revision }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Authenticate to GCP via WIF
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.DEPLOY_SA_EMAIL }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Capture previous revision (for revert-on-failure)
+        id: capture-prev
+        run: |
+          PREV=$(gcloud run revisions list \
+            --service=${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='value(metadata.name)' \
+            --limit=10 \
+            --filter='status.conditions.status=True AND status.conditions.type=Active' \
+            2>/dev/null | head -1 || echo "")
+          echo "prev_revision=${PREV}" >> "$GITHUB_OUTPUT"
+          echo "Previous active revision: ${PREV:-<none — first deploy>}"
+
+      - name: Deploy new revision
+        id: deploy-out
+        run: |
+          gcloud run deploy ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --image=${{ needs.build-push.outputs.image_uri }} \
+            --quiet
+          URL=$(gcloud run services describe ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --format='value(status.url)')
+          echo "service_url=${URL}" >> "$GITHUB_OUTPUT"
+
+  smoke-test:
+    name: Smoke test (staging)
+    needs: [build-push, deploy]
+    runs-on: ubuntu-latest
+    steps:
+      - name: HTTP /health probe
+        run: |
+          set -euo pipefail
+          URL="${{ needs.deploy.outputs.service_url }}"
+          echo "Probing $URL/health ..."
+          curl -fsS --max-time 10 "$URL/health" | tee /tmp/health.json
+          jq -e '.status == "ok" and .service == "ssw-mcp"' /tmp/health.json
+
+      - name: MCP tools/list (expect 5 tools)
+        run: |
+          set -euo pipefail
+          URL="${{ needs.deploy.outputs.service_url }}"
+          npx -y @modelcontextprotocol/inspector --cli "$URL/mcp" \
+            --method tools/list > /tmp/tools.json
+          jq -e '(.tools // .result.tools) | length == 5' /tmp/tools.json
+
+      - name: MCP tools/call search_visa (expect groundedChunks >= 2)
+        run: |
+          set -euo pipefail
+          URL="${{ needs.deploy.outputs.service_url }}"
+          npx -y @modelcontextprotocol/inspector --cli "$URL/mcp" \
+            --method tools/call \
+            --tool-name search_visa \
+            --tool-arg query="特定技能1号 建設分野" \
+            --tool-arg lang=ja > /tmp/search.json
+          jq -e '(.structuredContent // .result.structuredContent).groundedChunks | length >= 2' /tmp/search.json
+
+      - name: /.well-known/mcp.json Server Card
+        run: |
+          set -euo pipefail
+          URL="${{ needs.deploy.outputs.service_url }}"
+          curl -fsS "$URL/.well-known/mcp.json" | tee /tmp/card.json
+          jq -e '.name == "SSW Compass"' /tmp/card.json
+
+      - name: Upload smoke test artefacts
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: smoke-test-report-${{ github.run_id }}
+          path: |
+            /tmp/health.json
+            /tmp/tools.json
+            /tmp/search.json
+            /tmp/card.json
+          if-no-files-found: warn
+
+  revert-on-failure:
+    name: Auto-revert on smoke failure
+    needs: [deploy, smoke-test]
+    if: failure() && needs.deploy.outputs.prev_revision != ''
+    runs-on: ubuntu-latest
+    steps:
+      - name: Authenticate to GCP via WIF
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.DEPLOY_SA_EMAIL }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Revert traffic to previous revision
+        run: |
+          PREV="${{ needs.deploy.outputs.prev_revision }}"
+          echo "Reverting ${{ env.SERVICE_NAME }} to revision $PREV"
+          gcloud run services update-traffic ${{ env.SERVICE_NAME }} \
+            --region=${{ env.REGION }} \
+            --to-revisions="${PREV}=100"

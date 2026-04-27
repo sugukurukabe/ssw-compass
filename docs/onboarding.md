@@ -100,6 +100,17 @@ never commit them. `terraform.tfvars` files contain **non-secret**
 project IDs and are force-included via the `!infra/terraform/envs/*/terraform.tfvars`
 .gitignore negation.
 
+## GitHub Actions secrets (one-time, first operator only)
+
+For the CI/CD flow in `.github/workflows/` to authenticate to GCP,
+four repository secrets must be registered. See
+[docs/deploy-runbook.md](deploy-runbook.md#1-github-secrets-registration)
+for the exact values and the UI path.
+
+Subsequent developers who clone the repo do not need to re-register
+these — they are repository-scoped and already set by the Batch 3
+operator.
+
 ## Claude Desktop / Cursor / other MCP host setup
 
 See `.claude/desktop_config.example.json` and the `README.md`
