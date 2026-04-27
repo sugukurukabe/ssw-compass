@@ -11,7 +11,8 @@
     "format": "turbo run format",
     "typecheck": "turbo run typecheck",
     "test": "turbo run test",
-    "check": "biome check ."
+    "check": "biome check .",
+    "ingest": "tsx scripts/ingest-sources.ts"
   },
   "keywords": [
     "mcp",

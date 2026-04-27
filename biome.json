@@ -6,7 +6,7 @@
     "useIgnoreFile": true
   },
   "files": {
-    "includes": ["apps/**", "ui/**", "packages/**"]
+    "includes": ["apps/**", "ui/**", "packages/**", "scripts/**"]
   },
   "formatter": {
     "enabled": true,
