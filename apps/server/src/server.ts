@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { registerSearchVisaTool } from "./tools/search-visa/index.js";
 
 const SERVER_INFO = {
   name: "vcj-mcp",
@@ -12,5 +13,6 @@ export function createMcpServer(): McpServer {
       resources: {},
     },
   });
+  registerSearchVisaTool(server);
   return server;
 }
