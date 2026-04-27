@@ -634,7 +634,7 @@ SSW 開発サーバ自体を Cursor の MCP として登録 (`.cursor/mcp.json` 
   "mcpServers": {
     "ssw-local": {
       "type": "http",
-      "url": "http://localhost:3001/mcp"
+      "url": "http://localhost:8080/mcp"
     }
   }
 }
@@ -648,7 +648,7 @@ SSW 開発サーバ自体を Cursor の MCP として登録 (`.cursor/mcp.json` 
 // package.json (root)
 {
   "scripts": {
-    "dev": "concurrently -n server,ui,inspector \"pnpm -F @ssw/server dev\" \"pnpm -F './ui/*' build:watch\" \"pnpm exec mcp-inspector --proxy http://localhost:3001/mcp\""
+    "dev": "concurrently -n server,ui,inspector \"pnpm -F @ssw/server dev\" \"pnpm -F './ui/*' build:watch\" \"pnpm exec mcp-inspector --proxy http://localhost:8080/mcp\""
   }
 }
 ```

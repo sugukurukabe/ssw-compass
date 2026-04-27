@@ -9,8 +9,8 @@ Sprint 3 (6月W3) で 6 ホスト動作確認を実施する際の手順書。
 
 ## 前提
 
-- `pnpm dev` で localhost:3001 起動済み
-- `cloudflared tunnel --url http://localhost:3001` で HTTPS URL 取得済み
+- `pnpm dev` で localhost:8080 起動済み
+- `cloudflared tunnel --url http://localhost:8080` で HTTPS URL 取得済み
 - 取得した tunnel URL をここでは `https://<TUNNEL>.trycloudflare.com/mcp` と記す
 
 ## 1. MCP Inspector CLI (smoke test)

@@ -41,7 +41,7 @@ resource "google_cloud_run_v2_service" "this" {
       }
 
       ports {
-        container_port = 3001
+        container_port = var.container_port
       }
     }
 

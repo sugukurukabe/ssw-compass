@@ -6,7 +6,7 @@ import { logger } from "./logger.js";
 import { createMcpServer } from "./server.js";
 import { buildServerCard } from "./server-card.js";
 
-const DEFAULT_PORT = 3001;
+const DEFAULT_PORT = 8080;
 const MAX_BODY_BYTES = 1024 * 1024;
 const SESSION_HEADER = "mcp-session-id";
 

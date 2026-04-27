@@ -79,6 +79,12 @@ variable "memory_limit" {
   default     = "512Mi"
 }
 
+variable "container_port" {
+  description = "Port the container listens on. 8080 is the Cloud Run / distroless convention; apps/server/Dockerfile and apps/server/src/index.ts DEFAULT_PORT must match."
+  type        = number
+  default     = 8080
+}
+
 variable "env" {
   description = "Environment label (staging/prod) — attached to service for filtering in logs/billing."
   type        = string

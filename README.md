@@ -42,11 +42,11 @@ pnpm -F @ssw/ui-bridge build
 # 3. Build the search UI bundle (single-file HTML, ~292 KB)
 pnpm -F @ssw/ui-ssw-search build
 
-# 4. Start the MCP server on http://localhost:3001
+# 4. Start the MCP server on http://localhost:8080
 pnpm -F @ssw/server dev
 
 # 5. In another terminal, expose the server via a Cloudflare quick tunnel
-cloudflared tunnel --url http://localhost:3001
+cloudflared tunnel --url http://localhost:8080
 #    → copy the printed https://*.trycloudflare.com URL for the next step
 ```
 
@@ -66,8 +66,8 @@ cloudflared tunnel --url http://localhost:3001
 
 | Mode | When to use | Command |
 |---|---|---|
-| Quick tunnel (Sprint 1 default) | Ephemeral URL, no account setup | `cloudflared tunnel --url http://localhost:3001` |
-| Named tunnel (Sprint 2+) | Stable URL, requires login + DNS | `cloudflared tunnel login`<br>`cloudflared tunnel create ssw-dev`<br>`cloudflared tunnel route dns ssw-dev ssw-dev.<your-domain>`<br>`cloudflared tunnel run --url http://localhost:3001 ssw-dev` |
+| Quick tunnel (Sprint 1 default) | Ephemeral URL, no account setup | `cloudflared tunnel --url http://localhost:8080` |
+| Named tunnel (Sprint 2+) | Stable URL, requires login + DNS | `cloudflared tunnel login`<br>`cloudflared tunnel create ssw-dev`<br>`cloudflared tunnel route dns ssw-dev ssw-dev.<your-domain>`<br>`cloudflared tunnel run --url http://localhost:8080 ssw-dev` |
 
 ## Architecture
 
