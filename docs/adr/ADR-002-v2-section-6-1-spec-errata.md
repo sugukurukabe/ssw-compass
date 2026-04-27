@@ -2,13 +2,13 @@
 
 - **Status**: Accepted
 - **Date**: 2026-04-27 (Sprint 1, Batch 4)
-- **Deciders**: @kabe, VCJ core team
+- **Deciders**: @kabe, SSW core team
 - **Supersedes**: partially overrides `docs/specs/v2-comprehensive-design.md` §6.1 sample code
 
 ## Context
 
 `docs/specs/v2-comprehensive-design.md` §6.1 contains a hand-written sample
-of `ui/vcj-search/src/main.tsx` showing how the UI Resource should connect
+of `ui/ssw-search/src/main.tsx` showing how the UI Resource should connect
 to the host via `@modelcontextprotocol/ext-apps`. During Batch 4 we
 cross-checked the sample against the actual package at
 `@modelcontextprotocol/ext-apps@^1.6.0` (resolved to **1.7.0** on npm as of
@@ -27,14 +27,14 @@ form produces TS2339 "Property 'result' does not exist on type '{}'"; the
 
 ## Decision
 
-Implement `ui/vcj-search/src/main.tsx` against the actual published API:
+Implement `ui/ssw-search/src/main.tsx` against the actual published API:
 
 ```typescript
 // (a) Two-argument PostMessageTransport for View role
 await app.connect(new PostMessageTransport(window.parent, window.parent));
 
 // (b) No onteardown handler — rely on SDK default behavior for
-//     ui/resource-teardown; revisit if VCJ needs custom teardown logic
+//     ui/resource-teardown; revisit if SSW needs custom teardown logic
 //     (see setRequestHandler below for the escape hatch)
 
 // (c) params IS the CallToolResult
@@ -52,7 +52,7 @@ considered errata until revised.
 
 Positive:
 
-- `pnpm -F @vcj/ui-vcj-search typecheck` passes under
+- `pnpm -F @ssw/ui-ssw-search typecheck` passes under
   `exactOptionalPropertyTypes: true` with **no `@ts-expect-error` in UI
   code**.
 - UI correctly receives and renders `structuredContent` from
@@ -63,10 +63,10 @@ Positive:
 
 Negative / follow-up:
 
-- Future VCJ UIs in Sprint 2 (`vcj-checklist`, `vcj-deadline-timeline`)
+- Future SSW UIs in Sprint 2 (`ssw-checklist`, `ssw-deadline-timeline`)
   must reference this ADR, not v2 §6.1, for the connect/teardown/
   handler patterns.
-- If VCJ needs a custom teardown hook (e.g. to persist UI draft state
+- If SSW needs a custom teardown hook (e.g. to persist UI draft state
   before the iframe unmounts), use
   `app.setRequestHandler(ResourceTeardownRequestSchema, async () => ({}))`
   from the base Protocol class; this is the SDK-blessed path since

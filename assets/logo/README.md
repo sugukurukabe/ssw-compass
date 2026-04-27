@@ -1,9 +1,9 @@
-# VCJ Logo Assets
+# SSW Logo Assets
 
 ## Current state — placeholder
 
-`vcj-logo.svg` in this folder is a **placeholder** (simple depth-blue ring
-+ "VCJ" wordmark, 56×56 viewBox). It is deliberately minimal so it never
+`ssw-logo.svg` in this folder is a **placeholder** (simple depth-blue ring
++ "SSW" wordmark, 56×56 viewBox). It is deliberately minimal so it never
 ships to the Connectors Directory by accident — the `aria-label` contains
 the string `"placeholder"` and CI / pre-submission review should grep for
 that token.
@@ -27,23 +27,23 @@ satisfy:
 
 ## Replacement procedure
 
-1. Drop the final SVG in place of `assets/logo/vcj-logo.svg`.
+1. Drop the final SVG in place of `assets/logo/ssw-logo.svg`.
 2. Remove the `(placeholder)` suffix from the `aria-label` — the live copy
-   should simply say `"Visa Compass Japan"`.
+   should simply say `"SSW Compass"`.
 3. Update `README.md` (this file) — remove the "Current state — placeholder"
    section and replace with the asset provenance (designer, date, license).
 4. If dark-mode / alternate variants ship, add them as
-   `vcj-logo-dark.svg`, `vcj-logo-monochrome.svg`, etc., and document each
+   `ssw-logo-dark.svg`, `ssw-logo-monochrome.svg`, etc., and document each
    under a new "Variants" section below.
 5. Reference the logo file(s) from:
    - Sprint 4 Directory submission packets (Anthropic + OpenAI)
-   - `ui/*/mcp-app.html` header (optional, if a VCJ badge is rendered
+   - `ui/*/mcp-app.html` header (optional, if a SSW badge is rendered
      in UI chrome later)
    - `README.md` at the repo root (hero section)
 
 ## Out of scope for Sprint 2
 
-The Sprint 2 kickoff prompt explicitly names VCJ logo as a deliverable and
+The Sprint 2 kickoff prompt explicitly names SSW logo as a deliverable and
 equally explicitly says AI generation is **not** acceptable ("Do NOT
 generate logos via AI; defer to human"). Sprint 2 ships the placeholder
 only; the final monoline compass + torii design is produced by a human

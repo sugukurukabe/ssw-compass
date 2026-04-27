@@ -1,14 +1,14 @@
-# Visa Compass Japan (VCJ)
+# SSW Compass (SSW)
 
 > *The compass for Japanese visa procedures.*
 > 「日本ビザ手続きの羅針盤。」
 > *Kompas untuk prosedur visa Jepang.*
 
-## What is VCJ?
+## What is SSW?
 
-Visa Compass Japan is a public, read-only, anonymous MCP App that grounds
+SSW Compass is a public, read-only, anonymous MCP App that grounds
 Japanese Specified Skilled Worker (特定技能 / SSW) and related visa questions
-in 出入国在留管理庁 official documents. VCJ points the way — it does **not**
+in 出入国在留管理庁 official documents. SSW points the way — it does **not**
 perform legal representation (行政書士法 §19-1). Every response is accompanied
 by a standard disclaimer directing users to a certified gyoseishoshi or
 attorney for individual cases, and the pipeline blocks personal identifiers
@@ -29,18 +29,18 @@ and Claude Desktop. Docker is **not** required in Sprint 1.
 
 ```bash
 # 1. Clone & install
-git clone https://github.com/<owner>/vcj-public.git
-cd vcj-public && pnpm install
+git clone https://github.com/<owner>/ssw-public.git
+cd ssw-public && pnpm install
 
-# 2. Build shared workspaces (UI depends on @vcj/shared-types + @vcj/ui-bridge)
-pnpm -F @vcj/shared-types build
-pnpm -F @vcj/ui-bridge build
+# 2. Build shared workspaces (UI depends on @ssw/shared-types + @ssw/ui-bridge)
+pnpm -F @ssw/shared-types build
+pnpm -F @ssw/ui-bridge build
 
 # 3. Build the search UI bundle (single-file HTML, ~292 KB)
-pnpm -F @vcj/ui-vcj-search build
+pnpm -F @ssw/ui-ssw-search build
 
 # 4. Start the MCP server on http://localhost:3001
-pnpm -F @vcj/server dev
+pnpm -F @ssw/server dev
 
 # 5. In another terminal, expose the server via a Cloudflare quick tunnel
 cloudflared tunnel --url http://localhost:3001
@@ -64,13 +64,13 @@ cloudflared tunnel --url http://localhost:3001
 | Mode | When to use | Command |
 |---|---|---|
 | Quick tunnel (Sprint 1 default) | Ephemeral URL, no account setup | `cloudflared tunnel --url http://localhost:3001` |
-| Named tunnel (Sprint 2+) | Stable URL, requires login + DNS | `cloudflared tunnel login`<br>`cloudflared tunnel create vcj-dev`<br>`cloudflared tunnel route dns vcj-dev vcj-dev.<your-domain>`<br>`cloudflared tunnel run --url http://localhost:3001 vcj-dev` |
+| Named tunnel (Sprint 2+) | Stable URL, requires login + DNS | `cloudflared tunnel login`<br>`cloudflared tunnel create ssw-dev`<br>`cloudflared tunnel route dns ssw-dev ssw-dev.<your-domain>`<br>`cloudflared tunnel run --url http://localhost:3001 ssw-dev` |
 
 ## Architecture
 
 ```
 apps/server           MCP server (Express + StreamableHTTPServerTransport)
-ui/vcj-search         UI Resource (Vite + single-file HTML, no React)
+ui/ssw-search         UI Resource (Vite + single-file HTML, no React)
 packages/shared-types zod schemas + DISCLAIMER_BY_LANG (ja/en/id)
 packages/ui-bridge    null-safe DOM helpers shared across UIs
 packages/tsconfig     Shared TypeScript compiler configs
@@ -81,9 +81,9 @@ For the full design see [`docs/specs/SPEC-INDEX.md`](docs/specs/SPEC-INDEX.md)
 
 ## Troubleshooting
 
-**VCJ does not appear in Claude Desktop.**
+**SSW does not appear in Claude Desktop.**
 Check that `~/Library/Application Support/Claude/claude_desktop_config.json`
-exists and contains a valid `mcpServers.vcj-local` entry. A single JSON syntax
+exists and contains a valid `mcpServers.ssw-local` entry. A single JSON syntax
 error will silently disable every MCP server in that config — validate with
 `jq . ~/Library/Application\ Support/Claude/claude_desktop_config.json`.
 After edits, **fully quit and relaunch** Claude Desktop (Cmd+Q, not just close

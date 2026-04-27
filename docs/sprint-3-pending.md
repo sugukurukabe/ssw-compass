@@ -17,7 +17,7 @@ grep -rn 'TODO(sprint-3)' --include='*.html' --include='*.ts' --include='*.tsx' 
 **Expected result at Sprint 1 close (verified 2026-04-27):**
 
 ```
-ui/vcj-search/mcp-app.html:7:      TODO(sprint-3): Replace 'unsafe-inline' with sha256 hashes.
+ui/ssw-search/mcp-app.html:7:      TODO(sprint-3): Replace 'unsafe-inline' with sha256 hashes.
 ```
 
 1 hit. `dist/mcp-app.html` is a build artifact and should not be grepped;
@@ -27,14 +27,14 @@ or grep `dist/` separately.
 **Resolution plan:**
 
 - Implement the post-build hash script described in v2 §6.2. It reads
-  `ui/vcj-search/dist/mcp-app.html`, computes `sha256-*` for every
+  `ui/ssw-search/dist/mcp-app.html`, computes `sha256-*` for every
   inlined `<script>` and `<style>` block, and rewrites the CSP `meta`
   tag to replace `'unsafe-inline'` with those hashes + `'strict-dynamic'`.
 - Follow v3 §23 rollout: CSP `Content-Security-Policy-Report-Only`
   header for 1 sprint of observation, then flip to enforcing
   `Content-Security-Policy`.
 - Add Trusted Types (`require-trusted-types-for 'script'; trusted-types
-  vcj-purify;`) once DOMPurify is instantiated with
+  ssw-purify;`) once DOMPurify is instantiated with
   `RETURN_TRUSTED_TYPE: true`.
 - Remove the `TODO(sprint-3)` comment as part of the same commit so the
   Sprint 3 close-check grep returns zero.
@@ -208,7 +208,7 @@ Batch 6 shipped the seed at 40; Sprint 2 kickoff targeted 50+.
 - Sprint 3 close exit criterion: the second grep above should return
   `0` (all placeholders replaced with real hashes).
 
-## VCJ logo finalize (Sprint 3 / 4)
+## SSW logo finalize (Sprint 3 / 4)
 
 **Discovery:**
 
@@ -219,7 +219,7 @@ grep -l 'placeholder' assets/logo/*.svg
 **Expected result at Sprint 2 close (verified 2026-04-27):**
 
 ```
-assets/logo/vcj-logo.svg
+assets/logo/ssw-logo.svg
 ```
 
 1 hit. The SVG's `aria-label` contains the word `"placeholder"` by design
@@ -230,7 +230,7 @@ so automated review catches it before Sprint 4 submission.
 - Sprint 3 kickoff: commission a human-designed monoline SVG (compass
   needle + torii, depth-blue `#0A2540`) per v3 §A. AI generation is
   explicitly out of scope for the logo per the Sprint 2 kickoff prompt.
-- Drop the final file at `assets/logo/vcj-logo.svg`; follow the procedure
+- Drop the final file at `assets/logo/ssw-logo.svg`; follow the procedure
   in `assets/logo/README.md`.
 - Add dark-mode / monochrome variants if the final asset is not
   colour-independent.
@@ -238,7 +238,7 @@ so automated review catches it before Sprint 4 submission.
   no files.
 - Reference the final logo from (a) Anthropic + OpenAI submission packets
   (Sprint 4), (b) the hero section of the root `README.md`, and
-  (c) optionally UI chrome if a VCJ badge is ever rendered inside a
+  (c) optionally UI chrome if a SSW badge is ever rendered inside a
   resource.
 
 ---

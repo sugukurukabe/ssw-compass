@@ -2,7 +2,7 @@
 
 - **Status**: Accepted
 - **Date**: 2026-04-27 (Sprint 1, Batch 5)
-- **Deciders**: @kabe, VCJ core team
+- **Deciders**: @kabe, SSW core team
 - **Scope**: `apps/server/src/server-card.ts` and the `GET /.well-known/mcp.json` route in `apps/server/src/index.ts`
 
 ## Context
@@ -32,7 +32,7 @@ Notable differences from the upstream proposals:
   true, apps: true, tasks: false, prompts: false }`) — directly maps to
   Directory submission checklists, not to MCP protocol's `ServerCapabilities`
   object.
-- `compliance` is **VCJ-specific**: `dataResidency: "JP"`,
+- `compliance` is **SSW-specific**: `dataResidency: "JP"`,
   `certifications: ["P-Mark-roadmap"]`,
   `regulatoryFramework: ["JP-PIPL", "JP-Immigration-Law"]`. Neither SEP
   proposal has an equivalent.
@@ -74,7 +74,7 @@ Positive:
   OpenAI Apps SDK can copy the `/.well-known/mcp.json` body verbatim
   without any shape translation.
 - The `compliance` / `limitations` / `publisher` fields are already
-  user-visible via the discovery endpoint, so reviewers can verify VCJ's
+  user-visible via the discovery endpoint, so reviewers can verify SSW's
   regulatory positioning before a single MCP message is exchanged.
 - No dependency on unstable upstream proposals — v2 §8.3 is under our
   direct change control.
@@ -94,7 +94,7 @@ Negative / follow-up:
 - The `capabilities` boolean format cannot express MCP protocol
   capabilities like `listChanged` or `subscribe`. Directory reviewers
   who expect the protocol-level shape will need to negotiate via the
-  actual MCP handshake; this is acceptable for VCJ's read-only scope.
+  actual MCP handshake; this is acceptable for SSW's read-only scope.
 
 ## Related
 

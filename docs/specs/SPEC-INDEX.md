@@ -1,4 +1,4 @@
-# VCJ Design Specs — Reading Order
+# SSW Design Specs — Reading Order
 
 ## 読み順 (上から順に)
 
@@ -8,7 +8,7 @@
 ## 競合解決ルール
 
 v2 と v3 が矛盾する場合、**v3 が常に優先** する。例:
-- ブランド名 → v3 (Visa Compass Japan / VCJ / ビザコンパス)
+- ブランド名 → v3 (SSW Compass / SSW / SSW コンパス)
 - Cursor rules 構造 → v3 24章 (2-4-2 構造)。v2 16章は無視。
 - Sprint 計画 → v3 26章。v2 12章は無視。
 - リスクレジスタ → v3 25章 (R16-R20 を v2 17章 R1-R15 に追加)。
@@ -31,7 +31,7 @@ v2 と v3 が矛盾する場合、**v3 が常に優先** する。例:
 
 ## v3 で新たに追加された章
 
-- **A章**: リブランド全置換マップ (SuguVisa → VCJ)
+- **A章**: リブランド全置換マップ (SuguVisa → SSW)
 - **B章**: 第二設計書からの統合 採否判定
 - **20章**: 疑似ストリーミング UX (Skeleton + CSS transition)
 - **21章**: Commit Moment パターン (checklist UI)
@@ -46,11 +46,11 @@ v2 と v3 が矛盾する場合、**v3 が常に優先** する。例:
 - 旧 SuguVisa B2B/Private 関連の記述全般 (本リポジトリの scope 外、別 repo で扱う)
 - v2 12章「Sprint ロードマップ」 (v3 26章で完全に上書き)
 - v2 16章「Cursor Skills / Rules」 (v3 24章で完全に上書き)
-- 設計書中の「SuguVisa」表記 (全て VCJ または Visa Compass Japan に置換済み)
+- 設計書中の「SuguVisa」表記 (全て SSW または SSW Compass に置換済み)
 
 ## ブランド名 (全 surface で統一)
 
-- 正式名 (英語): **Visa Compass Japan**
-- 略称 (技術): **VCJ**
-- 日本語通称: **ビザコンパス**
+- 正式名 (英語): **SSW Compass**
+- 略称 (技術): **SSW**
+- 日本語通称: **SSW コンパス**
 - 採用しない呼称: ビザコン (婚活コン等と紛らわしい)、SuguVisa (旧名)、すぐビザ (旧名)

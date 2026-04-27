@@ -1,4 +1,4 @@
-# Sprint 2 Summary — Visa Compass Japan
+# Sprint 2 Summary — SSW Compass
 
 **Sprint**: 2 (2 weeks following Sprint 1)
 **Completed**: 2026-04-27
@@ -19,12 +19,12 @@ plus 1 Sprint 2 closure commit (this document).
 - `apps/server/src/tools/search-visa/index.ts` — description extended with
   the PII rejection clause.
 
-### Batch 2 — `classify_procedure` tool + `vcj-classify` UI Resource
+### Batch 2 — `classify_procedure` tool + `ssw-classify` UI Resource
 - 5-rule decision tree + 3-language rationale + next-steps.
 - UI with single-card result + 2-tier disclaimer.
 - 8 decision-tree cases + 9 prompt cases.
 
-### Batch 3 — `get_deadline_timeline` tool + `vcj-timeline` UI Resource
+### Batch 3 — `get_deadline_timeline` tool + `ssw-timeline` UI Resource
 - 5 deadline kinds (notification_14days / annual_report / renewal_earliest
   / tokutei_ginou_1_cap / bridge_preparation), cross-year-safe month
   arithmetic.
@@ -34,18 +34,18 @@ plus 1 Sprint 2 closure commit (this document).
 - 6 deadline-calc cases + 9 prompt cases.
 
 ### Batch 4 — Vertex AI Search real-connection dispatch
-- `VCJ_VERTEX_MODE` env flag dispatches between fixture and real
+- `SSW_VERTEX_MODE` env flag dispatches between fixture and real
   `@google-cloud/discoveryengine.SearchServiceClient`.
 - Five real-mode env vars required; missing-env failure is loud and
   immediate (no silent fallback — auditability).
 - `__setSearchClientForTesting` testing seam; 6 new vitest cases.
 - `docs/adr/ADR-006-vertex-fixture-real-dispatch.md` — Status: Accepted.
 
-### Batch 5 — `list_visa_documents` + `vcj-checklist` Commit Moment + trust-badge dark mode + internal tool visibility
+### Batch 5 — `list_visa_documents` + `ssw-checklist` Commit Moment + trust-badge dark mode + internal tool visibility
 - `list_visa_documents` tool — per-(visaCategory, industry) document
   catalog; SSW-1 + agriculture returns 8 entries, other combinations the
   3–5 item baseline.
-- `vcj-checklist` UI — checkbox + notes + "この内容でAIに次の質問をする"
+- `ssw-checklist` UI — checkbox + notes + "この内容でAIに次の質問をする"
   button; `app.updateModelContext` fires **only** on explicit press
   (v3 §21.2 Commit Moment). UI-side PII regex rejects the notes before
   commit fires.
@@ -53,7 +53,7 @@ plus 1 Sprint 2 closure commit (this document).
   with WCAG 1.4.1 icon prefix (`✓` / `△` / `○`) so colour is never the
   sole differentiator. `@media (prefers-color-scheme: dark)` pulls from
   host CSS variables.
-- Internal tool `_vcj_checklist_schema` with
+- Internal tool `_ssw_checklist_schema` with
   `_meta.ui.visibility: ["app"]` + `[INTERNAL]` description prefix
   (v3 §23.3).
 - 6 catalog cases + 9 prompt cases.
@@ -63,7 +63,7 @@ plus 1 Sprint 2 closure commit (this document).
   (moj / maff / mhlw / mlit / meti / soumu / cao), all `*.go.jp`. Schema
   includes `id`, `title`, `url`, `ministry`, `datastore`, `trustLevel`,
   `tags`, `lang`, `verifiedAt`, `contentSha256: "__PLACEHOLDER__"`.
-- `assets/logo/vcj-logo.svg` — placeholder (depth-blue ring + "VCJ"
+- `assets/logo/ssw-logo.svg` — placeholder (depth-blue ring + "SSW"
   wordmark). `aria-label` contains `"placeholder"` token so CI / review
   can grep and block accidental submission.
 - `assets/logo/README.md` — v3 §A brand requirements + replacement
@@ -77,13 +77,13 @@ plus 1 Sprint 2 closure commit (this document).
 |---|---|---|
 | MCP tools (all) | 1 (`search_visa`) | **5** (4 public + 1 internal with `visibility:["app"]`) |
 | MCP tools (LLM-visible) | 1 | 4 (`search_visa`, `classify_procedure`, `get_deadline_timeline`, `list_visa_documents`) |
-| MCP resources | 1 (`vcj-search`) | **4** (+ `vcj-classify`, `vcj-timeline`, `vcj-checklist`) |
+| MCP resources | 1 (`ssw-search`) | **4** (+ `ssw-classify`, `ssw-timeline`, `ssw-checklist`) |
 | UI workspaces (`ui/*`) | 1 | 4 |
 | Shared-types zod schemas | 1 | **4** (+ classify-procedure, get-deadline-timeline, list-visa-documents) |
 | vitest cases | 7 | **60** (+ 8 decision-tree, 9 classify prompts, 6 deadline-calc, 9 deadline prompts, 6 vertex, 6 catalog, 9 document prompts) |
 | ADRs | 4 (001–004) | **6** (+ ADR-005 ext-apps stay-on-1.6, ADR-006 vertex dispatch) |
 | Accepted `@ts-expect-error` | 1 (SDK Transport bug) | 1 (unchanged; SDK still 1.29.0) |
-| UI bundle sizes (largest) | 299,405 B (`vcj-search`) | 305,839 B (`vcj-checklist`) — all 4 UIs well under 512 KB |
+| UI bundle sizes (largest) | 299,405 B (`ssw-search`) | 305,839 B (`ssw-checklist`) — all 4 UIs well under 512 KB |
 | `*.go.jp` seed URL catalog | 0 | **40** (Sprint 3 expands to 50+) |
 
 ## ADRs accepted this sprint
@@ -92,7 +92,7 @@ plus 1 Sprint 2 closure commit (this document).
   1.6.0 → 1.7.0 is non-breaking, hoisted installer already resolves to
   1.7.0, narrowing the pin is cosmetic and out of Sprint 2 scope.
 - **ADR-006** — Vertex AI Search fixture / real dispatch via
-  `VCJ_VERTEX_MODE` env flag; five real-mode env vars mandatory; silent
+  `SSW_VERTEX_MODE` env flag; five real-mode env vars mandatory; silent
   fallback rejected for auditability.
 
 ## Unresolved / deferred (tracked in sprint-3-pending.md)
@@ -109,7 +109,7 @@ plus 1 Sprint 2 closure commit (this document).
 - Real Vertex AI Search data store provisioning (Terraform) + VPC egress
   (v3 §23.2) + confidence tuning (replace 0.9 placeholder).
 - `source-index.jsonl` expansion from 40 → 50+ + real SHA-256 population.
-- VCJ logo finalize (human-designed monoline 羅針盤 + 鳥居).
+- SSW logo finalize (human-designed monoline 羅針盤 + 鳥居).
 - Document catalog (`document-catalog.ts`): gyoseishoshi-reviewed per-
   industry wording.
 - `RATIONALE_BY_LANG` / `NEXT_STEPS_BY_LANG` in `decision-tree.ts`:
@@ -119,7 +119,7 @@ plus 1 Sprint 2 closure commit (this document).
   diverse enough.
 - Host-side honouring of `_meta.ui.visibility: ["app"]` is implementation-
   dependent; until hosts comply, the `[INTERNAL]` description prefix is
-  the sole LLM-visible signal for the `_vcj_checklist_schema` helper.
+  the sole LLM-visible signal for the `_ssw_checklist_schema` helper.
 
 ## Handover to Sprint 3
 

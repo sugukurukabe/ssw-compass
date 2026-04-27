@@ -1,10 +1,10 @@
-# ADR-006: Vertex AI Search — fixture / real dispatch via `VCJ_VERTEX_MODE`
+# ADR-006: Vertex AI Search — fixture / real dispatch via `SSW_VERTEX_MODE`
 
 - **Status**: Accepted
 - **Date**: 2026-04-27 (Sprint 2, Batch 4)
-- **Deciders**: @kabe, VCJ core team
+- **Deciders**: @kabe, SSW core team
 - **Scope**: `apps/server/src/vertex.ts`, the sole retrieval seam for every
-  VCJ tool (`search_visa`, `classify_procedure`, `get_deadline_timeline`)
+  SSW tool (`search_visa`, `classify_procedure`, `get_deadline_timeline`)
 
 ## Context
 
@@ -17,7 +17,7 @@ Run deploy, Terraform-driven data store provisioning, VPC egress controls
 Three operating contexts need to coexist:
 
 1. **Local development** — usually no GCP credentials available;
-   developer runs `pnpm -F @vcj/server dev` and expects tools to return
+   developer runs `pnpm -F @ssw/server dev` and expects tools to return
    something useful via fixture data.
 2. **CI (Sprint 3)** — deterministic vitest runs without any GCP reach;
    must be able to execute the same code path that production would,
@@ -40,25 +40,25 @@ Three dispatch strategies were considered:
 | **B. Auto-detect credentials** — try ADC, fall back to fixture silently | Zero configuration | Silent fallback masks misconfiguration in production; hard to audit whether a given response came from the real data store or a dev fixture |
 | **C. Explicit env flag** (chosen) | Loud failures on misconfiguration; testable; deployable in stages | One extra env var to set |
 
-Strategy B was rejected primarily on auditability grounds: once VCJ ships
+Strategy B was rejected primarily on auditability grounds: once SSW ships
 to Connectors Directory (Sprint 4), we must be able to answer "was this
 a real retrieval or a stub?" from the logs alone. A silent-fallback
 design cannot answer that reliably.
 
 ## Decision
 
-1. Dispatch on `VCJ_VERTEX_MODE` env var. Accepted values: `"real"`. Any
+1. Dispatch on `SSW_VERTEX_MODE` env var. Accepted values: `"real"`. Any
    other value (including unset / empty / any typo) resolves to
    `"fixture"`. This makes local dev the safe default.
 
-2. When `VCJ_VERTEX_MODE=real`, five additional env vars are **required**:
-   - `VCJ_VERTEX_PROJECT` — GCP project ID
-   - `VCJ_VERTEX_LOCATION` — region (e.g., `asia-northeast1`)
-   - `VCJ_VERTEX_COLLECTION` — Discovery Engine collection
+2. When `SSW_VERTEX_MODE=real`, five additional env vars are **required**:
+   - `SSW_VERTEX_PROJECT` — GCP project ID
+   - `SSW_VERTEX_LOCATION` — region (e.g., `asia-northeast1`)
+   - `SSW_VERTEX_COLLECTION` — Discovery Engine collection
      (typically `default_collection`)
-   - `VCJ_VERTEX_DATA_STORE_ID` — data store ID (Sprint 3 will create
+   - `SSW_VERTEX_DATA_STORE_ID` — data store ID (Sprint 3 will create
      `visa_legal` / `visa_faq` / `visa_secondary` per v2 §10)
-   - `VCJ_VERTEX_SERVING_CONFIG_ID` — serving config ID (typically
+   - `SSW_VERTEX_SERVING_CONFIG_ID` — serving config ID (typically
      `default_serving_config`)
 
    Any missing value makes `vertexSearch` **throw synchronously** at the
@@ -84,21 +84,21 @@ design cannot answer that reliably.
    so vitest can inject a mock. A more idiomatic DI refactor is Sprint 3
    work if it becomes necessary.
 
-6. Tests run with `VCJ_VERTEX_MODE` explicitly cleared/set per case, so
+6. Tests run with `SSW_VERTEX_MODE` explicitly cleared/set per case, so
    repeat executions are deterministic.
 
 ## Consequences
 
 Positive:
 
-- Localhost `pnpm -F @vcj/server dev` keeps working with zero config
+- Localhost `pnpm -F @ssw/server dev` keeps working with zero config
   changes; existing three tools continue to return the two MOJ fixture
   chunks.
 - CI (Sprint 3) can exercise both the fixture path (default) and the
   real path (via `__setSearchClientForTesting` + env vars) with complete
   determinism.
 - Cloud Run deploy (Sprint 3): ship the container with
-  `VCJ_VERTEX_MODE=real` and the five env vars mounted from Secret
+  `SSW_VERTEX_MODE=real` and the five env vars mounted from Secret
   Manager. No code change needed.
 - Any misconfigured deploy fails loudly on the first MCP `tools/call`,
   making incidents obvious rather than silently degrading to fixture
@@ -119,7 +119,7 @@ Negative / follow-up:
   - Layer the v3 §23.1 output sanitizer and the v3 §23.2 egress
     controls (VPC connector + Cloud NAT + `safeFetch`) around the real
     branch.
-- `__setSearchClientForTesting` is a deliberate testing seam; if VCJ's
+- `__setSearchClientForTesting` is a deliberate testing seam; if SSW's
   DI pattern matures in Sprint 3+, revisit whether to replace it with a
   constructor-injected client or a factory.
 - The `as unknown as SearchClientLike` cast bridges the full SDK type

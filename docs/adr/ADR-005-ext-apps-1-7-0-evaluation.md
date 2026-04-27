@@ -2,8 +2,8 @@
 
 - **Status**: Accepted
 - **Date**: 2026-04-27 (Sprint 2 kickoff pre-flight)
-- **Deciders**: @kabe, VCJ core team
-- **Scope**: `apps/server/package.json`, `ui/vcj-search/package.json` — the two
+- **Deciders**: @kabe, SSW core team
+- **Scope**: `apps/server/package.json`, `ui/ssw-search/package.json` — the two
   workspace packages that depend on `@modelcontextprotocol/ext-apps`
 
 ## Context
@@ -14,8 +14,8 @@ check produced the following facts (observed on npm registry and GitHub
 Releases, 2026-04-27):
 
 - **Latest stable**: **1.7.0**, published 2026-04-21.
-- **VCJ's current pin**: `^1.6.0` in both `apps/server/package.json` and
-  `ui/vcj-search/package.json`.
+- **SSW's current pin**: `^1.6.0` in both `apps/server/package.json` and
+  `ui/ssw-search/package.json`.
 - **Effective resolved version**: **1.7.0** in every workspace.
   `^1.6.0` satisfies 1.7.0 under semver, and `.npmrc` `node-linker=hoisted`
   places the single resolved copy at `node_modules/@modelcontextprotocol/ext-apps`.
@@ -43,7 +43,7 @@ Source: GitHub Releases page for `modelcontextprotocol/ext-apps`, v1.7.0.
   without `'unsafe-eval'`. Opt in to the faster JIT path by passing `true`
   (#618).
 - `useApp()` forwards `autoResize` and `strict` to the underlying `App`
-  (#622). React-only; VCJ does not use it (see ADR-004).
+  (#622). React-only; SSW does not use it (see ADR-004).
 
 #### Fixes (non-breaking)
 
@@ -51,12 +51,12 @@ Source: GitHub Releases page for `modelcontextprotocol/ext-apps`, v1.7.0.
   dev double-invoke no longer leaves a zombie `PostMessageTransport`
   listener (#631). React-only.
 - `csp` / `permissions` typed `?: never` on `McpUiToolMeta`, so misplaced
-  declarations fail at compile time (#624). VCJ uses
+  declarations fail at compile time (#624). SSW uses
   `McpUiResourceConfig.csp` on the **resource** side, not
   `McpUiToolMeta.csp` on the tool side, so this change does not affect
   our code paths.
 - Drop stale `resourceUri` JSDoc referencing the deprecated flat
-  `_meta["ui/resourceUri"]` key (#626). VCJ already uses the nested
+  `_meta["ui/resourceUri"]` key (#626). SSW already uses the nested
   `_meta.ui.resourceUri` form everywhere (Sprint 1 code review confirms).
 
 #### Chore
@@ -68,12 +68,12 @@ Source: GitHub Releases page for `modelcontextprotocol/ext-apps`, v1.7.0.
 - Bump `vite` / `hono` / `@hono/node-server` to patched versions (#616).
 - Examples policy added to `CONTRIBUTING.md` (#550).
 
-### Impact assessment on VCJ code
+### Impact assessment on SSW code
 
-Every change in 1.7.0 is either additive or targets APIs VCJ does not use.
+Every change in 1.7.0 is either additive or targets APIs SSW does not use.
 `z.config({ jitless: true })` (from `allowUnsafeEval: false`) happens to
 pre-align us with the Sprint 3 CSP hash migration (no `'unsafe-eval'`).
-No VCJ source file needs to change to consume 1.7.0 — it has already been
+No SSW source file needs to change to consume 1.7.0 — it has already been
 running at 1.7.0 since Sprint 1.
 
 ### Alternative considered: narrow the pin to `^1.7.0`
@@ -90,7 +90,7 @@ Rejected. Reasons:
 ## Decision
 
 Keep `@modelcontextprotocol/ext-apps` pinned at `^1.6.0` in both
-`apps/server/package.json` and `ui/vcj-search/package.json`. Do **not**
+`apps/server/package.json` and `ui/ssw-search/package.json`. Do **not**
 narrow, widen, or otherwise alter the range in Sprint 2.
 
 ## Consequences
@@ -102,7 +102,7 @@ Positive:
   version change.
 - `^1.6.0` retains the flexibility to absorb an eventual 1.8.x release
   without another ADR.
-- VCJ is already running the latest tested minor (1.7.0) at runtime, so
+- SSW is already running the latest tested minor (1.7.0) at runtime, so
   we gain the handshake-ordering guards, `jitless` CSP alignment, and
   McpUiToolMeta strictness without a code change.
 
@@ -120,12 +120,12 @@ Negative / follow-up:
 
 ## Related
 
-- **ADR-002** — UI Resource sample errata; documents how VCJ already
+- **ADR-002** — UI Resource sample errata; documents how SSW already
   consumes ext-apps 1.7.0's real API (`PostMessageTransport(window.parent,
   window.parent)`, `params.structuredContent` direct access, no
   `onteardown`).
 - **ADR-004** — React-free UI stack; explains why 1.7.0's React-only
-  additions (`useApp` improvements) do not affect VCJ.
+  additions (`useApp` improvements) do not affect SSW.
 - `docs/sprint-3-pending.md` — Sprint 3 entry point; this ADR's
   "Re-evaluate at Sprint 3 kickoff" obligation belongs there as a
   follow-up.

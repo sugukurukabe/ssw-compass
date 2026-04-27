@@ -1,8 +1,8 @@
-# ADR-004: React-free UI stack — pure TypeScript + DOM + @vcj/ui-bridge
+# ADR-004: React-free UI stack — pure TypeScript + DOM + @ssw/ui-bridge
 
 - **Status**: Accepted
 - **Date**: 2026-04-27 (Sprint 1, Batch 4)
-- **Deciders**: @kabe, VCJ core team
+- **Deciders**: @kabe, SSW core team
 - **Scope**: all UI Resources under `ui/` in this repository
 - **Supersedes**: `docs/specs/v2-comprehensive-design.md` §4.3's `@vitejs/plugin-react` inclusion (demoted to example only)
 
@@ -10,7 +10,7 @@
 
 `docs/specs/v2-comprehensive-design.md` §4.3 shows an example Vite config
 that includes `@vitejs/plugin-react`. That line is illustrative rather
-than prescriptive — v2 never explicitly requires React in VCJ UIs. Three
+than prescriptive — v2 never explicitly requires React in SSW UIs. Three
 constraints pushed us to evaluate the default:
 
 1. **Bundle budget.** v2 §13.1 specifies a 512 KB per-UI bundle budget,
@@ -21,7 +21,7 @@ constraints pushed us to evaluate the default:
    runtime and internal utilities are compatible with `strict-dynamic`,
    but every additional piece of library code is another hash to
    compute and audit. Pure DOM is strictly fewer moving parts.
-3. **Non-null-assertion ban.** VCJ code rules (`.cursor/rules/...`)
+3. **Non-null-assertion ban.** SSW code rules (`.cursor/rules/...`)
    forbid `!` non-null assertions. React's idiomatic
    `document.getElementById("root")!` pattern would need a wrapper
    anyway, so the cost of *not* using React is near zero in authoring
@@ -44,7 +44,7 @@ Alternatives considered:
 - **React**: rejected on bundle size + CSP surface; no gain for the
   current UI needs.
 - **Preact**: 3 KB gzipped, JSX-compatible. Considered viable fallback
-  if a future VCJ UI needs JSX ergonomics (virtualized lists, forms
+  if a future SSW UI needs JSX ergonomics (virtualized lists, forms
   with controlled inputs). Kept as the stated migration path rather
   than adopted preemptively — YAGNI.
 - **SolidJS**: fine-grained reactivity, no VDOM. Similar trade-offs to
@@ -52,7 +52,7 @@ Alternatives considered:
 
 ## Decision
 
-1. Build all Sprint 1 UIs (`ui/vcj-search/`) with **pure TypeScript +
+1. Build all Sprint 1 UIs (`ui/ssw-search/`) with **pure TypeScript +
    DOM API + DOMPurify**. No framework.
 2. Introduce `packages/ui-bridge/` as a shared workspace package
    providing type-safe DOM helpers:
@@ -64,7 +64,7 @@ Alternatives considered:
    lint rule in Sprint 3).
 3. HTML construction goes through `DOMPurify.sanitize(html, { ALLOWED_URI_REGEXP: /^https:\/\/(www\.)?(moj|mhlw|soumu|cao)\.go\.jp\// })`
    for every user-visible body.
-4. **Sprint 2 UIs** (`vcj-checklist`, `vcj-deadline-timeline`) adopt the
+4. **Sprint 2 UIs** (`ssw-checklist`, `ssw-deadline-timeline`) adopt the
    same stack. Re-evaluate if and only if one of them needs non-trivial
    interactive state (e.g. virtualized list, drag-and-drop).
 5. `@vitejs/plugin-react` is **not** installed. v2 §4.3's inclusion is
@@ -74,11 +74,11 @@ Alternatives considered:
 
 Positive (measured on Sprint 1 output):
 
-- `ui/vcj-search/dist/mcp-app.html` is **299,405 bytes (~292 KB)** —
+- `ui/ssw-search/dist/mcp-app.html` is **299,405 bytes (~292 KB)** —
   **58 % under** the 512 KB budget. Leaves room for future UIs (shared
   inline CSS, images, more content) without re-evaluating the stack.
-- Zero `!` non-null assertions in `ui/vcj-search/src/**` — verified by
-  grep at Sprint 1 close. `@vcj/ui-bridge.getElement<HTMLDivElement>("root", HTMLDivElement)`
+- Zero `!` non-null assertions in `ui/ssw-search/src/**` — verified by
+  grep at Sprint 1 close. `@ssw/ui-bridge.getElement<HTMLDivElement>("root", HTMLDivElement)`
   gives the same brevity as React's ref-by-id pattern while throwing
   a descriptive `ElementNotFoundError` / `ElementTypeMismatchError` on
   misuse.
@@ -100,7 +100,7 @@ Negative / follow-up:
   Testing Library would not have applied anyway for a read-only
   output, so this is not a regression.)
 - Contributors familiar with React need a brief orientation on
-  `@vcj/ui-bridge`. Addressed by the helper names being self-evident
+  `@ssw/ui-bridge`. Addressed by the helper names being self-evident
   (`getElement`, `querySelector`) and by this ADR.
 
 ## Related
