@@ -14,21 +14,36 @@ grep -rn 'TODO(sprint-3)' --include='*.html' --include='*.ts' --include='*.tsx' 
   apps/ ui/ packages/
 ```
 
-**Expected result at Sprint 1 close (verified 2026-04-27):**
+**Expected result at Sprint 2 close (verified 2026-04-27):**
 
 ```
+ui/ssw-checklist/dist/mcp-app.html:7:      TODO(sprint-3): Replace 'unsafe-inline' with sha256 hashes.
+ui/ssw-checklist/mcp-app.html:7:      TODO(sprint-3): Replace 'unsafe-inline' with sha256 hashes.
+ui/ssw-timeline/dist/mcp-app.html:7:      TODO(sprint-3): Replace 'unsafe-inline' with sha256 hashes.
+ui/ssw-timeline/mcp-app.html:7:      TODO(sprint-3): Replace 'unsafe-inline' with sha256 hashes.
+ui/ssw-classify/dist/mcp-app.html:7:      TODO(sprint-3): Replace 'unsafe-inline' with sha256 hashes.
+ui/ssw-classify/mcp-app.html:7:      TODO(sprint-3): Replace 'unsafe-inline' with sha256 hashes.
+ui/ssw-search/dist/mcp-app.html:7:      TODO(sprint-3): Replace 'unsafe-inline' with sha256 hashes.
 ui/ssw-search/mcp-app.html:7:      TODO(sprint-3): Replace 'unsafe-inline' with sha256 hashes.
 ```
 
-1 hit. `dist/mcp-app.html` is a build artifact and should not be grepped;
-if you need to include it add `--include='*.html'` without the path filter
-or grep `dist/` separately.
+8 hits = 4 UI Resources (`ssw-search`, `ssw-classify`, `ssw-timeline`,
+`ssw-checklist`) × (source `mcp-app.html` + built `dist/mcp-app.html`).
+The doc originally expected 1 hit against `ssw-search` only; Sprint 2
+Batch 2–5 added the three sibling UIs with the same boilerplate CSP
+`meta` tag, each carrying the same `TODO(sprint-3)` marker by design.
+To exclude build artifacts, re-run with `--exclude-dir=dist`; the
+source-only count should be 4.
 
 **Resolution plan:**
 
-- Implement the post-build hash script described in v2 §6.2. It reads
-  `ui/ssw-search/dist/mcp-app.html`, computes `sha256-*` for every
-  inlined `<script>` and `<style>` block, and rewrites the CSP `meta`
+- Implement the post-build hash script described in v2 §6.2 **once**
+  as a shared helper (e.g. `scripts/post-build-csp-hash.mjs` or a
+  `@ssw/ui-bridge` build step), then invoke it from each of the 4
+  `ui/ssw-*/package.json` `postbuild` hooks. Do not copy-paste the
+  logic per UI.
+- Per UI: read `ui/ssw-*/dist/mcp-app.html`, compute `sha256-*` for
+  every inlined `<script>` and `<style>` block, rewrite the CSP `meta`
   tag to replace `'unsafe-inline'` with those hashes + `'strict-dynamic'`.
 - Follow v3 §23 rollout: CSP `Content-Security-Policy-Report-Only`
   header for 1 sprint of observation, then flip to enforcing
@@ -36,8 +51,9 @@ or grep `dist/` separately.
 - Add Trusted Types (`require-trusted-types-for 'script'; trusted-types
   ssw-purify;`) once DOMPurify is instantiated with
   `RETURN_TRUSTED_TYPE: true`.
-- Remove the `TODO(sprint-3)` comment as part of the same commit so the
-  Sprint 3 close-check grep returns zero.
+- Remove the `TODO(sprint-3)` comment from all 4 source `mcp-app.html`
+  files as part of the same commit so the Sprint 3 close-check grep
+  (source-only, `--exclude-dir=dist`) returns zero.
 
 ## SDK type bug bypass
 
@@ -79,18 +95,28 @@ PR #1766 / #1821.
 grep -rn 'scrubInputForPII' --include='*.ts' apps/
 ```
 
-**Expected result at Sprint 1 close (verified 2026-04-27):**
+**Expected result at Sprint 2 close (verified 2026-04-27):**
 
 ```
 apps/server/src/pii/index.ts:45:export async function scrubInputForPII(args: unknown): Promise<PiiScrubResult> {
-apps/server/src/tools/search-visa/handler.ts:5:import { scrubInputForPII } from "../../pii/index.js";
-apps/server/src/tools/search-visa/handler.ts:15:    const piiCheck = await scrubInputForPII(args);
-apps/server/test/pii/scrub.test.ts  (7 occurrences — test cases)
+apps/server/src/tools/classify-procedure/handler.ts:5,21        (import + call)
+apps/server/src/tools/get-deadline-timeline/handler.ts:5,20     (import + call)
+apps/server/src/tools/list-visa-documents/handler.ts:5,14       (import + call)
+apps/server/src/tools/search-visa/handler.ts:5,15               (import + call)
+apps/server/test/pii/scrub.test.ts                              (10 occurrences — core regex-stage cases)
+apps/server/test/tools/classify-procedure/prompts.test.ts       (4 occurrences — PII guard tests)
+apps/server/test/tools/get-deadline-timeline/prompts.test.ts    (4 occurrences — PII guard tests)
+apps/server/test/tools/list-visa-documents/prompts.test.ts      (3 occurrences — PII guard tests)
 ```
 
-One production call site in `handler.ts`, one definition in `pii/index.ts`,
-plus 7 vitest cases. The call-site contract is `Promise<PiiScrubResult>`
-and will not change when DLP is wired in.
+30 total hits: 1 definition in `pii/index.ts` + 4 production call sites
+(one per tool handler, each with a matching import line = 8 handler
+hits) + 21 vitest occurrences across 4 test files. Sprint 1 shipped
+with only `search_visa`; Sprint 2 Batches 3–5 added `classify_procedure`,
+`get_deadline_timeline`, and `list_visa_documents`, each with the
+same `scrubInputForPII` guard at the top of its handler and a paired
+PII-smuggling prompt test. The call-site contract is
+`Promise<PiiScrubResult>` and will not change when DLP is wired in.
 
 **Resolution plan:**
 
@@ -145,37 +171,46 @@ flipping the flag activates it without any further pattern work.
 grep -rn 'fixture' --include='*.ts' apps/server/src/vertex.ts
 ```
 
-**Expected result at Sprint 1 close (verified 2026-04-27):**
+**Expected result at Sprint 2 close (verified 2026-04-27):**
 
 ```
-apps/server/src/vertex.ts:2: * Vertex AI Search client — Sprint 1 fixture stub.
+apps/server/src/vertex.ts:7: * - "fixture" (default): returns hardcoded primary_source entries from
+apps/server/src/vertex.ts:14: *   any one throws immediately (silent fallback to fixture is rejected
+apps/server/src/vertex.ts:48:type VertexMode = "fixture" | "real";
+apps/server/src/vertex.ts:77:  return raw === "real" ? "real" : "fixture";
+apps/server/src/vertex.ts:105:        "Set them or switch back to SSW_VERTEX_MODE=fixture for local development.",
+apps/server/src/vertex.ts:118:async function fixtureSearch(args: VertexSearchArgs): Promise<VertexSearchResult> {
+apps/server/src/vertex.ts:257:  if (mode === "fixture") {
+apps/server/src/vertex.ts:258:    return fixtureSearch(args);
 ```
 
-1 hit — the module-level docstring identifying the fixture nature. The
-actual fixture data array lives in the same file (search for
-`FIXTURE_CHUNKS` if needed).
+8 hits. Sprint 1 shipped a single-line docstring stub; Sprint 2 Batch 6
+landed real-dispatch per [ADR-006](./adr/ADR-006-vertex-fixture-real-dispatch.md),
+so the file now contains both the `"fixture" | "real"` discriminator
+type, the runtime switch at line 257–258, and the module docstring
+contrast (fixture as default, real gated on `SSW_VERTEX_MODE=real`).
+The `fixtureSearch` function body is retained for local development
+and offline test runs — it is not dead code and must not be removed
+in Sprint 3.
 
-**Resolution plan (split across two sprints):**
+**Resolution plan:**
 
-Sprint 2 (initial wiring):
-
-- Replace `FIXTURE_CHUNKS` with `@google-cloud/discoveryengine` client
-  calls against the `visa_legal` data store.
-- Preserve the `VertexSearchArgs` / `VertexSearchResult` / `GroundedChunk`
-  interfaces exactly — handler.ts stays untouched.
-- Enforce `confidenceThreshold` (default 0.7) and
-  `sourceAllowlist: ["*.go.jp"]` before returning chunks.
-- Terraform: create `visa_legal`, `visa_faq`, `visa_secondary` data
-  stores with IAM scoped to `roles/discoveryengine.viewer`.
-
-Sprint 3 (production hardening):
+Sprint 2 "initial wiring" is **complete** (ADR-006). The only remaining
+Sprint 3 work is the production-hardening half:
 
 - Add egress controls: VPC connector + Cloud NAT static IP +
   application-layer URL allowlist (`safeFetch`) per v3 §23.2.
 - Add retriever / writer separation per v2 §10 for content integrity
   (prevents the writer role from poisoning the retrieved index).
 - Verify the output sanitizer (see previous section) runs between
-  `vertexSearch` and the structured response.
+  `vertexSearch` and the structured response before Sprint 3 close.
+- Flip the production default from `fixture` to `real` by setting
+  `SSW_VERTEX_MODE=real` in the Cloud Run service spec (Batch 3),
+  keeping `fixture` as the local-dev default to avoid accidental
+  Vertex calls from `pnpm dev`.
+- Exit criterion: `SSW_VERTEX_MODE=real` run of the vitest suite
+  against real data stores returns non-empty results with
+  `confidence >= 0.7` on the canonical test queries.
 
 ## source-index.jsonl expansion to 50+ entries + real SHA-256 population
 

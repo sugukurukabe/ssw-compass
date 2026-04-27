@@ -9,6 +9,17 @@ alwaysApply: true
 - Prefer `z.infer<typeof Schema>` over hand-written types.
 - All async functions return `Promise<T>` with explicit T.
 
+## Environment variables
+- Access via `process.env["KEY"]`, not `process.env.KEY` (ADR-008).
+- `noUncheckedIndexedAccess` makes both forms return `string | undefined`;
+  index access is the codebase convention because it matches the
+  `Record<string, string | undefined>` type of `process.env` and gives
+  a single grep pattern (`process\.env\["[A-Z_]+"\]`) for security audits.
+- Biome's `useLiteralKeys` is disabled globally for this reason; do not
+  re-enable it per-file.
+- In Vite configs, keep `"process.env.NODE_ENV"` as a string key inside
+  `define:` — that is a build-time substitution target, not a runtime read.
+
 ## Naming
 - Tools: snake_case verb_noun (search_visa, classify_procedure)
 - Files: kebab-case (search-visa.ts)
