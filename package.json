@@ -1,13 +1,34 @@
 {
   "name": "vcj-public",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "private": true,
+  "type": "module",
+  "description": "Visa Compass Japan — MCP App for Japanese SSW visa procedural information",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "build": "turbo run build",
+    "dev": "turbo run dev",
+    "lint": "turbo run lint",
+    "format": "turbo run format",
+    "typecheck": "turbo run typecheck",
+    "test": "turbo run test",
+    "check": "biome check ."
   },
-  "keywords": [],
-  "author": "",
+  "keywords": [
+    "mcp",
+    "visa",
+    "japan",
+    "tokutei-ginou"
+  ],
+  "author": "Sugukuru Inc.",
   "license": "ISC",
-  "packageManager": "pnpm@10.33.0"
+  "packageManager": "pnpm@10.33.0",
+  "engines": {
+    "node": ">=22",
+    "pnpm": ">=10"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.4.0",
+    "turbo": "^2.9.0",
+    "typescript": "^5.7.0"
+  }
 }
