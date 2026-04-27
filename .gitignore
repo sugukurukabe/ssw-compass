@@ -13,6 +13,9 @@ coverage/
 *.tfstate
 *.tfstate.backup
 .terraform/
+*.tfplan
+*.auto.tfvars
 *.tfvars
+!infra/terraform/envs/*/terraform.tfvars
 *-key.json
 service-account*.json
