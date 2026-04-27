@@ -177,6 +177,70 @@ Sprint 3 (production hardening):
 - Verify the output sanitizer (see previous section) runs between
   `vertexSearch` and the structured response.
 
+## source-index.jsonl expansion to 50+ entries + real SHA-256 population
+
+**Discovery:**
+
+```bash
+wc -l data/source-index.jsonl
+grep -c '"contentSha256":"__PLACEHOLDER__"' data/source-index.jsonl
+```
+
+**Expected result at Sprint 2 close (verified 2026-04-27):**
+
+```
+40 data/source-index.jsonl
+40
+```
+
+40 entries total, all with `contentSha256: "__PLACEHOLDER__"`. Sprint 2
+Batch 6 shipped the seed at 40; Sprint 2 kickoff targeted 50+.
+
+**Resolution plan (Sprint 3):**
+
+- Add the remaining 10+ entries from the gyoseishoshi monthly review cadence
+  once each real URL is verified (deep-link level, not just ministry-top).
+- Implement the ingest pipeline that reads `data/source-index.jsonl`,
+  fetches each URL, computes SHA-256 of the normalised body, and replaces
+  the `__PLACEHOLDER__` value in place via a commit.
+- Pair with Terraform data store provisioning
+  (`visa_legal` / `visa_faq` / `visa_secondary`) per v2 §10.
+- Sprint 3 close exit criterion: the second grep above should return
+  `0` (all placeholders replaced with real hashes).
+
+## VCJ logo finalize (Sprint 3 / 4)
+
+**Discovery:**
+
+```bash
+grep -l 'placeholder' assets/logo/*.svg
+```
+
+**Expected result at Sprint 2 close (verified 2026-04-27):**
+
+```
+assets/logo/vcj-logo.svg
+```
+
+1 hit. The SVG's `aria-label` contains the word `"placeholder"` by design
+so automated review catches it before Sprint 4 submission.
+
+**Resolution plan:**
+
+- Sprint 3 kickoff: commission a human-designed monoline SVG (compass
+  needle + torii, depth-blue `#0A2540`) per v3 §A. AI generation is
+  explicitly out of scope for the logo per the Sprint 2 kickoff prompt.
+- Drop the final file at `assets/logo/vcj-logo.svg`; follow the procedure
+  in `assets/logo/README.md`.
+- Add dark-mode / monochrome variants if the final asset is not
+  colour-independent.
+- Grep exit criterion: `grep -l 'placeholder' assets/logo/*.svg` returns
+  no files.
+- Reference the final logo from (a) Anthropic + OpenAI submission packets
+  (Sprint 4), (b) the hero section of the root `README.md`, and
+  (c) optionally UI chrome if a VCJ badge is ever rendered inside a
+  resource.
+
 ---
 
 ## How to use this file
