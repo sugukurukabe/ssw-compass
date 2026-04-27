@@ -155,16 +155,36 @@ jobs:
             --method tools/list > /tmp/tools.json
           jq -e '(.tools // .result.tools) | length == 5' /tmp/tools.json
 
-      - name: MCP tools/call search_visa (expect groundedChunks >= 2)
+      - name: MCP tools/call search_visa (expect results >= 2)
         run: |
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
-          npx -y @modelcontextprotocol/inspector --cli "$URL/mcp" \
-            --method tools/call \
-            --tool-name search_visa \
-            --tool-arg query="特定技能1号 建設分野" \
-            --tool-arg lang=ja > /tmp/search.json
-          jq -e '(.structuredContent // .result.structuredContent).groundedChunks | length >= 2' /tmp/search.json
+          # MCP JSON-RPC over streamable HTTP. We must initialize to get a
+          # session id, then include mcp-session-id on subsequent calls.
+          # search_visa's zod schema requires `category` per
+          # apps/server/src/tools/search-visa/schema.ts; fixture mode
+          # returns structuredContent.results[] (not groundedChunks).
+          INIT_RESP=$(curl -sS -i -X POST "$URL/mcp" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-smoke","version":"1.0"},"capabilities":{}}}')
+          SESSION_ID=$(echo "$INIT_RESP" | grep -i '^mcp-session-id:' | awk '{print $2}' | tr -d '\r\n')
+          test -n "$SESSION_ID" || { echo "No mcp-session-id in initialize response"; exit 1; }
+
+          curl -sS -X POST "$URL/mcp" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -H "mcp-session-id: $SESSION_ID" \
+            -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_visa","arguments":{"query":"特定技能1号 建設分野","lang":"ja","category":"tokutei_ginou_1"}}}' \
+            > /tmp/search-raw.txt
+
+          # Streamable HTTP SSE response — extract the JSON from the "data: " line.
+          awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/search-raw.txt > /tmp/search.json
+
+          cat /tmp/search.json | head -c 500; echo
+          # Verify tool did NOT signal an error and returned >=2 results.
+          jq -e '.result.isError != true' /tmp/search.json
+          jq -e '.result.structuredContent.results | length >= 2' /tmp/search.json
 
       - name: /.well-known/mcp.json Server Card
         run: |
