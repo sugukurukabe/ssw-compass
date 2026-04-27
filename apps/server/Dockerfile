@@ -31,7 +31,11 @@ COPY apps/server ./apps/server
 # ["^build"]`, then builds the server itself.
 RUN pnpm exec turbo run build --filter=@ssw/server
 
-RUN pnpm deploy --filter=@ssw/server --prod /app
+# pnpm 10 default requires inject-workspace-packages=true. We use
+# workspace:* without injection, so pass --legacy (equivalent to pnpm
+# < 10 behaviour) to have pnpm resolve workspace deps into /app's
+# node_modules by symlink-equivalent copy.
+RUN pnpm deploy --legacy --filter=@ssw/server --prod /app
 
 ############################################
 # Stage 2: runtime (distroless)            #
