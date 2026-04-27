@@ -15,7 +15,8 @@ export function registerSearchVisaTool(server: McpServer): void {
         "Returns Japanese Specified Skilled Worker (特定技能) and related visa " +
         "procedures grounded in 出入国在留管理庁 official documents. " +
         "Use when the user asks about visa categories, document checklists, or " +
-        "deadlines. Information only — does not constitute legal advice.",
+        "deadlines. Information only — does not constitute legal advice. " +
+        "Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers).",
       inputSchema: SearchVisaInput.shape,
       annotations: {
         readOnlyHint: true,

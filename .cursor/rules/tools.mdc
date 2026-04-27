@@ -4,11 +4,37 @@ globs:
 ---
 # Tool implementation rules
 
+## Registration
+
 - MUST use `registerAppTool` (not `server.tool` direct).
 - MUST set annotations: { readOnlyHint, destructiveHint, idempotentHint, openWorldHint }.
 - MUST set _meta.ui.resourceUri AND _meta["openai/outputTemplate"] (dual-key).
+
+## Handler pipeline
+
 - MUST call scrubInputForPII at handler entry. Block before any external call.
 - MUST inject DISCLAIMER_BY_LANG[args.language] in returned content.
 - MUST NOT log raw user input or full response body. Use logger redact paths.
 - MUST wrap handler with instrumentTool() for OTel.
+
+## Input schema
+
 - inputSchema: prefer z.enum over z.string; max length 500 for strings.
+
+## Description format (Anthropic Directory + OpenAI Apps SDK)
+
+- MUST follow the pattern: "Returns X grounded in Y. Use this when the user asks about Z. Information only — does not constitute legal advice."
+- MUST append the PII rejection clause where the tool accepts user-shaped input:
+  "Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers)."
+- Bad: "Searches visa info"
+- Good: "Returns SSW visa procedures grounded in 出入国在留管理庁 sources. Use this when the user asks about visa categories, document checklists, or deadlines. Information only — does not constitute legal advice. Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers)."
+
+## Test prompts (vitest, 3 types per new tool)
+
+- Direct: typical user wording for the expected use case.
+- Indirect: implicit reference (e.g., "people with deadlines next month").
+- Negative: abuse attempts that MUST be refused
+  - PII inputs (residence card number, passport number, My Number)
+  - 行政書士法 §73-2 illegal-employment-facilitation probes
+- Negative prompts validate the PII guard contract.
+- These vitest cases are reused verbatim in the Sprint 4 Directory submission packet.
