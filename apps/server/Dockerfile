@@ -18,13 +18,19 @@ WORKDIR /workspace
 COPY pnpm-lock.yaml pnpm-workspace.yaml package.json ./
 COPY turbo.json biome.json ./
 COPY packages/tsconfig ./packages/tsconfig
+COPY packages/shared-types/package.json ./packages/shared-types/package.json
 COPY apps/server/package.json ./apps/server/package.json
 
 RUN pnpm install --frozen-lockfile --filter=@ssw/server...
 
+COPY packages/shared-types ./packages/shared-types
 COPY apps/server ./apps/server
 
-RUN pnpm --filter=@ssw/server build
+# `turbo run build --filter=@ssw/server` builds upstream workspace
+# deps first (@ssw/shared-types) per turbo.json `build.dependsOn:
+# ["^build"]`, then builds the server itself.
+RUN pnpm exec turbo run build --filter=@ssw/server
+
 RUN pnpm deploy --filter=@ssw/server --prod /app
 
 ############################################
