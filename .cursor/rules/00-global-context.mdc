@@ -1,0 +1,32 @@
+---
+alwaysApply: true
+---
+# VCJ Project Context
+
+You are working on **Visa Compass Japan (VCJ)** — a public, read-only,
+anonymous MCP App that provides Japanese SSW visa procedural information.
+
+## Critical constraints (NEVER violate)
+1. **No PII handling.** No names, residence card numbers, passport numbers,
+   My Number, full DOB. Year-month only. See pii-guard.mdc.
+2. **No legal representation.** Information only. Every response includes
+   the standard disclaimer (DISCLAIMER_BY_LANG in src/disclaimers.ts).
+3. **Read-only tools.** All tools have readOnlyHint: true,
+   destructiveHint: false. No write/mutation tools whatsoever.
+4. **Primary sources only.** Vertex AI Search results filtered to
+   primary_source with confidence ≥ 0.7. No fallback to LLM knowledge.
+
+## Stack (do not deviate without ADR)
+- Node 22 LTS, TypeScript 5.7+, ES2022, NodeNext
+- @modelcontextprotocol/sdk ^1.29, ext-apps ^1.6
+- Zod ^3.23 (NOT v4), pnpm workspaces, Turborepo
+- Vite + vite-plugin-singlefile per UI
+- Cloud Run asia-northeast1, BYOSA, Workload Identity Federation
+
+## Forbidden actions (block immediately)
+- Editing .cursor/mcp.json (CVE-2025-54136 mitigation)
+- Removing or weakening DISCLAIMER blocks
+- Adding 'unsafe-eval' to any CSP
+- Bypassing scrubInputForPII or output sanitizer
+- Using `any` type without an explicit `// @ts-expect-error: <reason>` line
+```

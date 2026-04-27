@@ -1,0 +1,178 @@
+---
+description: VCJ の Cloud Run / Terraform / WIF デプロイ手順
+---
+
+# Deployment checklist — Cloud Run via Cloud Build + WIF
+
+このルールは @deployment-checklist で明示メンションした時のみ参照する。
+Sprint 1 後半 〜 Sprint 4 のデプロイ作業時の手順書。
+
+## GCP 前提リソース (Sprint 1 で 1 度だけ作成)
+
+### 1. プロジェクト設定
+
+```bash
+export PROJECT_ID=vcj-public-prod
+export REGION=asia-northeast1
+gcloud config set project $PROJECT_ID
+gcloud config set run/region $REGION
+
+# 必要 API 有効化
+gcloud services enable \
+  run.googleapis.com \
+  cloudbuild.googleapis.com \
+  artifactregistry.googleapis.com \
+  secretmanager.googleapis.com \
+  discoveryengine.googleapis.com \
+  aiplatform.googleapis.com \
+  dlp.googleapis.com \
+  cloudtrace.googleapis.com \
+  iamcredentials.googleapis.com \
+  vpcaccess.googleapis.com
+```
+
+### 2. Workload Identity Federation (GitHub Actions 用)
+
+GitHub OIDC を信頼する Pool / Provider を作成:
+
+```bash
+gcloud iam workload-identity-pools create github \
+  --location=global \
+  --display-name="GitHub Actions"
+
+gcloud iam workload-identity-pools providers create-oidc github-oidc \
+  --workload-identity-pool=github \
+  --location=global \
+  --issuer-uri="https://token.actions.githubusercontent.com" \
+  --attribute-mapping="google.subject=assertion.sub,attribute.repository=assertion.repository" \
+  --attribute-condition="assertion.repository=='YOUR_GH_ORG/vcj-public'"
+
+# Service Account 作成
+gcloud iam service-accounts create vcj-deploy \
+  --display-name="VCJ deploy SA"
+
+# WIF から SA への impersonation 許可
+gcloud iam service-accounts add-iam-policy-binding \
+  vcj-deploy@$PROJECT_ID.iam.gserviceaccount.com \
+  --role=roles/iam.workloadIdentityUser \
+  --member="principalSet://iam.googleapis.com/projects/$(gcloud projects describe $PROJECT_ID --format='value(projectNumber)')/locations/global/workloadIdentityPools/github/attribute.repository/YOUR_GH_ORG/vcj-public"
+
+# vcj-deploy SA の権限
+for role in roles/run.admin roles/cloudbuild.builds.editor \
+            roles/artifactregistry.writer roles/iam.serviceAccountUser; do
+  gcloud projects add-iam-policy-binding $PROJECT_ID \
+    --member="serviceAccount:vcj-deploy@$PROJECT_ID.iam.gserviceaccount.com" \
+    --role=$role
+done
+```
+
+GitHub repo の Settings > Secrets に登録:
+- `WIF_PROVIDER`: `projects/<PROJECT_NUMBER>/locations/global/workloadIdentityPools/github/providers/github-oidc`
+- `PROJECT_ID`: `vcj-public-prod`
+
+### 3. Runtime Service Account (BYOSA — v2 §8.2)
+
+```bash
+gcloud iam service-accounts create vcj-runtime \
+  --display-name="VCJ runtime (BYOSA)"
+
+# Discovery Engine viewer (data store 限定 — IAM Conditions で絞る)
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:vcj-runtime@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role=roles/discoveryengine.viewer
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:vcj-runtime@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role=roles/dlp.user
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:vcj-runtime@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role=roles/secretmanager.secretAccessor
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:vcj-runtime@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role=roles/cloudtrace.agent
+
+gcloud projects add-iam-policy-binding $PROJECT_ID \
+  --member="serviceAccount:vcj-runtime@$PROJECT_ID.iam.gserviceaccount.com" \
+  --role=roles/logging.logWriter
+```
+
+絶対に Editor / Owner / project-wide 権限は付けない。
+
+### 4. Artifact Registry
+
+```bash
+gcloud artifacts repositories create vcj-images \
+  --repository-format=docker \
+  --location=$REGION \
+  --description="VCJ MCP server container images"
+```
+
+## Terraform 適用 (Sprint 3)
+
+```bash
+cd infra/terraform/envs/prod
+terraform init
+terraform plan -out=plan.tfplan
+# diff を必ず人間がレビュー
+terraform apply plan.tfplan
+```
+
+Terraform で作る対象:
+- VPC + Serverless VPC Access connector + Cloud NAT (v3 §23.2)
+- Cloud Run service (BYOSA bind, max-instances=20, vpc-egress=all-traffic)
+- Cloud Armor security policy (rate limit + reCAPTCHA WAF)
+- Logging buckets (retention + Bucket Lock for security logs)
+- Vertex AI Search data stores (visa_legal, visa_faq, visa_secondary)
+- Secret Manager secrets (volume mount target)
+
+## デプロイ実行
+
+GitHub Actions の `deploy` job が main branch push 時に自動実行:
+
+```yaml
+# .github/workflows/ci.yml の deploy job 抜粋
+- uses: google-github-actions/auth@v2
+  with:
+    workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+    service_account: vcj-deploy@${{ secrets.PROJECT_ID }}.iam.gserviceaccount.com
+- run: |
+    gcloud builds submit --config cloudbuild.yaml \
+      --substitutions=_REGION=asia-northeast1
+```
+
+## デプロイ後検証
+
+```bash
+# 公開 URL 取得
+gcloud run services describe vcj-mcp --format='value(status.url)'
+
+# ヘルスチェック
+curl -i https://<URL>/healthz
+
+# tools/list smoke test
+npx @modelcontextprotocol/inspector --cli https://<URL>/mcp --method tools/list
+
+# Cloud Logging で recent error 確認
+gcloud logging read 'resource.type="cloud_run_revision" severity>=ERROR' \
+  --limit=20 --format=json
+```
+
+## ロールバック手順
+
+```bash
+# 直前 revision に traffic 100% を戻す
+gcloud run services update-traffic vcj-mcp \
+  --to-revisions=<PREV_REVISION>=100
+```
+
+## チェックリスト
+
+- [ ] Cloud Run service が公開 URL を返す
+- [ ] /mcp が 200 + valid MCP JSON を返す
+- [ ] tools/list で 3 tool 揃う
+- [ ] Cloud Armor が rate limit を発火 (curl で 100 リクエスト/秒テスト)
+- [ ] Cloud Logging に PII 文字列が入っていない (grep で確認)
+- [ ] BYOSA 確認: `gcloud run services describe ... --format='value(spec.template.spec.serviceAccountName)'` が `vcj-runtime@...`
+- [ ] Vertex AI Search data store が 50+ 文書取り込み済

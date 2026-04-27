@@ -1,0 +1,108 @@
+---
+description: VCJ の MCP server 動作確認手順 (6 ホスト)
+---
+
+# Testing checklist — manual host verification
+
+このルールは @testing-checklist で明示メンションした時のみ参照する。
+Sprint 3 (6月W3) で 6 ホスト動作確認を実施する際の手順書。
+
+## 前提
+
+- `pnpm dev` で localhost:3001 起動済み
+- `cloudflared tunnel --url http://localhost:3001` で HTTPS URL 取得済み
+- 取得した tunnel URL をここでは `https://<TUNNEL>.trycloudflare.com/mcp` と記す
+
+## 1. MCP Inspector CLI (smoke test)
+
+```bash
+npx @modelcontextprotocol/inspector --cli \
+  https://<TUNNEL>.trycloudflare.com/mcp \
+  --method tools/list
+```
+
+期待: search_visa, classify_procedure, show_deadline_timeline の 3 tool が
+返却される。各 tool に annotations + _meta.ui.resourceUri が含まれる。
+
+```bash
+npx @modelcontextprotocol/inspector --cli \
+  https://<TUNNEL>.trycloudflare.com/mcp \
+  --method tools/call --params '{"name":"search_visa","arguments":{"category":"tokutei_ginou_1","industry":"agriculture","language":"ja"}}'
+```
+
+期待: structuredContent.results が 1 件以上、各 result に sourceUrl が
+*.go.jp ドメイン、disclaimer 文字列が含まれる。
+
+## 2. Claude Desktop
+
+Claude Desktop の Settings > Developer > Edit Config に追加:
+
+```json
+{
+  "mcpServers": {
+    "vcj-tunnel": {
+      "command": "npx",
+      "args": ["mcp-remote", "https://<TUNNEL>.trycloudflare.com/mcp"]
+    }
+  }
+}
+```
+
+Claude Desktop 再起動 → 新規チャットで「特定技能2号 農業の必要書類は？」と入力。
+期待: VCJ の UI Resource が iframe としてインラインで表示される。
+カードが 3 件以上、disclaimer が footer に表示。
+
+## 3. Claude Web (claude.ai)
+
+Settings > Connectors > Add Custom Connector:
+- Name: VCJ (dev)
+- URL: https://<TUNNEL>.trycloudflare.com/mcp
+- Auth: None
+
+新規チャットで同じ質問 → UI 描画を確認。
+
+## 4. VS Code GitHub Copilot
+
+`.vscode/mcp.json` (workspace) に追加:
+
+```json
+{
+  "servers": {
+    "vcj": {
+      "type": "http",
+      "url": "https://<TUNNEL>.trycloudflare.com/mcp"
+    }
+  }
+}
+```
+
+Copilot Chat で `@vcj 特定技能2号の必要書類` と入力 → tool が呼ばれることを確認。
+
+## 5. Goose
+
+```bash
+goose configure
+# Add custom extension > HTTP > URL: https://<TUNNEL>.trycloudflare.com/mcp
+goose session
+```
+
+`tools` コマンドで一覧確認 → tool 呼び出しテスト。
+
+## 6. Postman / MCPJam
+
+- Postman: Collections > Import > MCP > URL に tunnel URL → tools/list / tools/call テスト
+- MCPJam: https://www.mcpjam.com/ で server URL を入力 → UI Resource emulator で
+  inline / fullscreen / pip / dark mode / mobile viewport を全部確認
+
+## チェックリスト (合格基準)
+
+- [ ] 6 ホスト全てで tools/list が成功
+- [ ] 6 ホスト全てで search_visa が UI を描画
+- [ ] dark mode で contrast 4.5:1 以上 (WCAG AA)
+- [ ] prefers-reduced-motion 環境で skeleton animation が止まる
+- [ ] PII 入力テスト: "在留番号 AB12345678CD で更新したい" → blocked + 警告
+- [ ] freshness warning: 古い source を返した場合に黄色バッジが出る
+- [ ] disclaimer footer が全 UI で常時表示
+- [ ] 外部 URL (.go.jp 以外) が結果に含まれていないことを目視確認
+
+すべての □ をチェック → Sprint 3 完了。

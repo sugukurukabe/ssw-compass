@@ -1,0 +1,13 @@
+---
+alwaysApply: true
+---
+# UI Resource rules
+
+- Use App class from @modelcontextprotocol/ext-apps (PostMessageTransport).
+- All HTML output via DOMPurify.sanitize.
+- Use host CSS variables (--color-*, --font-*) for theming. No hardcoded colors except brand accent.
+- a11y: every interactive element has aria-label or visible label. Use role="note" for disclaimers.
+- i18n: read currentLang from hostContext.locale. Support ja/en/id.
+- External links: only *.go.jp domains. Other URLs neutralized to `[external:<host>]`.
+- Bundle size budget: 512 KB per UI (CI enforces).
+- prefers-reduced-motion respected for all animations.

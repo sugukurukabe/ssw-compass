@@ -1,0 +1,11 @@
+---
+globs:
+  - "apps/server/src/safety/**"
+  - "apps/server/src/pii/**"
+---
+- Never bypass pii guard or output sanitizer for "performance".
+- ZAIRYU_CARD_NUMBER custom infoType regex: \b[A-Z]{2}[0-9]{8}[A-Z]{2}\b
+- BLOCKING_TYPES set is the source of truth — modifications require ADR.
+- All sanitizer modifications must be paired with snapshot test updates in
+  `test/safety/sanitizer.snapshot.ts`.
+- Trust no external URL. Use safeFetch (URL allowlist).

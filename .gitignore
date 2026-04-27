@@ -1,0 +1,17 @@
+node_modules/
+dist/
+.env
+.env.local
+*.log
+.DS_Store
+.turbo/
+coverage/
+.vscode/
+.idea/
+.cursor/mcp.json
+*.tfstate
+*.tfstate.backup
+.terraform/
+*.tfvars
+*-key.json
+service-account*.json

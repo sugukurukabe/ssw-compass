@@ -1,0 +1,14 @@
+---
+globs:
+  - "apps/server/src/tools/**"
+---
+# Tool implementation rules
+
+- MUST use `registerAppTool` (not `server.tool` direct).
+- MUST set annotations: { readOnlyHint, destructiveHint, idempotentHint, openWorldHint }.
+- MUST set _meta.ui.resourceUri AND _meta["openai/outputTemplate"] (dual-key).
+- MUST call scrubInputForPII at handler entry. Block before any external call.
+- MUST inject DISCLAIMER_BY_LANG[args.language] in returned content.
+- MUST NOT log raw user input or full response body. Use logger redact paths.
+- MUST wrap handler with instrumentTool() for OTel.
+- inputSchema: prefer z.enum over z.string; max length 500 for strings.
