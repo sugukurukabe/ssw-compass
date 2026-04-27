@@ -26,6 +26,9 @@ for Sprint 2–4.
 
 Prerequisites (macOS): Node 22, pnpm 10, [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/),
 and Claude Desktop. Docker is **not** required in Sprint 1.
+Sprint 3 onward also requires [`direnv`](https://direnv.net/) and
+`gcloud` for Terraform workflows — see
+[docs/onboarding.md](docs/onboarding.md) for the one-time setup.
 
 ```bash
 # 1. Clone & install
