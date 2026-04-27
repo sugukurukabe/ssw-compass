@@ -1,6 +1,8 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { registerClassifyProcedureTool } from "./tools/classify-procedure/index.js";
 import { registerClassifyProcedureUiResource } from "./tools/classify-procedure/ui.js";
+import { registerGetDeadlineTimelineTool } from "./tools/get-deadline-timeline/index.js";
+import { registerGetDeadlineTimelineUiResource } from "./tools/get-deadline-timeline/ui.js";
 import { registerSearchVisaTool } from "./tools/search-visa/index.js";
 import { registerSearchVisaUiResource } from "./tools/search-visa/ui.js";
 
@@ -20,5 +22,7 @@ export function createMcpServer(): McpServer {
   registerSearchVisaUiResource(server);
   registerClassifyProcedureTool(server);
   registerClassifyProcedureUiResource(server);
+  registerGetDeadlineTimelineTool(server);
+  registerGetDeadlineTimelineUiResource(server);
   return server;
 }
