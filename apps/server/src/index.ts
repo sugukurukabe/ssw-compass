@@ -4,6 +4,7 @@ import type { Express, Request, Response } from "express";
 import express from "express";
 import { logger } from "./logger.js";
 import { createMcpServer } from "./server.js";
+import { buildServerCard } from "./server-card.js";
 
 const DEFAULT_PORT = 3001;
 const MAX_BODY_BYTES = 1024 * 1024;
@@ -24,6 +25,14 @@ export function createApp(): Express {
 
   app.get("/health", (_req: Request, res: Response) => {
     res.status(200).json({ status: "ok", service: "vcj-mcp" });
+  });
+
+  app.get("/.well-known/mcp.json", (_req: Request, res: Response) => {
+    res
+      .status(200)
+      .set("Cache-Control", "public, max-age=300")
+      .type("application/json")
+      .json(buildServerCard());
   });
 
   app.post("/mcp", async (req: Request, res: Response) => {

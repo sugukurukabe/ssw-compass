@@ -9,6 +9,7 @@ coverage/
 .vscode/
 .idea/
 .cursor/mcp.json
+.claude/desktop_config.json
 *.tfstate
 *.tfstate.backup
 .terraform/
