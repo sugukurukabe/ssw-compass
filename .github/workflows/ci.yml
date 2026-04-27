@@ -1,0 +1,88 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+jobs:
+  lint-typecheck-test:
+    name: Lint + typecheck + test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 10.33.0
+          run_install: false
+
+      - name: Get pnpm store directory
+        shell: bash
+        run: echo "STORE_PATH=$(pnpm store path --silent)" >> $GITHUB_ENV
+
+      - name: Cache pnpm store
+        uses: actions/cache@v4
+        with:
+          path: ${{ env.STORE_PATH }}
+          key: pnpm-${{ runner.os }}-${{ hashFiles('pnpm-lock.yaml') }}
+          restore-keys: pnpm-${{ runner.os }}-
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Biome check
+        run: pnpm exec biome check apps packages ui --max-diagnostics=200
+
+      - name: Typecheck (turbo, all 9 workspaces)
+        run: pnpm run typecheck
+
+      - name: Server vitest
+        run: pnpm -F @ssw/server test
+
+  terraform-check:
+    name: Terraform fmt + validate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Terraform
+        uses: hashicorp/setup-terraform@v3
+        with:
+          terraform_version: 1.14.9
+          terraform_wrapper: false
+
+      - name: terraform fmt -check
+        run: terraform fmt -check -recursive infra/
+
+      - name: terraform init (staging, no backend access needed for validate)
+        working-directory: infra/terraform/envs/staging
+        run: terraform init -backend=false
+
+      - name: terraform validate (staging)
+        working-directory: infra/terraform/envs/staging
+        run: terraform validate
+
+      - name: terraform init (prod, no backend)
+        working-directory: infra/terraform/envs/prod
+        run: terraform init -backend=false
+
+      - name: terraform validate (prod)
+        working-directory: infra/terraform/envs/prod
+        run: terraform validate

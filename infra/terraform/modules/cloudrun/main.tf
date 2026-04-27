@@ -64,6 +64,14 @@ resource "google_cloud_run_v2_service" "this" {
       client,
       client_version,
       template[0].annotations["run.googleapis.com/operation-id"],
+      # ADR-009 judgment 1 (gcloud-managed image): the image tag is
+      # rotated by `gcloud run deploy --image=...` from GitHub Actions
+      # on every main push. Terraform state stays pinned to whatever
+      # value was supplied at last apply. `terraform plan` must NOT
+      # show an image diff after a gcloud-driven deploy — if it does,
+      # this ignore_changes entry has drifted and must be restored
+      # before the next terraform apply.
+      template[0].containers[0].image,
     ]
   }
 }
