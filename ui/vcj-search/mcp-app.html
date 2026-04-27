@@ -1,0 +1,130 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <!--
+      TODO(sprint-3): Replace 'unsafe-inline' with sha256 hashes.
+      See v2 §6.2 (post-build script) and v3 §23 (Report-Only rollout).
+      Sprint 1 ships with 'unsafe-inline' to unblock directory submission
+      screenshots and Claude Desktop smoke tests. Sprint 3 flips to hash-based
+      CSP + Trusted Types + strict-dynamic once the build pipeline computes
+      per-artifact hashes and CI verifies them.
+    -->
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none';"
+    />
+    <title>Visa Compass Japan</title>
+    <style>
+      :root {
+        --vcj-fg: var(--color-text-primary, #111);
+        --vcj-fg-muted: var(--color-text-secondary, #555);
+        --vcj-bg: var(--color-bg-primary, #fff);
+        --vcj-bg-muted: var(--color-bg-secondary, #f6f6f6);
+        --vcj-bg-skeleton: var(--color-bg-tertiary, #f0f0f0);
+        --vcj-bg-skeleton-shine: var(--color-bg-secondary, #e0e0e0);
+        --vcj-accent: var(--color-accent, #0a2540);
+        --vcj-border: var(--color-border, #e5e7eb);
+        --vcj-disclaimer-bg: var(--color-info-bg, #fffbeb);
+        --vcj-disclaimer-fg: var(--color-info-text, #713f12);
+        --vcj-font: var(--font-family-body, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif);
+      }
+      html, body {
+        margin: 0;
+        padding: 0;
+        background: var(--vcj-bg);
+        color: var(--vcj-fg);
+        font-family: var(--vcj-font);
+        font-size: 14px;
+        line-height: 1.6;
+      }
+      #root {
+        padding: 16px;
+      }
+      .notice-l1 {
+        display: block;
+        color: var(--vcj-fg-muted);
+        font-size: 12px;
+        padding: 4px 0 12px;
+      }
+      .card {
+        background: var(--vcj-bg);
+        border: 1px solid var(--vcj-border);
+        border-radius: 8px;
+        padding: 12px 14px;
+        margin: 8px 0;
+        transition: opacity 200ms ease-out, transform 200ms ease-out;
+      }
+      .card h3 {
+        margin: 0 0 6px;
+        font-size: 14px;
+        font-weight: 600;
+        color: var(--vcj-accent);
+      }
+      .card p {
+        margin: 0 0 8px;
+        color: var(--vcj-fg);
+      }
+      .card a {
+        color: var(--vcj-accent);
+        font-size: 12px;
+        text-decoration: underline;
+      }
+      .card small {
+        display: block;
+        margin-top: 6px;
+        color: var(--vcj-fg-muted);
+        font-size: 11px;
+      }
+      .disclaimer {
+        margin-top: 16px;
+        padding: 10px 12px;
+        background: var(--vcj-disclaimer-bg);
+        color: var(--vcj-disclaimer-fg);
+        border-radius: 6px;
+        font-size: 12px;
+        line-height: 1.5;
+      }
+      .meta {
+        margin-top: 8px;
+        color: var(--vcj-fg-muted);
+        font-size: 11px;
+      }
+      .skeleton-stack {
+        padding: 4px 0;
+      }
+      .skeleton .skel-line {
+        background: linear-gradient(
+          90deg,
+          var(--vcj-bg-skeleton) 0%,
+          var(--vcj-bg-skeleton-shine) 50%,
+          var(--vcj-bg-skeleton) 100%
+        );
+        background-size: 200% 100%;
+        animation: vcj-shimmer 1.4s ease-in-out infinite;
+        border-radius: 4px;
+        height: 12px;
+        margin: 8px 0;
+      }
+      .skel-line--title { height: 18px; width: 70%; }
+      .skel-line--body  { width: 95%; }
+      .skel-line--body.short { width: 60%; }
+      .skel-line--meta  { height: 10px; width: 30%; margin-top: 12px; }
+      @keyframes vcj-shimmer {
+        0%   { background-position: -200% 0; }
+        100% { background-position:  200% 0; }
+      }
+      @media (prefers-reduced-motion: reduce) {
+        .skel-line { animation: none; opacity: 0.6; }
+        .card { transition: none; }
+      }
+      .card.entering { opacity: 0; transform: translateY(4px); }
+      .card.entered  { opacity: 1; transform: translateY(0); }
+    </style>
+  </head>
+  <body>
+    <div id="root" role="region" aria-label="Visa Compass Japan search results"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>
