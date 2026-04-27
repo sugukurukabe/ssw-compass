@@ -99,14 +99,38 @@
         margin: 6px 0 0;
       }
       .trust-badge {
-        display: inline-block;
+        display: inline-flex;
+        align-items: center;
+        gap: 4px;
         margin-left: 8px;
         padding: 1px 8px;
         border-radius: 10px;
         font-size: 10px;
         font-weight: 600;
-        background: #d1fae5;
-        color: #065f46;
+      }
+      .trust-badge::before {
+        font-weight: 700;
+        font-size: 10px;
+      }
+      .trust-badge--primary   { background: #d1fae5; color: #065f46; }
+      .trust-badge--primary::before   { content: "\2713"; }
+      .trust-badge--secondary { background: #fef3c7; color: #92400e; }
+      .trust-badge--secondary::before { content: "\25B3"; }
+      .trust-badge--community { background: #e5e7eb; color: #374151; }
+      .trust-badge--community::before { content: "\25CB"; }
+      @media (prefers-color-scheme: dark) {
+        .trust-badge--primary {
+          background: var(--color-success-bg, #064e3b);
+          color: var(--color-success-text, #a7f3d0);
+        }
+        .trust-badge--secondary {
+          background: var(--color-warning-bg, #78350f);
+          color: var(--color-warning-text, #fde68a);
+        }
+        .trust-badge--community {
+          background: var(--color-muted-bg, #374151);
+          color: var(--color-muted-text, #d1d5db);
+        }
       }
       .refs h4 {
         margin: 18px 0 6px;

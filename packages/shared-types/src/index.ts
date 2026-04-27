@@ -20,4 +20,13 @@ export {
   TRUST_LEVEL,
   type TrustLevel,
 } from "./get-deadline-timeline.js";
+export {
+  DOCUMENT_CATEGORY,
+  DOCUMENTS_INDUSTRY,
+  DOCUMENTS_VISA_CATEGORY,
+  type DocumentCategory,
+  DocumentEntry,
+  ListVisaDocumentsInput,
+  ListVisaDocumentsOutput,
+} from "./list-visa-documents.js";
 export { SearchVisaInput, SearchVisaOutput } from "./search-visa.js";

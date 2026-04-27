@@ -85,8 +85,14 @@ export function render(
         d.dueBy !== undefined
           ? `<span class="due-by">${escapeAttr(t.dueByPrefix)}: ${escapeAttr(d.dueBy)}</span>`
           : "";
+      const trustClass =
+        d.trustLevel === "primary_source"
+          ? "trust-badge trust-badge--primary"
+          : d.trustLevel === "secondary"
+            ? "trust-badge trust-badge--secondary"
+            : "trust-badge trust-badge--community";
       return `<li class="deadline" tabindex="0" aria-label="${escapeAttr(labelText)}">
-        <h3>${escapeAttr(labelText)} <span class="trust-badge" aria-label="${escapeAttr(trustText)}">${escapeAttr(trustText)}</span></h3>
+        <h3>${escapeAttr(labelText)} <span class="${trustClass}" aria-label="${escapeAttr(trustText)}">${escapeAttr(trustText)}</span></h3>
         <span class="relative">${escapeAttr(relativeText)}</span>${dueByHtml}
         <p class="description">${escapeAttr(d.description)}</p>
       </li>`;

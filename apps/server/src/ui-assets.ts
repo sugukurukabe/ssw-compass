@@ -28,7 +28,7 @@ function resolveDistPath(uiName: string): string {
 }
 
 export async function loadUiHtml(
-  uiName: "vcj-search" | "vcj-classify" | "vcj-timeline",
+  uiName: "vcj-search" | "vcj-classify" | "vcj-timeline" | "vcj-checklist",
 ): Promise<string> {
   const cached = cache.get(uiName);
   if (cached !== undefined) {
