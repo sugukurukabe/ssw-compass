@@ -112,6 +112,37 @@ importers:
         specifier: ^5.7.0
         version: 5.9.3
 
+  ui/vcj-classify:
+    dependencies:
+      '@modelcontextprotocol/ext-apps':
+        specifier: ^1.6.0
+        version: 1.7.0(@modelcontextprotocol/sdk@1.29.0(zod@3.25.76))(react-dom@18.3.1(react@18.3.1))(react@18.3.1)(zod@3.25.76)
+      '@vcj/shared-types':
+        specifier: workspace:*
+        version: link:../../packages/shared-types
+      '@vcj/ui-bridge':
+        specifier: workspace:*
+        version: link:../../packages/ui-bridge
+      dompurify:
+        specifier: ^3.4.1
+        version: 3.4.1
+    devDependencies:
+      '@types/dompurify':
+        specifier: ^3.0.0
+        version: 3.2.0
+      '@vcj/tsconfig':
+        specifier: workspace:*
+        version: link:../../packages/tsconfig
+      typescript:
+        specifier: ^5.7.0
+        version: 5.9.3
+      vite:
+        specifier: ^5.4.0
+        version: 5.4.21(@types/node@22.19.17)
+      vite-plugin-singlefile:
+        specifier: ^2.0.0
+        version: 2.3.3(rollup@4.60.2)(vite@5.4.21(@types/node@22.19.17))
+
   ui/vcj-search:
     dependencies:
       '@modelcontextprotocol/ext-apps':

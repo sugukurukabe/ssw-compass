@@ -27,7 +27,7 @@ function resolveDistPath(uiName: string): string {
   return resolve(__dirname, "..", "..", "..", "ui", uiName, "dist", "mcp-app.html");
 }
 
-export async function loadUiHtml(uiName: "vcj-search"): Promise<string> {
+export async function loadUiHtml(uiName: "vcj-search" | "vcj-classify"): Promise<string> {
   const cached = cache.get(uiName);
   if (cached !== undefined) {
     return cached;
