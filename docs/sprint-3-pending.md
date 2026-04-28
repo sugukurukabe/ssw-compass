@@ -7,7 +7,7 @@ as a **Sprint 3 closure artefact** — the history of what was
 originally deferred here and where each item ended up.
 
 > **Status (2026-04-28)**: all Sprint 3 batches complete. Sprint 3
-> closure summary lives in [sprint-3-summary.md](sprint-3-summary.md)
+> closure summary lives in [sprints/sprint-3-summary.md](sprints/sprint-3-summary.md)
 > (Batch 8). Active Sprint 4 scope lives in
 > [sprint-4-pending.md](sprint-4-pending.md).
 

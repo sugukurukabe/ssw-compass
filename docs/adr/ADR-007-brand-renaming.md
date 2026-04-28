@@ -168,6 +168,6 @@ A narrower brand also:
   unchanged in substance.
 - `docs/specs/v3-supplement.md` §A — original brand map. This ADR
   supersedes the VCJ half of that map.
-- `docs/sprint-2-summary.md` — Sprint 2 results, updated with the
+- `docs/sprints/sprint-2-summary.md` — Sprint 2 results, updated with the
   SSW Compass name. The underlying metrics (6 ADRs, 60 vitest cases,
   4 UI workspaces, 40-entry source-index, etc.) are unchanged.
