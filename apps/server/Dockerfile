@@ -83,4 +83,10 @@ COPY --from=builder --chown=nonroot:nonroot /workspace/ui/ssw-checklist/dist ./u
 USER nonroot
 EXPOSE 8080
 
+# Cloud Run ignores HEALTHCHECK but it's useful for local docker run and
+# future ECS/GKE deployments. Uses /health which returns {"status":"ok"}.
+HEALTHCHECK --interval=30s --timeout=5s --start-period=10s --retries=3 \
+  CMD ["/nodejs/bin/node", "-e", \
+    "require('http').get('http://localhost:8080/health', r => process.exit(r.statusCode === 200 ? 0 : 1)).on('error', () => process.exit(1))"]
+
 CMD ["dist/index.js"]
