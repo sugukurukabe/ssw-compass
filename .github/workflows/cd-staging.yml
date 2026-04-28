@@ -180,7 +180,11 @@ jobs:
             -H "mcp-session-id: $SESSION_ID" \
             -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
             > /tmp/tools-raw.txt
-          awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/tools-raw.txt > /tmp/tools.json
+          if grep -q '^data: ' /tmp/tools-raw.txt; then
+            awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/tools-raw.txt > /tmp/tools.json
+          else
+            cp /tmp/tools-raw.txt /tmp/tools.json
+          fi
           cat /tmp/tools.json | head -c 300; echo
           jq -e '.result.tools | length >= 5' /tmp/tools.json
 
@@ -208,7 +212,11 @@ jobs:
             > /tmp/search-raw.txt
 
           # Streamable HTTP SSE response — extract the JSON from the "data: " line.
-          awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/search-raw.txt > /tmp/search.json
+          if grep -q '^data: ' /tmp/search-raw.txt; then
+            awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/search-raw.txt > /tmp/search.json
+          else
+            cp /tmp/search-raw.txt /tmp/search.json
+          fi
 
           cat /tmp/search.json | head -c 500; echo
           # Verify tool did NOT signal an error and returned >=2 results.
@@ -263,7 +271,11 @@ jobs:
             -H "mcp-session-id: $SESSION_ID" \
             -d '{"jsonrpc":"2.0","id":2,"method":"resources/read","params":{"uri":"ui://ssw-search/mcp-app.html"}}' \
             > /tmp/ui-raw.txt
-          awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/ui-raw.txt > /tmp/ui.json
+          if grep -q '^data: ' /tmp/ui-raw.txt; then
+            awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/ui-raw.txt > /tmp/ui.json
+          else
+            cp /tmp/ui-raw.txt /tmp/ui.json
+          fi
           # Expect one contents[] entry, mimeType=text/html, text starts
           # with the doctype, and the Report-Only CSP header is present.
           jq -e '.result.contents | length == 1' /tmp/ui.json
