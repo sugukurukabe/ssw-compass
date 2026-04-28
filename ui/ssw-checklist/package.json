@@ -9,7 +9,8 @@
     "build": "vite build",
     "build:watch": "vite build --watch",
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "biome check ."
+    "lint": "biome check .",
+    "postbuild": "node ../../scripts/compute-csp-hashes.mjs dist/mcp-app.html"
   },
   "dependencies": {
     "@modelcontextprotocol/ext-apps": "^1.6.0",
