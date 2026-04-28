@@ -1,12 +1,22 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { validateToolAnnotations } from "./hitl/validate-annotations.js";
 import { registerChecklistSchemaTool } from "./tools/_internal/checklist-schema.js";
-import { registerClassifyProcedureTool } from "./tools/classify-procedure/index.js";
+import {
+  CLASSIFY_PROCEDURE_ANNOTATION,
+  registerClassifyProcedureTool,
+} from "./tools/classify-procedure/index.js";
 import { registerClassifyProcedureUiResource } from "./tools/classify-procedure/ui.js";
-import { registerGetDeadlineTimelineTool } from "./tools/get-deadline-timeline/index.js";
+import {
+  GET_DEADLINE_TIMELINE_ANNOTATION,
+  registerGetDeadlineTimelineTool,
+} from "./tools/get-deadline-timeline/index.js";
 import { registerGetDeadlineTimelineUiResource } from "./tools/get-deadline-timeline/ui.js";
-import { registerListVisaDocumentsTool } from "./tools/list-visa-documents/index.js";
+import {
+  LIST_VISA_DOCUMENTS_ANNOTATION,
+  registerListVisaDocumentsTool,
+} from "./tools/list-visa-documents/index.js";
 import { registerListVisaDocumentsUiResource } from "./tools/list-visa-documents/ui.js";
-import { registerSearchVisaTool } from "./tools/search-visa/index.js";
+import { registerSearchVisaTool, SEARCH_VISA_ANNOTATION } from "./tools/search-visa/index.js";
 import { registerSearchVisaUiResource } from "./tools/search-visa/ui.js";
 
 const SERVER_INFO = {
@@ -30,5 +40,18 @@ export function createMcpServer(): McpServer {
   registerListVisaDocumentsTool(server);
   registerListVisaDocumentsUiResource(server);
   registerChecklistSchemaTool(server);
+
+  // ADR-014 §5: validate all registered tool annotations at startup.
+  // The annotation objects are exported from each tool registration file
+  // (SEARCH_VISA_ANNOTATION etc.) so we can validate without calling
+  // a non-existent server.listTools(). Any L2/L3 mis-configuration
+  // throws ToolAnnotationConfigError → server fails to start.
+  validateToolAnnotations([
+    { name: "search_visa", annotations: SEARCH_VISA_ANNOTATION },
+    { name: "classify_procedure", annotations: CLASSIFY_PROCEDURE_ANNOTATION },
+    { name: "get_deadline_timeline", annotations: GET_DEADLINE_TIMELINE_ANNOTATION },
+    { name: "list_visa_documents", annotations: LIST_VISA_DOCUMENTS_ANNOTATION },
+  ]);
+
   return server;
 }

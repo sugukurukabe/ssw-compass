@@ -7,6 +7,8 @@ export {
   AuthContext,
   AuthTier,
 } from "./auth/AuthContext.js";
+export type { CaseId as CaseIdType } from "./case-id.js";
+export { CASE_ID_PATTERN, CaseId, generateCaseId } from "./case-id.js";
 export {
   CLASSIFY_CURRENT_STATUS,
   CLASSIFY_INDUSTRY,
@@ -29,6 +31,12 @@ export {
   TRUST_LEVEL,
   type TrustLevel,
 } from "./get-deadline-timeline.js";
+export type {
+  HitlControlId as HitlControlIdType,
+  LegalLevel as LegalLevelType,
+  SswCompassToolAnnotation,
+} from "./hitl/HitlControl.js";
+export { HitlControlId, LegalLevel } from "./hitl/HitlControl.js";
 export {
   DOCUMENT_CATEGORY,
   DOCUMENTS_INDUSTRY,

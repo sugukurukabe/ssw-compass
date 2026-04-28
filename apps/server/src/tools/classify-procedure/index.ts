@@ -1,9 +1,22 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { SswCompassToolAnnotation } from "@ssw/shared-types";
 import { classifyProcedureHandler } from "./handler.js";
 import { ClassifyProcedureInput } from "./schema.js";
 
 const UI_RESOURCE_URI = "ui://ssw-classify/mcp-app.html";
+
+export const CLASSIFY_PROCEDURE_ANNOTATION: SswCompassToolAnnotation = {
+  readOnlyHint: true,
+  idempotentHint: true,
+  openWorldHint: false,
+  destructiveHint: false,
+  title: "Classify Japanese visa procedure type",
+  legalLevel: "L1",
+  requiresGyoseishoshiAuth: false,
+  hitlControls: ["H07_PII_AUTO_MASKING", "H09_TEMPLATE_VS_INDIVIDUAL", "H10_LAW_AUTO_UPDATE"],
+  tier: "free",
+};
 
 export function registerClassifyProcedureTool(server: McpServer): void {
   registerAppTool(
@@ -19,12 +32,7 @@ export function registerClassifyProcedureTool(server: McpServer): void {
         "status, and location. Information only — does not constitute legal advice. " +
         "Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers).",
       inputSchema: ClassifyProcedureInput.shape,
-      annotations: {
-        readOnlyHint: true,
-        idempotentHint: true,
-        openWorldHint: false,
-        destructiveHint: false,
-      },
+      annotations: CLASSIFY_PROCEDURE_ANNOTATION,
       _meta: {
         ui: {
           resourceUri: UI_RESOURCE_URI,
