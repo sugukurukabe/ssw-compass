@@ -26,6 +26,9 @@ importers:
       '@google-cloud/dlp':
         specifier: ^5.0.0
         version: 5.13.0
+      '@google-cloud/logging':
+        specifier: ^11.2.1
+        version: 11.2.1
       '@google-cloud/pino-logging-gcp-config':
         specifier: ^1.3.3
         version: 1.3.3

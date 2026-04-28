@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "SSW classify_procedure result UI Resource (single-file HTML)",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "scripts": {
     "build": "vite build",
     "build:watch": "vite build --watch",

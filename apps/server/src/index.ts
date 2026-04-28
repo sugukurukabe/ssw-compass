@@ -28,6 +28,24 @@ export function createApp(): Express {
     res.status(200).json({ status: "ok", service: "ssw-mcp" });
   });
 
+  // Privacy policy endpoint (trilingual drafts in docs/privacy/)
+  app.get("/privacy", (_req: Request, res: Response) => {
+    res
+      .status(200)
+      .set("Cache-Control", "public, max-age=86400")
+      .type("text/plain; charset=utf-8")
+      .send(
+        "SSW Compass Privacy Policy\n==========================\n\n" +
+          "This service does NOT collect personal information.\n" +
+          "Inputs containing residence card numbers, passport numbers, or My Number are automatically blocked.\n\n" +
+          "Log data (access timestamps, IP hashed after 24h) retained 7 years per Gyoseishoshi Act §9.\n" +
+          "No cross-border transfer (APPI Article 24). Data location: Japan (asia-northeast1).\n\n" +
+          "Full trilingual policy (under gyoseishoshi review):\n" +
+          "https://github.com/sugukurukabe/ssw-compass/tree/main/docs/privacy/\n\n" +
+          "Contact: a_kabe@sugu-kuru.co.jp\n",
+      );
+  });
+
   app.get("/.well-known/mcp.json", (_req: Request, res: Response) => {
     res
       .status(200)
