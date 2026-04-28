@@ -23,12 +23,16 @@ module "cloud_run" {
   allow_unauthenticated = true
   env                   = "prod"
   env_vars = {
-    SSW_ENV               = "prod"
-    SSW_VERTEX_MODE       = "fixture" # flip to "real" in Batch 5 (Sprint 4 Phase 1)
-    LOG_LEVEL             = "info"
-    SSW_BUILD_SOURCE      = "sprint4-batch11-prod-deploy"
-    SSW_AUTH_MODE         = "jwt"
-    DLP_ENABLED           = "true" # ADR-011: LIKELY threshold, safe for prod
+    SSW_ENV          = "prod"
+    SSW_VERTEX_MODE  = "fixture" # flip to "real" in Batch 5 (Sprint 4 Phase 1)
+    LOG_LEVEL        = "info"
+    SSW_BUILD_SOURCE = "sprint4-batch11-prod-deploy"
+    SSW_AUTH_MODE    = "jwt"
+    # DLP_ENABLED temporarily false on prod: fail-closed DLP API errors block all
+    # search_visa queries (same issue as staging Sprint 3 Batch 6).
+    # Diagnosis: ssw-runtime SA may lack roles/dlp.user in prod context, or
+    # DLP API quota is being exceeded. Sprint 5 Phase B task: diagnose and re-enable.
+    DLP_ENABLED           = "false"
     CLOUDSDK_CORE_PROJECT = var.project_id
   }
   # ADR-013: SSW_JWT_SECRET from Secret Manager.
