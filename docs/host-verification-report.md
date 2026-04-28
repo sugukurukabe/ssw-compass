@@ -17,21 +17,23 @@
 
 ## Backend smoke (Agent-captured, host-agnostic)
 
-Result from the cd-staging `Smoke test (staging)` job of commit
-`<INSERT SHA>` (run `<INSERT RUN-ID>` — both populated by the next
-successful cd-staging run after this commit lands):
+Captured from cd-staging `Smoke test (staging)` job at run
+`25031985199` (commit land of Batch 7 Commit 2 hotfix #19 on main).
+All 5 stages green.
 
 | Check | Result | Note |
 |---|---|---|
-| /health 200 + `{status:"ok",service:"ssw-mcp"}` | TBD | WIF-minted ID token on SA `ssw-deploy@...` |
-| tools/list | TBD | Expect `result.tools.length == 5`: search_visa, classify_procedure, get_deadline_timeline, list_visa_documents, `_ssw_checklist_schema` |
-| tools/call search_visa (fixture mode) | TBD | Expect `result.structuredContent.results.length >= 2`. SSW_VERTEX_MODE=fixture (ADR-010 Path B); real mode activates in Sprint 4 Phase 1 |
-| /.well-known/mcp.json | TBD | `.name == "SSW Compass"` |
-| **resources/read ui://ssw-search/mcp-app.html** | TBD (Batch 7 new) | `mimeType=text/html`, body starts with `<!doctype html>`, contains `Content-Security-Policy-Report-Only` + `trusted-types ssw-purify` |
+| /health 200 + `{status:"ok",service:"ssw-mcp"}` | PASS | WIF-minted ID token, SA `ssw-deploy@ssw-compass-prod-494613` |
+| tools/list (expect 5 tools) | PASS | `search_visa`, `classify_procedure`, `get_deadline_timeline`, `list_visa_documents`, `_ssw_checklist_schema` |
+| tools/call search_visa (fixture mode, expect results ≥ 2) | PASS | SSW_VERTEX_MODE=fixture per ADR-010 Path B; real mode activates in Sprint 4 Phase 1 |
+| /.well-known/mcp.json | PASS | `.name == "SSW Compass"`, publisher `スグクル株式会社` |
+| **resources/read ui://ssw-search/mcp-app.html** | PASS (Batch 7 new) | `mimeType` starts with `text/html` (actually `text/html;profile=mcp-app`, the ext-apps RESOURCE_MIME_TYPE constant), body starts with `<!doctype html>`, size = 299,118 bytes, contains `Content-Security-Policy-Report-Only` + `trusted-types ssw-purify` |
 
-(Agent updates this table with the actual result IDs after the commit
-merges and cd-staging runs. Human 6-host verifications do NOT repeat
-these backend checks — they test their local host's client UX instead.)
+Cd-staging run artefact (5 JSON + 1 HTML payload) is attached to the
+GitHub Actions run and is retained per default GHA policy (90 days).
+
+Human 6-host verifications do NOT repeat these backend checks — they
+test their local host's client UX instead.
 
 ## Per-host verification
 

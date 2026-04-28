@@ -182,6 +182,118 @@ If timing permits. Requires the same base assets.
 
 ---
 
+## Phase 3: Sprint-3 infrastructure carry-overs
+
+Engineering follow-ups from Sprint 3 that are decoupled from the
+content + submission-packet Phases 1 + 2 and can proceed in parallel.
+
+### 1. 6-host coverage expansion (from Batch 7)
+
+Hosts that could not be fully verified in Sprint 3 (per
+[host-verification-report.md](host-verification-report.md) deferral
+table) are completed here. Scope depends on what Batch 7 closed as
+`→ Sprint 4 deferral`. Priority still favours Claude Desktop + Claude
+Web if any of those remain open.
+
+### 2. Cloud Armor attach via Global HTTPS Load Balancer (from ADR-012 §Decision 1)
+
+Create `google_compute_backend_service` + `google_compute_url_map` +
+`google_compute_target_https_proxy` + `google_compute_global_forwarding_rule`
+Terraform stack; attach `module.cloud_armor.policy_id` to the
+backend. Concurrent with the custom-domain + Cloudflare work so the
+DNS cut-over is a single event.
+
+Attach-day runbook captured in
+[ADR-012 §Sprint 4 attach-day validation plan](adr/ADR-012-egress-and-public-exposure.md).
+
+### 3. Custom domain `mcp.ssw-compass.jp` (from Phase 2 pre-work)
+
+- DNS cut-over from registrar default nameservers to Cloudflare.
+- `google_cloud_run_domain_mapping` — or the newer LB + managed SSL
+  cert path if Phase 3.2 lands the LB first (preferred).
+- Server Card `publisher.url` and submission metadata update.
+
+### 4. Cloudflare WAF + Bot Fight Mode + Proxied DNS (from ADR-012 §Decision 2 / Phase 3.3)
+
+Once DNS is on Cloudflare, enable WAF managed rules, Bot Fight Mode,
+geo-gating list (overlap with Cloud Armor CN/RU/KP/IR intentional).
+Document the "two-layer defence" decision.
+
+### 5. CSP enforce-mode flip (from ADR-012 §Decision 1, Batch 5 Report-Only close)
+
+After 1 sprint of observation:
+
+```bash
+# In scripts/compute-csp-hashes.mjs, change the header name:
+#   "Content-Security-Policy-Report-Only" → "Content-Security-Policy"
+# Rebuild + redeploy. No other file changes.
+```
+
+Observation window review: `gcloud logging read 'jsonPayload.type=
+"csp-violation-report"'` for the Sprint 3 window to confirm no
+unexpected violations before flipping.
+
+### 6. DLP sensitivity tuning + re-enable (ADR-011 candidate)
+
+Batch 6 disabled DLP on staging due to false-positive on the neutral
+smoke query. Options under review:
+
+- Raise `minLikelihood` from `POSSIBLE` (3) to `LIKELY` (4) in
+  [apps/server/src/pii/dlp-client.ts](../apps/server/src/pii/dlp-client.ts).
+- Add a curated allow-list of Japanese visa vocabulary tokens that
+  DLP should ignore.
+- Scope `BLOCKING_INFO_TYPES` more tightly (possibly drop
+  EMAIL_ADDRESS + PHONE_NUMBER + IBAN_CODE from the default set if
+  they generate false positives on Japanese free text).
+
+Requires an ADR (security.mdc rule for BLOCKING_TYPES changes).
+Re-enable on staging with `DLP_ENABLED=true`, observe smoke test on
+typical visa queries, then roll to prod.
+
+### 7. Output sanitizer pattern-ordering hardening (ADR-011 candidate)
+
+Batch 5 documented a known weakness: soft-hyphen smuggling slips past
+INJECTION_PATTERNS because CONTROL_CHARS stripping runs last.
+Proposed fix: reorder so CONTROL_CHARS normalization runs FIRST,
+then INJECTION_PATTERNS operates on the cleaned text. Snapshot test
+in [sanitizer.snapshot.test.ts](../apps/server/test/safety/sanitizer.snapshot.test.ts)
+flips the "does NOT currently catch" assertion to "catches".
+
+May be combined with §6 into a single ADR-011 covering both
+security-layer tunings, or split. Decision during Sprint 4 triage.
+
+### 8. `@modelcontextprotocol/sdk` upgrade check (from Sprint 3 Pending SDK type bug)
+
+Monitor for 1.30.0 release. When available:
+
+```bash
+pnpm update @modelcontextprotocol/sdk
+# Remove @ts-expect-error at apps/server/src/index.ts:62 + the
+# 2 explanatory comment lines. tsc must stay green (TS2578
+# "Unused '@ts-expect-error' directive" error is the safety net).
+```
+
+### 9. prod Cloud Run first-deploy + smoke
+
+Prod Cloud Run `ingress=INGRESS_TRAFFIC_ALL` + `allow_unauthenticated
+=false` was applied in Batch 6 but no image was ever deployed. Sprint
+4 Phase 3 executes the first prod deploy via `cd-prod.yml` manual
+dispatch (Batch 3 shipped the workflow file but never ran it).
+Prereqs: Phase 1 complete (real-Vertex, content indexed),
+host-verification evidence from Phase 3.1, Cloud Armor attached
+(Phase 3.2).
+
+### 10. Server Docker image runtime-resource invariant (Batch 8 retrospective finding)
+
+Add a validation item to every future Interface Freeze:
+"Cloud Run image includes every runtime resource the server needs
+to serve under normal MCP traffic." The Batch 3-6 gap (UI dist not
+bundled until Batch 7) demonstrated that backend-only smoke can hide
+a resource-serving regression for many deploys. Sprint 4 batches
+add an explicit check to the Interface Freeze template.
+
+---
+
 ## How this doc is used
 
 - At every Sprint 4 batch kickoff, re-read the relevant phase /
