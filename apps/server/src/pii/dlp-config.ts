@@ -39,7 +39,10 @@ export const DLP_CONFIG = {
     "JAPAN_INDIVIDUAL_NUMBER",
     "JAPAN_PASSPORT",
     "JAPAN_DRIVERS_LICENSE_NUMBER",
-    "ZAIRYU_CARD_NUMBER", // custom infoType (下記 customInfoTypes で定義)
+    // NOTE: ZAIRYU_CARD_NUMBER is a CUSTOM infoType defined in customInfoTypes below.
+    // Do NOT include it here as a built-in infoType name — DLP API returns
+    // INVALID_ARGUMENT if a custom type name is passed in the infoTypes list.
+    // The custom infoType detector handles it via the customInfoTypes field.
     "CREDIT_CARD_NUMBER",
   ] as const,
 
