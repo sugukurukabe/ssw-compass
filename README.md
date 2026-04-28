@@ -1,5 +1,9 @@
 ![SSW Compass Japan](assets/logo/ssw-compass-lockup-sm.png)
 
+[![CI](https://github.com/sugukurukabe/ssw-compass/actions/workflows/ci.yml/badge.svg)](https://github.com/sugukurukabe/ssw-compass/actions/workflows/ci.yml)
+[![CD Staging](https://github.com/sugukurukabe/ssw-compass/actions/workflows/cd-staging.yml/badge.svg)](https://github.com/sugukurukabe/ssw-compass/actions/workflows/cd-staging.yml)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue.svg)](LICENSE)
+
 # SSW Compass (SSW)
 
 > *The compass for Japanese visa procedures.*

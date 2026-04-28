@@ -28,6 +28,36 @@ export function createApp(): Express {
     res.status(200).json({ status: "ok", service: "ssw-mcp" });
   });
 
+  // OpenAI Apps SDK: ai-plugin.json manifest
+  app.get("/.well-known/ai-plugin.json", (_req: Request, res: Response) => {
+    res
+      .status(200)
+      .set("Cache-Control", "public, max-age=3600")
+      .type("application/json")
+      .json({
+        schema_version: "v1",
+        name_for_human: "SSW Compass Japan",
+        name_for_model: "ssw_compass_japan",
+        description_for_human:
+          "Official-source visa information for Japanese Specified Skilled Worker (特定技能) procedures.",
+        description_for_model:
+          "Query Japanese SSW (特定技能) visa procedures grounded in 出入国在留管理庁 official documents. " +
+          "7 tools: search_visa, classify_procedure, get_deadline_timeline, list_visa_documents, " +
+          "list_law_updates, submit_gyoseishoshi_approval, validate_zairyu_compatibility. " +
+          "Free for general information (anonymous); Pro for document drafts (JWT required). " +
+          "Information only — not legal advice. Always include disclaimer in responses.",
+        auth: { type: "none" },
+        api: {
+          type: "openapi",
+          url: "https://mcp.ssw-compass.jp/.well-known/openapi.json",
+        },
+        logo_url:
+          "https://raw.githubusercontent.com/sugukurukabe/ssw-compass/main/assets/logo/ssw-compass-icon-512.png",
+        contact_email: "a_kabe@sugu-kuru.co.jp",
+        legal_info_url: "https://mcp.ssw-compass.jp/privacy",
+      });
+  });
+
   // Privacy policy endpoint (trilingual drafts in docs/privacy/)
   app.get("/privacy", (_req: Request, res: Response) => {
     res
