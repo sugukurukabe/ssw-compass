@@ -30,14 +30,12 @@ resource "google_storage_bucket" "audit_7y" {
   }
 }
 
-# Grant Cloud Logging service account write access to the bucket.
-resource "google_storage_bucket_iam_member" "logging_writer" {
-  bucket = google_storage_bucket.audit_7y.name
-  role   = "roles/storage.objectCreator"
-  member = "serviceAccount:${var.logging_sa_email}"
-}
-
 # Cloud Logging sink: export all audit_event log entries to the GCS bucket.
+# unique_writer_identity=true creates a per-sink SA automatically.
+# The sink's writer_identity is bound to the bucket below (sink_writer).
+# No separate "logging_writer" IAM binding is required — sink_writer is sufficient.
+# (Rationale: when unique_writer_identity=true the auto-created per-sink SA,
+#  not the global Cloud Logging SA, writes to GCS. ADR-015.)
 resource "google_logging_project_sink" "audit_sink" {
   project                = var.project_id
   name                   = "ssw-audit-to-gcs"

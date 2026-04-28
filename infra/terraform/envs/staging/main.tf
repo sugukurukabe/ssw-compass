@@ -145,10 +145,8 @@ module "audit_log" {
   project_id  = var.project_id
   bucket_name = "ssw-compass-audit-7y"
   env         = "staging"
-  # Cloud Logging service account for this project.
-  # Obtain with: gcloud logging sinks describe _Default --project=PROJECT --format='value(writerIdentity)'
-  # Placeholder — set before terraform apply. See ADR-015 §Consequences.
-  logging_sa_email = var.audit_logging_sa_email
+  # No logging_sa_email needed: unique_writer_identity=true auto-creates a per-sink SA.
+  # The sink_writer IAM binding is handled inside the module. (ADR-015)
 
   depends_on = [google_project_service.enabled]
 }

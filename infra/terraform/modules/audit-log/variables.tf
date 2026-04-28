@@ -20,10 +20,9 @@ variable "retention_seconds" {
   }
 }
 
-variable "logging_sa_email" {
-  description = "Cloud Logging service account email granted objectCreator on the bucket."
-  type        = string
-}
+# logging_sa_email removed: unique_writer_identity=true creates a per-sink SA
+# automatically. The sink_writer IAM binding handles bucket access.
+# See ADR-015 and infra/terraform/modules/audit-log/main.tf comments.
 
 variable "env" {
   description = "Environment label (staging/prod/shared)"

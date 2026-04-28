@@ -22,8 +22,5 @@ variable "github_repo" {
   default     = "sugukurukabe/ssw-compass"
 }
 
-variable "audit_logging_sa_email" {
-  description = "Cloud Logging service account email granted write access to the audit GCS bucket (ADR-015). Obtain with: gcloud logging sinks describe _Default --project=PROJECT --format='value(writerIdentity)'"
-  type        = string
-  default     = "" # Set in terraform.tfvars or via -var flag before applying module.audit_log
-}
+# audit_logging_sa_email removed: module.audit_log no longer requires it.
+# unique_writer_identity=true in the sink auto-creates the SA. (ADR-015)
