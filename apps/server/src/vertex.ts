@@ -182,7 +182,12 @@ function resultToChunk(result: SearchResult): GroundedChunk | null {
   const derived = doc.derivedStructData ?? undefined;
   const struct = doc.structData ?? undefined;
 
-  const link = getStringField(derived, "link") ?? getStringField(struct, "uri");
+  const link =
+    getStringField(derived, "link") ??
+    getStringField(struct, "uri") ??
+    // ingest-sources.ts stores the primary source URL as structData.url.
+    // Discovery Engine may not populate derivedStructData.link for all imported docs.
+    getStringField(struct, "url");
   if (link === undefined) return null;
 
   const title = getStringField(derived, "title") ?? getStringField(struct, "title") ?? "(no title)";
