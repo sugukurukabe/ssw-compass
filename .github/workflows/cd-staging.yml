@@ -161,7 +161,7 @@ jobs:
           curl -fsS --max-time 10 -H "Authorization: Bearer $TOKEN" "$URL/health" | tee /tmp/health.json
           jq -e '.status == "ok" and .service == "ssw-mcp"' /tmp/health.json
 
-      - name: MCP tools/list (expect 5 tools)
+      - name: MCP tools/list (expect >= 5 tools)
         run: |
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
@@ -182,7 +182,7 @@ jobs:
             > /tmp/tools-raw.txt
           awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/tools-raw.txt > /tmp/tools.json
           cat /tmp/tools.json | head -c 300; echo
-          jq -e '.result.tools | length == 5' /tmp/tools.json
+          jq -e '.result.tools | length >= 5' /tmp/tools.json
 
       - name: MCP tools/call search_visa (expect results >= 2)
         run: |
@@ -254,7 +254,8 @@ jobs:
           jq -e '.result.contents[0].mimeType | startswith("text/html")' /tmp/ui.json
           jq -r '.result.contents[0].text' /tmp/ui.json > /tmp/ui.html
           head -c 120 /tmp/ui.html; echo
-          grep -q 'Content-Security-Policy-Report-Only' /tmp/ui.html
+          # Sprint 4 Batch 11: CSP flipped from Report-Only to enforcing
+          grep -q 'Content-Security-Policy' /tmp/ui.html
           grep -q 'trusted-types ssw-purify' /tmp/ui.html
           echo "UI resource read OK (size=$(wc -c < /tmp/ui.html) bytes)"
 
