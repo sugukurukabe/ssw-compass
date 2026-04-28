@@ -222,6 +222,21 @@ jobs:
           TOKEN="${{ steps.id-token.outputs.id_token }}"
           curl -fsS -H "Authorization: Bearer $TOKEN" "$URL/.well-known/mcp.json" | tee /tmp/card.json
           jq -e '.name == "SSW Compass"' /tmp/card.json
+          jq -e '.license == "Apache-2.0"' /tmp/card.json
+          jq -e '.privacyPolicy == "https://mcp.ssw-compass.jp/privacy"' /tmp/card.json
+          jq -e '.termsOfService == "https://mcp.ssw-compass.jp/privacy"' /tmp/card.json
+
+      - name: Submission endpoints (/privacy + ai-plugin + openapi)
+        run: |
+          set -euo pipefail
+          URL="${{ needs.deploy.outputs.service_url }}"
+          TOKEN="${{ steps.id-token.outputs.id_token }}"
+          curl -fsS -H "Authorization: Bearer $TOKEN" "$URL/privacy" | tee /tmp/privacy.txt
+          grep -q 'SSW Compass Privacy Policy' /tmp/privacy.txt
+          curl -fsS -H "Authorization: Bearer $TOKEN" "$URL/.well-known/ai-plugin.json" | tee /tmp/ai-plugin.json
+          jq -e '.name_for_human == "SSW Compass Japan"' /tmp/ai-plugin.json
+          curl -fsS -H "Authorization: Bearer $TOKEN" "$URL/.well-known/openapi.json" | tee /tmp/openapi.json
+          jq -e '.openapi == "3.1.0"' /tmp/openapi.json
 
       - name: MCP resources/read ui://ssw-search/mcp-app.html (Batch 7 UI dist)
         run: |
@@ -269,6 +284,9 @@ jobs:
             /tmp/tools.json
             /tmp/search.json
             /tmp/card.json
+            /tmp/privacy.txt
+            /tmp/ai-plugin.json
+            /tmp/openapi.json
             /tmp/ui.json
             /tmp/ui.html
           if-no-files-found: warn

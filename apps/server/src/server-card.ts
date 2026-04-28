@@ -67,8 +67,9 @@ const SERVER_CARD: ServerCard = {
     tasks: false,
     prompts: false,
   },
-  // ADR-013: JWT bearer auth for Pro tier; anonymous = Free tier
-  auth: { type: "bearer" },
+  // Free connector submission path: anonymous access is available.
+  // Pro-only tools enforce JWT/HITL at call time (ADR-013/014).
+  auth: { type: "none" },
   compliance: {
     dataResidency: "JP",
     certifications: ["P-Mark-roadmap"],
@@ -80,6 +81,7 @@ const SERVER_CARD: ServerCard = {
     "Does not perform legal representation under Japanese 行政書士法 §19-1.",
     "Does not accept personal identifiers as input.",
     "Does not generate or file government documents.",
+    "Pro-only document approval workflows require gyoseishoshi authentication and are not available to anonymous Free users.",
     "Vertex AI Search currently in fixture mode — real content requires Batch 5 flip.",
   ],
   license: "Apache-2.0",

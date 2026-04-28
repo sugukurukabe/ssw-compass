@@ -1,4 +1,5 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { SswCompassToolAnnotation } from "@ssw/shared-types";
 import { validateToolAnnotations } from "./hitl/validate-annotations.js";
 import { registerChecklistSchemaTool } from "./tools/_internal/checklist-schema.js";
 import {
@@ -27,6 +28,42 @@ const SERVER_INFO = {
   version: "1.0.0",
 } as const;
 
+const LIST_LAW_UPDATES_ANNOTATION: SswCompassToolAnnotation = {
+  readOnlyHint: true,
+  idempotentHint: true,
+  openWorldHint: false,
+  destructiveHint: false,
+  title: "List Japanese visa law updates",
+  legalLevel: "L0",
+  requiresGyoseishoshiAuth: false,
+  hitlControls: ["H07_PII_AUTO_MASKING", "H10_LAW_AUTO_UPDATE"],
+  tier: "free",
+};
+
+const SUBMIT_GYOSEISHOSHI_APPROVAL_ANNOTATION: SswCompassToolAnnotation = {
+  readOnlyHint: false,
+  idempotentHint: true,
+  openWorldHint: false,
+  destructiveHint: false,
+  title: "Submit gyoseishoshi draft approval",
+  legalLevel: "L2",
+  requiresGyoseishoshiAuth: true,
+  hitlControls: ["H01_DRAFT_LOCKGATE", "H03_GYOSEISHOSHI_APPROVAL", "H04_AUDIT_LOG_7Y"],
+  tier: "pro",
+};
+
+const VALIDATE_ZAIRYU_COMPATIBILITY_ANNOTATION: SswCompassToolAnnotation = {
+  readOnlyHint: true,
+  idempotentHint: true,
+  openWorldHint: false,
+  destructiveHint: false,
+  title: "Validate zairyu status compatibility",
+  legalLevel: "L1",
+  requiresGyoseishoshiAuth: false,
+  hitlControls: ["H06_ILLEGAL_WORK_ALERT", "H07_PII_AUTO_MASKING"],
+  tier: "free",
+};
+
 export function createMcpServer(): McpServer {
   const server = new McpServer(SERVER_INFO, {
     capabilities: {
@@ -50,6 +87,13 @@ export function createMcpServer(): McpServer {
     "制度変動フィードを返す。行政書士法改正・入管法改正・手数料改定などの最新情報を提供する。" +
       "Return law updates feed: gyoseishoshi law revisions, immigration act changes, fee revisions, etc.",
     {},
+    {
+      title: LIST_LAW_UPDATES_ANNOTATION.title,
+      readOnlyHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
     listLawUpdatesHandler,
   );
 
@@ -59,6 +103,13 @@ export function createMcpServer(): McpServer {
     "行政書士が書類ドラフトを最終承認する。改正行政書士法§19 に基づき Pro + 行政書士認証が必須。" +
       "Gyoseishoshi final approval for a draft document. Requires Pro + gyoseishoshi auth per §19.",
     {},
+    {
+      title: SUBMIT_GYOSEISHOSHI_APPROVAL_ANNOTATION.title,
+      readOnlyHint: false,
+      idempotentHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
     submitGyoseishoshiApprovalHandler,
   );
 
@@ -68,6 +119,13 @@ export function createMcpServer(): McpServer {
     "在留資格と想定就労の適合性を判定する (H06 不法就労判定アラート)。" +
       "Validate compatibility between residence status and intended employment (H06 illegal work alert).",
     {},
+    {
+      title: VALIDATE_ZAIRYU_COMPATIBILITY_ANNOTATION.title,
+      readOnlyHint: true,
+      idempotentHint: true,
+      openWorldHint: false,
+      destructiveHint: false,
+    },
     validateZairyuCompatibilityHandler,
   );
 
@@ -81,6 +139,12 @@ export function createMcpServer(): McpServer {
     { name: "classify_procedure", annotations: CLASSIFY_PROCEDURE_ANNOTATION },
     { name: "get_deadline_timeline", annotations: GET_DEADLINE_TIMELINE_ANNOTATION },
     { name: "list_visa_documents", annotations: LIST_VISA_DOCUMENTS_ANNOTATION },
+    { name: "list_law_updates", annotations: LIST_LAW_UPDATES_ANNOTATION },
+    { name: "submit_gyoseishoshi_approval", annotations: SUBMIT_GYOSEISHOSHI_APPROVAL_ANNOTATION },
+    {
+      name: "validate_zairyu_compatibility",
+      annotations: VALIDATE_ZAIRYU_COMPATIBILITY_ANNOTATION,
+    },
   ]);
 
   return server;
