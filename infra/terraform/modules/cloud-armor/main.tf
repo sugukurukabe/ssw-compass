@@ -6,7 +6,8 @@ resource "google_compute_security_policy" "this" {
   description = "SSW Compass ${var.env} multi-layer WAF — rate limit + geo-block + RFC1918 egress block. Standard edition (ADR-012)."
   type        = "CLOUD_ARMOR"
 
-  # Priority 500 — geo-block high-risk countries.
+  # Priority 500 — geo-block high-risk countries. Cloud Armor CEL
+  # does not support the `in [...]` operator; use chained `==`.
   rule {
     action      = "deny(403)"
     priority    = 500
@@ -14,7 +15,7 @@ resource "google_compute_security_policy" "this" {
 
     match {
       expr {
-        expression = "origin.region_code in ['CN', 'RU', 'KP', 'IR']"
+        expression = "origin.region_code == 'CN' || origin.region_code == 'RU' || origin.region_code == 'KP' || origin.region_code == 'IR'"
       }
     }
   }
