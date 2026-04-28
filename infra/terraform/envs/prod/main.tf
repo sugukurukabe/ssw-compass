@@ -66,15 +66,20 @@ module "vpc_egress" {
   source     = "../../modules/vpc-egress"
   project_id = var.project_id
   region     = var.region
-  enabled    = true # same VPC + NAT configuration as staging
+  enabled    = true
   env        = "prod"
+  # Use prod-specific names to avoid 409 conflict with staging resources
+  # (both staging and prod share the same GCP project ssw-compass-prod-494613)
+  network_name = "ssw-vpc-prod"
 }
 
 module "cloud_armor" {
   source     = "../../modules/cloud-armor"
   project_id = var.project_id
-  enabled    = true # policy defined; attached to LB below
+  enabled    = true
   env        = "prod"
+  # Use prod-specific policy name to avoid 409 conflict with staging's ssw-waf-policy
+  policy_name = "ssw-waf-policy-prod"
 }
 
 # Global HTTPS LB + Cloud Armor attach (ADR-012 §Decision 1)
