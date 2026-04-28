@@ -48,12 +48,14 @@ export interface ServerCard {
 
 const SERVER_CARD: ServerCard = {
   name: "SSW Compass",
-  version: "1.0.0",
+  version: "4.0.0", // Sprint 4 — 7 tools, Free/Pro/Business tiers, 10-language
   description:
-    "Official-source-grounded informational app for Japanese specified-skilled-worker (SSW / 特定技能) and related visa procedures. Information only — does not constitute legal advice.",
+    "Official-source-grounded informational app for Japanese specified-skilled-worker (SSW / 特定技能) and related visa procedures. " +
+    "Freemium: search, deadline tracking, law updates (Free); document generation, approval workflow (Pro). " +
+    "Information only — does not constitute legal advice.",
   publisher: {
     name: "スグクル株式会社",
-    url: "https://sugu-kuru.co.jp",
+    url: "https://mcp.ssw-compass.jp", // ADR-012: prod URL (Batch 11)
   },
   capabilities: {
     tools: true,
@@ -62,7 +64,8 @@ const SERVER_CARD: ServerCard = {
     tasks: false,
     prompts: false,
   },
-  auth: { type: "none" },
+  // ADR-013: JWT bearer auth for Pro tier; anonymous = Free tier
+  auth: { type: "bearer" },
   compliance: {
     dataResidency: "JP",
     certifications: ["P-Mark-roadmap"],

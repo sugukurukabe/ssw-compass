@@ -15,3 +15,9 @@ variable "runtime_sa_email" {
   type        = string
   default     = "ssw-runtime@ssw-compass-prod-494613.iam.gserviceaccount.com"
 }
+
+variable "audit_logging_sa_email" {
+  description = "Cloud Logging SA for audit-log GCS sink (ADR-015). Obtain with: gcloud logging sinks describe _Default --project=PROJECT --format='value(writerIdentity)'"
+  type        = string
+  default     = "" # Set in terraform.tfvars or via -var flag before applying module.audit_log
+}
