@@ -16,20 +16,20 @@ attorney for individual cases, and the pipeline blocks personal identifiers
 
 ## Status
 
-**Sprint 3 complete.** Production-grade infrastructure in place:
+**Sprint 4 complete.** Production deployed and live at **https://mcp.ssw-compass.jp**:
 
-- staging Cloud Run service deployed with IAM-gated access
-- VPC-egress-pinned (Cloud NAT static IP)
-- 4 UI Resources bundled in the container image
-- Output sanitizer active; Cloud DLP 2nd stage implemented (gated off
-  on staging pending Sprint 4 sensitivity tuning)
-- Hash-based CSP with Trusted Types (Report-Only rollout window)
-- Cloud Armor security policy defined, pending Sprint 4 attach
+- **7 tools** (search, classify, deadline, docs, law_updates, approval, zairyu)
+- **10 languages** (ja/en/id full Vertex grounding; 7 others disclaimer-only)
+- **Freemium tiers**: Free (anonymous) / Pro (JWT) / Business (Sprint 5+)
+- **HITL 12 controls** (H01 L2 lockgate, H04 7-year audit log, H06 illegal-work alert, H07 PII guard)
+- **CSP enforcing** (Trusted Types + hash-based)
+- **Global HTTPS LB** + **Cloud Armor WAF** (`ssw-waf-policy-prod`)
+- **GCS audit bucket** (`gs://ssw-compass-audit-7y`, 7-year WORM)
 
-**Sprint 4 (in planning, June 2026)**: Vertex AI Search content
-(gyoseishoshi-supervised), custom domain `mcp.ssw-compass.jp`,
-Cloud Armor + Cloudflare attach, and Connectors Directory
-submission packet.
+**Sprint 5 Phase A (next)**: Logo, screenshots, demo video × 3 lang,
+privacy policy (gyoseishoshi review), license decision, Connectors Directory submission.
+
+**Sprint 5 Phase B**: Vertex AI Search real flip, 6-host verification, Cloudflare migration.
 
 For staging URL discovery (developer access only):
 
@@ -38,8 +38,8 @@ gcloud run services describe ssw-mcp-staging \
   --region=asia-northeast1 --format='value(status.url)'
 ```
 
-See [docs/sprints/sprint-3-summary.md](docs/sprints/sprint-3-summary.md) for the full
-Sprint 3 retrospective.
+See [docs/sprints/sprint-4-summary.md](docs/sprints/sprint-4-summary.md) for the full
+Sprint 4 retrospective.
 
 ## Quick start (local development)
 
