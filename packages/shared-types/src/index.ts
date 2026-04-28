@@ -97,5 +97,15 @@ export type {
   ListLawUpdatesOutput as ListLawUpdatesOutputType,
 } from "./tools/list-law-updates.js";
 export { ListLawUpdatesInput, ListLawUpdatesOutput } from "./tools/list-law-updates.js";
+export type {
+  DocumentOutputFormat as DocumentOutputFormatType,
+  ListVisaDocumentsInputV4 as ListVisaDocumentsInputV4Type,
+} from "./tools/list-visa-documents-v4.js";
+export {
+  DocumentOutputFormat,
+  effectiveLegalLevel,
+  HTML_PREVIEW_WATERMARK,
+  ListVisaDocumentsInputV4,
+} from "./tools/list-visa-documents-v4.js";
 export type { SearchVisaInputV4 as SearchVisaInputV4Type } from "./tools/search-visa-v4.js";
 export { SearchVisaInputV4 } from "./tools/search-visa-v4.js";

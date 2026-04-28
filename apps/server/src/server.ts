@@ -11,6 +11,7 @@ import {
   registerGetDeadlineTimelineTool,
 } from "./tools/get-deadline-timeline/index.js";
 import { registerGetDeadlineTimelineUiResource } from "./tools/get-deadline-timeline/ui.js";
+import { listLawUpdatesHandler } from "./tools/list-law-updates/handler.js";
 import {
   LIST_VISA_DOCUMENTS_ANNOTATION,
   registerListVisaDocumentsTool,
@@ -40,6 +41,15 @@ export function createMcpServer(): McpServer {
   registerListVisaDocumentsTool(server);
   registerListVisaDocumentsUiResource(server);
   registerChecklistSchemaTool(server);
+
+  // Batch 9: list_law_updates (L0, Free)
+  server.tool(
+    "list_law_updates",
+    "制度変動フィードを返す。行政書士法改正・入管法改正・手数料改定などの最新情報を提供する。" +
+      "Return law updates feed: gyoseishoshi law revisions, immigration act changes, fee revisions, etc.",
+    {},
+    listLawUpdatesHandler,
+  );
 
   // ADR-014 §5: validate all registered tool annotations at startup.
   // The annotation objects are exported from each tool registration file
