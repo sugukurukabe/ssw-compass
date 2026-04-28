@@ -13,7 +13,7 @@ module "cloud_run" {
   max_instances         = 20
   min_instances         = 0
   concurrency           = 80
-  ingress               = "INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER"
+  ingress               = "INGRESS_TRAFFIC_ALL" # Batch 6: opened post-Cloud-Armor definition; auth still required
   allow_unauthenticated = false
   env                   = "prod"
   env_vars = {

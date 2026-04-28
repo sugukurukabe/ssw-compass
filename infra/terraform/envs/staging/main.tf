@@ -87,7 +87,7 @@ module "cloud_run" {
   min_instances         = 0
   concurrency           = 80
   ingress               = "INGRESS_TRAFFIC_ALL"
-  allow_unauthenticated = true
+  allow_unauthenticated = false # Batch 6: ADR-009 §6 mitigation #1 enforced — staging close-public
   env                   = "staging"
   env_vars = {
     SSW_ENV          = "staging"
