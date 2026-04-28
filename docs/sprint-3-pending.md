@@ -163,56 +163,10 @@ flipping the flag activates it without any further pattern work.
   in Cloud Logging after Sprint 3 deploy; tune patterns if the
   false-positive rate on primary-source `*.go.jp` content exceeds 1 %.
 
-## Vertex AI Search 実接続 (Sprint 2 で着手、Sprint 3 で本番化)
+## source-index.jsonl SHA-256 population and 50+ expansion
 
-**Discovery:**
-
-```bash
-grep -rn 'fixture' --include='*.ts' apps/server/src/vertex.ts
-```
-
-**Expected result at Sprint 2 close (verified 2026-04-27):**
-
-```
-apps/server/src/vertex.ts:7: * - "fixture" (default): returns hardcoded primary_source entries from
-apps/server/src/vertex.ts:14: *   any one throws immediately (silent fallback to fixture is rejected
-apps/server/src/vertex.ts:48:type VertexMode = "fixture" | "real";
-apps/server/src/vertex.ts:77:  return raw === "real" ? "real" : "fixture";
-apps/server/src/vertex.ts:105:        "Set them or switch back to SSW_VERTEX_MODE=fixture for local development.",
-apps/server/src/vertex.ts:118:async function fixtureSearch(args: VertexSearchArgs): Promise<VertexSearchResult> {
-apps/server/src/vertex.ts:257:  if (mode === "fixture") {
-apps/server/src/vertex.ts:258:    return fixtureSearch(args);
-```
-
-8 hits. Sprint 1 shipped a single-line docstring stub; Sprint 2 Batch 6
-landed real-dispatch per [ADR-006](./adr/ADR-006-vertex-fixture-real-dispatch.md),
-so the file now contains both the `"fixture" | "real"` discriminator
-type, the runtime switch at line 257–258, and the module docstring
-contrast (fixture as default, real gated on `SSW_VERTEX_MODE=real`).
-The `fixtureSearch` function body is retained for local development
-and offline test runs — it is not dead code and must not be removed
-in Sprint 3.
-
-**Resolution plan:**
-
-Sprint 2 "initial wiring" is **complete** (ADR-006). The only remaining
-Sprint 3 work is the production-hardening half:
-
-- Add egress controls: VPC connector + Cloud NAT static IP +
-  application-layer URL allowlist (`safeFetch`) per v3 §23.2.
-- Add retriever / writer separation per v2 §10 for content integrity
-  (prevents the writer role from poisoning the retrieved index).
-- Verify the output sanitizer (see previous section) runs between
-  `vertexSearch` and the structured response before Sprint 3 close.
-- Flip the production default from `fixture` to `real` by setting
-  `SSW_VERTEX_MODE=real` in the Cloud Run service spec (Batch 3),
-  keeping `fixture` as the local-dev default to avoid accidental
-  Vertex calls from `pnpm dev`.
-- Exit criterion: `SSW_VERTEX_MODE=real` run of the vitest suite
-  against real data stores returns non-empty results with
-  `confidence >= 0.7` on the canonical test queries.
-
-## source-index.jsonl expansion to 50+ entries + real SHA-256 population
+**Status (Sprint 3 Batch 4 close):** migrated to Sprint 4 per
+[ADR-010 Path B](./adr/ADR-010-vertex-ingestion-failure-mode.md).
 
 **Discovery:**
 
@@ -221,27 +175,47 @@ wc -l data/source-index.jsonl
 grep -c '"contentSha256":"__PLACEHOLDER__"' data/source-index.jsonl
 ```
 
-**Expected result at Sprint 2 close (verified 2026-04-27):**
+**Status 2026-04-28 (Batch 4 close):**
 
 ```
 40 data/source-index.jsonl
-40
+40   # all contentSha256 still __PLACEHOLDER__ (Path B: no Sprint 3 edits)
 ```
 
-40 entries total, all with `contentSha256: "__PLACEHOLDER__"`. Sprint 2
-Batch 6 shipped the seed at 40; Sprint 2 kickoff targeted 50+.
+Batch 4 Day 1 created the three Discovery Engine data stores via
+Terraform (`visa_legal` / `visa_faq` / `visa_secondary`) and bound
+`roles/discoveryengine.viewer` to `ssw-runtime`. Batch 4 Day 2
+shipped [scripts/ingest-sources.ts](../scripts/ingest-sources.ts)
+with full `--dry-run` / `--filter` / `--mode` flags.
 
-**Resolution plan (Sprint 3):**
+A URL health dry-run at Batch 4 Day 2 found 12 of the 40 seeds
+(30 %) dead — including the only `visa_faq` entry — which exceeded
+the 28 % threshold we had adopted for Sprint-3 full ingest. Rather
+than band-aid the seeds unilaterally the work migrates to Sprint 4
+Phase 1 where the retained gyoseishoshi drives the URL cleanup +
+50+ expansion in one sitting. Report at
+[data/url-health-report.2026-04-27.md](../data/url-health-report.2026-04-27.md).
 
-- Add the remaining 10+ entries from the gyoseishoshi monthly review cadence
-  once each real URL is verified (deep-link level, not just ministry-top).
-- Implement the ingest pipeline that reads `data/source-index.jsonl`,
-  fetches each URL, computes SHA-256 of the normalised body, and replaces
-  the `__PLACEHOLDER__` value in place via a commit.
-- Pair with Terraform data store provisioning
-  (`visa_legal` / `visa_faq` / `visa_secondary`) per v2 §10.
-- Sprint 3 close exit criterion: the second grep above should return
-  `0` (all placeholders replaced with real hashes).
+**What Sprint 3 already delivered toward this goal:**
+
+- Discovery Engine data stores 3 × in `asia-northeast1`
+  / `default_collection` (apply-complete, empty).
+- `ssw-runtime` BYOSA bound to `roles/discoveryengine.viewer`.
+- [scripts/ingest-sources.ts](../scripts/ingest-sources.ts) with
+  retry policy per ADR-010 §3.
+- ADR-010 retry / dedup / rollback policy documented.
+- Baseline health report at
+  [data/url-health-report.2026-04-27.md](../data/url-health-report.2026-04-27.md).
+
+**Exit criterion (moved to Sprint 4):**
+
+- `grep -c '"contentSha256":"__PLACEHOLDER__"' data/source-index.jsonl` = 0
+- `wc -l data/source-index.jsonl` ≥ 50
+- `visa_faq` data store has ≥ 10 entries
+- Each 特定技能分野 has ≥ 2 entries across data stores
+- Staging `SSW_VERTEX_MODE=real` smoke passes for each tool
+
+Tracking in [docs/sprint-4-pending.md](./sprint-4-pending.md) Phase 1.
 
 ## SSW logo finalize (Sprint 3 / 4)
 
