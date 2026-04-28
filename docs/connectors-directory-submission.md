@@ -101,6 +101,7 @@ Sprint 5 後半で追加予定。基本情報は Anthropic と同一。
 - [ ] Vertex real mode (fixture mode は審査で問題になりうる — B1 完了が prerequisite)
 - [x] `/.well-known/ai-plugin.json` returns 200 JSON
 - [x] `/.well-known/openapi.json` returns 200 JSON
+- [x] Internal helper `_ssw_checklist_schema` removed from public tools/list
 
 ### コンテンツ要件 (行政書士監修後)
 

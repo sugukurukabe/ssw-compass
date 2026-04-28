@@ -12,14 +12,14 @@
 | `list_law_updates` | Yes | Read-only | Free anonymous | L0 | Law update fixture entries, source URLs, disclaimer | Fixture data from primary sources |
 | `validate_zairyu_compatibility` | Yes | Read-only | Free anonymous | L1 | Compatibility result, legal basis, recommendation | H06 illegal-work alert; information only |
 | `submit_gyoseishoshi_approval` | Yes, but Pro-only | Write-like audit event | Pro + gyoseishoshi_verified JWT | L2 | Approval result, audit event recorded flag | Anonymous users are blocked by H01 lockgate |
-| `_ssw_checklist_schema` | Internal helper | Read-only | UI only | Internal | UI column order | Marked `[INTERNAL]`; hosts may still show it in tools/list |
+| `_ssw_checklist_schema` | Removed from public registration | — | — | Internal | UI column order | Removed from `createMcpServer()` before directory submission to avoid exposing internal helper |
 
 ## Review notes
 
 - All tools include `readOnlyHint` or `destructiveHint` annotations.
 - All public Free tools are side-effect-free.
 - `submit_gyoseishoshi_approval` writes an audit event and is intentionally Pro-only; it must not be presented as a general Free tool.
-- `_ssw_checklist_schema` is an internal UI helper. If Anthropic requires no internal tools in public `tools/list`, hide or remove it before final submission.
+- `_ssw_checklist_schema` was removed from public registration before final submission readiness work. This avoids exposing internal UI helper tools to directory reviewers.
 
 ## Data minimization
 
