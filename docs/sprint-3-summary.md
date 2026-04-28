@@ -224,8 +224,21 @@ git grep -iE 'ssw-mcp-(staging|prod)-[a-z0-9]+[-.][a-z0-9-]+\.(a\.)?run\.app' \
 # main commits at Sprint 3 close (expected value; may grow between
 # Sprint 3 closure and Sprint 4 kickoff as minor doc PRs land)
 git rev-list --count main
-# → 72 at the exact Batch 8 close commit; incrementally higher thereafter
+# → 73 at the exact Batch 8 close commit; incrementally higher thereafter
 ```
+
+### Closure snapshot — executed at Batch 8 close
+
+Captured 2026-04-28 on commit hash *recorded at merge time*:
+
+| Grep | Expected | Actual |
+|---|---:|---:|
+| `TODO(sprint-3)` source | 0 | **0** ✓ |
+| Sprint-3 ADRs (008 / 009 / 010 / 012) | 4 | **4** ✓ (ADR-011 reserved in Sprint 4) |
+| URL leak | 0 | **0** ✓ |
+| main commits | 73 (±1 per merge-commit counting) | updated post-merge |
+
+All invariants hold. Sprint 3 is closed.
 
 ## Sprint 4 pointer
 

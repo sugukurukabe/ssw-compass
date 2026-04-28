@@ -7,6 +7,17 @@ description: SSW の Cloud Run / Terraform / WIF デプロイ手順
 このルールは @deployment-checklist で明示メンションした時のみ参照する。
 Sprint 1 後半 〜 Sprint 4 のデプロイ作業時の手順書。
 
+> **Sprint 3 close (2026-04-28) 時点の status**: このファイルは Sprint 1 期の
+> "before-TF-adoption" 視点で書かれた cheatsheet。**Sprint 3 以降は**
+> [docs/deploy-runbook.md](../../docs/deploy-runbook.md) と
+> [ADR-009](../../docs/adr/ADR-009-terraform-foundation.md) /
+> [ADR-012](../../docs/adr/ADR-012-egress-and-public-exposure.md) が
+> authoritative。ここに書かれた `gcloud services enable ...` の手動手順は
+> Terraform `local.enabled_apis` に統合済み、`gcloud iam service-accounts
+> create ssw-deploy ...` 等も `modules/service-account` + `modules/
+> workload-identity-federation` に TF 化されている。このファイルは **歴史
+> 参照用** として残存、Sprint 1 期の設計文脈を読む際に参照。
+
 ## GCP 前提リソース (Sprint 1 で 1 度だけ作成)
 
 ### 1. プロジェクト設定
