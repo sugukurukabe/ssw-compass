@@ -52,15 +52,9 @@ transfer, DLP reject for 要配慮個人情報, §73-2 illegal-employment probe 
 Publish at `/privacy` endpoint (Cloud Run) + docs/privacy/ for version tracking.
 Link from Server Card `limitations[]`.
 
-### A5. License selection (business decision)
+### ~~A5. License~~ ✅ 完了 (2026-04-29)
 
-Candidates: Apache-2.0 / MIT / proprietary.
-
-Actions when decided:
-1. `LICENSE` file commit (root)
-2. root `package.json` + all workspace `package.json` の `license` field 更新
-3. `README.md` License セクション更新
-4. Server Card `publisher.url` に license URL 追加 (Batch 11 で server-card.ts 更新済み)
+Apache-2.0 に決定。LICENSE ファイル / 全 package.json / server-card.ts 更新済み。
 
 ### A6. Anthropic Connectors Directory 提出
 
@@ -84,23 +78,20 @@ Actions when decided:
 - `SSW_VERTEX_MODE=real` staging + prod flip
 - 新スモーク: `search_visa` が ingested URL を返すこと確認
 
-### B2. DLP re-enable (prod)
+### ~~B2. DLP re-enable~~ ✅ 完了 (2026-04-29)
 
-- Diagnose: `ssw-runtime` SA の `roles/dlp.user` binding 確認
-- `gcloud projects get-iam-policy ssw-compass-prod-494613 --format=json | jq '.bindings[] | select(.role=="roles/dlp.user")'`
-- 問題なければ `DLP_ENABLED=true` に戻し + prod terraform apply
-- sprint-5-pending.md §B2 を削除
+IAM confirmed OK。ZAIRYU_CARD_NUMBER の infoType/customInfoType 混在バグも修正済み。
+DLP_ENABLED=true で prod 稼働中。
 
 ### B3. 6-host manual verification (G3 残課題)
 
 Sprint 4 G3 は未達 (prod が Sprint 4 末に確定したため)。
-`mcp.ssw-compass.jp` で Claude Desktop + Claude Web の 2-host 実施。
+手順書: `docs/6-host-verification-sprint5.md`
+`mcp.ssw-compass.jp` で Claude Desktop + Claude Web の 2-host 実施 (認証不要 Free tier)。
 
-### B4. fetchAuditEvents 実装
+### ~~B4. fetchAuditEvents~~ ✅ 完了 (2026-04-29)
 
-- `apps/server/package.json` に `@google-cloud/logging` 追加
-- `apps/server/src/audit/writer.ts` の stub を Cloud Logging API で実装
-- integration test (opt-in): `SSW_AUDIT_INTEGRATION_TEST=1`
+`@google-cloud/logging` 追加 + dynamic import で実装済み。
 
 ### B5. Cloudflare 移行
 
@@ -108,11 +99,10 @@ Sprint 4 G3 は未達 (prod が Sprint 4 末に確定したため)。
 - Cloudflare: A record proxied ON + WAF managed rules + Bot Fight Mode
 - "Two-layer defence" ADR 起票 (Cloud Armor + Cloudflare)
 
-### B6. Node.js actions upgrade
+### ~~B6. Node.js actions upgrade~~ ✅ 完了 (2026-04-29)
 
-- CI/CD が Node.js 20 deprecation warning を出している
-- `actions/checkout@v4` → `@v5`、`google-github-actions/*@v2` → 最新
-- 2026-06-02 以降は Node.js 24 強制
+checkout@v5, auth@v3, setup-gcloud@v3 アップグレード済み。
+残り: setup-node@v4, pnpm/action-setup@v4 は現時点で最新版が Node 24 未対応のため保留。
 
 ---
 
