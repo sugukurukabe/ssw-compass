@@ -23,6 +23,10 @@ import { z } from "zod";
 
 const PROJECT_ID = process.env["CLOUDSDK_CORE_PROJECT"] ?? "ssw-compass-prod-494613";
 const LOCATION = "asia-northeast1";
+const DISCOVERY_ENGINE_API_ENDPOINT =
+  LOCATION === "global"
+    ? "discoveryengine.googleapis.com"
+    : `${LOCATION}-discoveryengine.googleapis.com`;
 const COLLECTION = "default_collection";
 const BRANCH = "0";
 const FETCH_TIMEOUT_MS = 15_000;
@@ -390,7 +394,9 @@ async function rewriteIndexWithHashes(
 
 async function main(): Promise<void> {
   const args = parseArgs(process.argv.slice(2));
-  console.log(`ssw-compass-ingest: project=${PROJECT_ID} location=${LOCATION}`);
+  console.log(
+    `ssw-compass-ingest: project=${PROJECT_ID} location=${LOCATION} endpoint=${DISCOVERY_ENGINE_API_ENDPOINT}`,
+  );
   console.log(`flags: dry-run=${args.dryRun} filter=${args.filter ?? "(none)"} mode=${args.mode}`);
 
   const allEntries = await readIndex();
@@ -422,7 +428,7 @@ async function main(): Promise<void> {
 
   console.log("");
   console.log("=== Calling Discovery Engine importDocuments ===");
-  const client = new DocumentServiceClient();
+  const client = new DocumentServiceClient({ apiEndpoint: DISCOVERY_ENGINE_API_ENDPOINT });
   let totalSuccess = 0;
   let totalFailed = 0;
   for (const [ds, items] of groupByDataStore(ok)) {
