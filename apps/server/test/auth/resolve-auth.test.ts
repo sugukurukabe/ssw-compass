@@ -9,7 +9,7 @@ import type { AuthContextType } from "@ssw/shared-types";
 import { ANONYMOUS_AUTH_CONTEXT } from "@ssw/shared-types";
 import type { NextFunction, Request, Response } from "express";
 import { describe, expect, it, vi } from "vitest";
-import { resolveAuth } from "../../src/auth/resolve-auth.js";
+import { type AuthedRequest, resolveAuth } from "../../src/auth/resolve-auth.js";
 import { __setTokenVerifierForTesting } from "../../src/auth/token-verifier.js";
 
 const PRO_CONTEXT: AuthContextType = {
@@ -25,7 +25,7 @@ function makeReq(authHeader?: string): Request {
   return {
     header: (name: string) => (name.toLowerCase() === "authorization" ? authHeader : undefined),
     authContext: undefined,
-  } as unknown as Request;
+  } as unknown as AuthedRequest;
 }
 
 function makeRes(): { res: Response; holder: { status: number | undefined; body: unknown } } {
@@ -55,7 +55,7 @@ describe("resolveAuth middleware", () => {
     const next = vi.fn() as NextFunction;
     await resolveAuth(req, res, next);
     expect(next).toHaveBeenCalledOnce();
-    expect(req.authContext).toEqual(ANONYMOUS_AUTH_CONTEXT);
+    expect((req as AuthedRequest).authContext).toEqual(ANONYMOUS_AUTH_CONTEXT);
   });
 
   it("valid Bearer token → Pro AuthContext attached, next() called", async () => {
