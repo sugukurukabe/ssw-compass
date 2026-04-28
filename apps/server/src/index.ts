@@ -2,6 +2,7 @@ import { randomUUID } from "node:crypto";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import type { Express, Request, Response } from "express";
 import express from "express";
+import { resolveAuth } from "./auth/resolve-auth.js";
 import { logger } from "./logger.js";
 import { createMcpServer } from "./server.js";
 import { buildServerCard } from "./server-card.js";
@@ -35,7 +36,10 @@ export function createApp(): Express {
       .json(buildServerCard());
   });
 
-  app.post("/mcp", async (req: Request, res: Response) => {
+  // ADR-013: resolveAuth resolves Free/Pro/Business tier from optional JWT.
+  // No token → anonymous Free. Invalid token → 401.
+  // Applied to POST /mcp only; health and .well-known remain public.
+  app.post("/mcp", resolveAuth, async (req: Request, res: Response) => {
     try {
       const sessionHeader = req.header(SESSION_HEADER);
       let transport: StreamableHTTPServerTransport | undefined;

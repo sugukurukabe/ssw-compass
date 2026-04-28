@@ -1,3 +1,12 @@
+export type {
+  AuthContext as AuthContextType,
+  AuthTier as AuthTierType,
+} from "./auth/AuthContext.js";
+export {
+  ANONYMOUS_AUTH_CONTEXT,
+  AuthContext,
+  AuthTier,
+} from "./auth/AuthContext.js";
 export {
   CLASSIFY_CURRENT_STATUS,
   CLASSIFY_INDUSTRY,

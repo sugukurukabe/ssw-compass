@@ -26,7 +26,13 @@ variable "runtime_sa_email" {
 }
 
 variable "env_vars" {
-  description = "Plain-text env vars (non-secret). Use secret_volumes for sensitive values."
+  description = "Plain-text env vars (non-secret). Use secret_env_vars for sensitive values."
+  type        = map(string)
+  default     = {}
+}
+
+variable "secret_env_vars" {
+  description = "Secret Manager secrets exposed as env vars. Map of env var name → secret name (without version). ADR-013: SSW_JWT_SECRET, future: other secrets."
   type        = map(string)
   default     = {}
 }
