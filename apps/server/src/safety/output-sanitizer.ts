@@ -2,7 +2,9 @@
  * Output sanitizer for retrieved snippets — defense against indirect prompt
  * injection per v3 §23.1. Pattern set is fully defined below.
  *
- * Sprint 3 Batch 5 activated: SANITIZATION_ACTIVE = true. All retrieved
+ * Sprint 3 Batch 5 activated: SANITIZATION_ACTIVE = true. ADR-011 (Sprint 4
+ * Batch 4) confirmed this pattern is correct and documented the known soft-hyphen
+ * weakness (CONTROL_CHARS runs last; Sprint 4 Phase 3 carry-over). All retrieved
  * snippets pass through the 4 pattern categories (INJECTION_PATTERNS,
  * SUSPICIOUS_URL, CODE_FENCE, CONTROL_CHARS) and any hit is replaced with
  * a neutralising marker + logged via `event: "retrieved_content_sanitized"`
