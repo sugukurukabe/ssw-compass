@@ -1,4 +1,4 @@
-import type { GetDeadlineTimelineOutput, SupportedLanguage } from "@ssw/shared-types";
+import type { GetDeadlineTimelineOutput, UILanguage } from "@ssw/shared-types";
 import DOMPurify from "dompurify";
 
 /**
@@ -70,7 +70,7 @@ function escapeAttr(s: string): string {
 
 export function render(
   result: GetDeadlineTimelineOutput,
-  lang: SupportedLanguage,
+  lang: UILanguage,
   rootEl: HTMLElement,
 ): void {
   const t = I18N[lang];

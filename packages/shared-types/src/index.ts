@@ -24,7 +24,8 @@ export {
   type ClassifyProcedureType,
   ProcedureLabelByLang,
 } from "./classify-procedure.js";
-export { DISCLAIMER_BY_LANG, type SupportedLanguage } from "./disclaimers.js";
+export { DISCLAIMER_BY_LANG } from "./disclaimers.js";
+export { TierLimitError } from "./errors/tier-limit.js";
 export {
   DEADLINE_KIND,
   DeadlineEntry,
@@ -42,6 +43,18 @@ export type {
   SswCompassToolAnnotation,
 } from "./hitl/HitlControl.js";
 export { HitlControlId, LegalLevel } from "./hitl/HitlControl.js";
+export type {
+  SupportedLanguage,
+  UILanguage,
+  VertexGroundedLanguage,
+} from "./i18n/supported-languages.js";
+export {
+  isVertexGrounded,
+  SUPPORTED_LANGUAGES,
+  toUILanguage,
+  UI_LANGUAGES,
+  VERTEX_GROUNDED_LANGUAGES,
+} from "./i18n/supported-languages.js";
 export type {
   AffectingRole as AffectingRoleType,
   ImpactSeverity as ImpactSeverityType,
@@ -73,8 +86,16 @@ export {
   SSW_INDUSTRIES_ACTIVE,
   type SswIndustry,
 } from "./ssw-industries.js";
+export type { GetDeadlineTimelineInputV4 as GetDeadlineTimelineInputV4Type } from "./tools/get-deadline-timeline-v4.js";
+export {
+  FREE_TIER_CASES_LIMIT,
+  GetDeadlineTimelineInputV4,
+  PRO_TIER_CASES_LIMIT,
+} from "./tools/get-deadline-timeline-v4.js";
 export type {
   ListLawUpdatesInput as ListLawUpdatesInputType,
   ListLawUpdatesOutput as ListLawUpdatesOutputType,
 } from "./tools/list-law-updates.js";
 export { ListLawUpdatesInput, ListLawUpdatesOutput } from "./tools/list-law-updates.js";
+export type { SearchVisaInputV4 as SearchVisaInputV4Type } from "./tools/search-visa-v4.js";
+export { SearchVisaInputV4 } from "./tools/search-visa-v4.js";

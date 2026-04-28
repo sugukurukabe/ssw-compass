@@ -1,4 +1,4 @@
-import type { ListVisaDocumentsOutput, SupportedLanguage } from "@ssw/shared-types";
+import type { ListVisaDocumentsOutput, UILanguage } from "@ssw/shared-types";
 
 /**
  * Checklist state, treated as immutable in the UI. Pages are not persisted
@@ -57,7 +57,7 @@ export function containsPii(notes: string): boolean {
 export function buildCommitSummary(
   state: ChecklistState,
   docs: ListVisaDocumentsOutput,
-  lang: SupportedLanguage,
+  lang: UILanguage,
 ): string {
   const checked = docs.documents.filter((d) => state.checkedDocIds.has(d.id));
   const labels = checked.map((d) => d.label[lang]);
