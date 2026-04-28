@@ -46,14 +46,13 @@ module "logging" {
 }
 
 # ADR-015: 7-year WORM audit log bucket.
-# ⚠️ is_locked=true is IRREVERSIBLE. Obtain Cloud Logging SA before applying:
-#   gcloud logging sinks describe _Default --project=PROJECT_ID --format='value(writerIdentity)'
+# ⚠️ is_locked=true is IRREVERSIBLE — run terraform plan first.
+# No logging_sa_email needed: unique_writer_identity=true auto-creates a per-sink SA.
 module "audit_log" {
-  source           = "../../modules/audit-log"
-  project_id       = var.project_id
-  bucket_name      = "ssw-compass-audit-7y"
-  env              = "prod"
-  logging_sa_email = var.audit_logging_sa_email
+  source      = "../../modules/audit-log"
+  project_id  = var.project_id
+  bucket_name = "ssw-compass-audit-7y"
+  env         = "prod"
 }
 
 module "vertex_ai_search" {
