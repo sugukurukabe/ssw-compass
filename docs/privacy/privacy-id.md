@@ -1,6 +1,6 @@
 # Kebijakan Privasi SSW Compass
 
-> **Status**: Draf — Menunggu tinjauan gyoseishoshi
+> **Status**: Draf publik aktif — Menunggu tinjauan akhir gyoseishoshi
 > **Terakhir diperbarui**: 2026-04-29
 > **URL**: https://mcp.ssw-compass.jp/privacy
 
@@ -10,7 +10,7 @@
 
 - **Nama**: Sugukuru Inc. (スグクル株式会社)
 - **Alamat**: Prefektur Kagoshima, Jepang
-- **Kontak**: [alamat email]
+- **Kontak**: a_kabe@sugu-kuru.co.jp
 
 ---
 
@@ -26,7 +26,7 @@ Berikut ini **tidak diterima** sebagai input:
 Jika terdeteksi: diblokir secara otomatis dan tidak diproses.
 
 **Data log yang dikumpulkan** (Google Cloud Logging):
-- Waktu akses layanan (alamat IP di-hash setelah 24 jam)
+- Waktu akses layanan dan metadata keamanan (alamat IP dapat diproses oleh log Cloud Run / Cloud Armor untuk keamanan, tetapi tidak digunakan untuk profiling)
 - Jenis pemanggilan alat (tanpa data pribadi)
 - Log kesalahan
 
@@ -57,7 +57,7 @@ Kami tidak menjual atau memberikan data log kepada pihak ketiga, kecuali:
 | Google Cloud Armor | WAF keamanan | Global |
 | Vertex AI Search | Pencarian informasi | Jepang |
 
-Tidak ada transfer lintas batas informasi pribadi (kepatuhan APPI Pasal 24).
+Kami tidak secara sengaja mengumpulkan informasi pribadi. Metadata keamanan operasional dapat diproses oleh layanan edge global Google Cloud seperti Cloud Armor; konten permohonan visa atau identitas pribadi tidak ditransfer lintas negara oleh SSW Compass.
 
 ---
 
@@ -91,7 +91,7 @@ Perubahan signifikan akan diumumkan sebelumnya.
 
 ## 9. Kontak
 
-Pertanyaan privasi: [alamat email]
+Pertanyaan privasi: a_kabe@sugu-kuru.co.jp
 
 ---
 

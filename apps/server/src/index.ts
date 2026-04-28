@@ -58,6 +58,80 @@ export function createApp(): Express {
       });
   });
 
+  // Minimal OpenAPI document for OpenAI Apps SDK submission. The actual MCP
+  // transport remains Streamable HTTP at /mcp; this document gives reviewers a
+  // stable public schema URL referenced by ai-plugin.json.
+  app.get("/.well-known/openapi.json", (_req: Request, res: Response) => {
+    res
+      .status(200)
+      .set("Cache-Control", "public, max-age=3600")
+      .type("application/json")
+      .json({
+        openapi: "3.1.0",
+        info: {
+          title: "SSW Compass Japan MCP API",
+          version: "4.0.0",
+          description:
+            "Streamable HTTP MCP endpoint for Japanese Specified Skilled Worker (SSW) visa procedural information. Information only — not legal advice.",
+          license: { name: "Apache-2.0", url: "https://www.apache.org/licenses/LICENSE-2.0" },
+        },
+        servers: [{ url: "https://mcp.ssw-compass.jp" }],
+        paths: {
+          "/health": {
+            get: {
+              operationId: "health",
+              summary: "Health check",
+              responses: {
+                "200": {
+                  description: "Service healthy",
+                  content: {
+                    "application/json": {
+                      schema: {
+                        type: "object",
+                        properties: {
+                          status: { type: "string", const: "ok" },
+                          service: { type: "string", const: "ssw-mcp" },
+                        },
+                        required: ["status", "service"],
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          },
+          "/mcp": {
+            post: {
+              operationId: "mcpStreamableHttp",
+              summary: "MCP Streamable HTTP JSON-RPC endpoint",
+              requestBody: {
+                required: true,
+                content: { "application/json": { schema: { type: "object" } } },
+              },
+              responses: {
+                "200": { description: "MCP JSON-RPC or SSE response" },
+                "400": { description: "Invalid MCP request" },
+              },
+            },
+          },
+          "/.well-known/mcp.json": {
+            get: {
+              operationId: "serverCard",
+              summary: "MCP server card",
+              responses: { "200": { description: "Server metadata" } },
+            },
+          },
+          "/privacy": {
+            get: {
+              operationId: "privacyPolicy",
+              summary: "Privacy policy",
+              responses: { "200": { description: "Privacy policy text" } },
+            },
+          },
+        },
+      });
+  });
+
   // Privacy policy endpoint (trilingual drafts in docs/privacy/)
   app.get("/privacy", (_req: Request, res: Response) => {
     res
@@ -68,9 +142,11 @@ export function createApp(): Express {
         "SSW Compass Privacy Policy\n==========================\n\n" +
           "This service does NOT collect personal information.\n" +
           "Inputs containing residence card numbers, passport numbers, or My Number are automatically blocked.\n\n" +
-          "Log data (access timestamps, IP hashed after 24h) retained 7 years per Gyoseishoshi Act §9.\n" +
-          "No cross-border transfer (APPI Article 24). Data location: Japan (asia-northeast1).\n\n" +
-          "Full trilingual policy (under gyoseishoshi review):\n" +
+          "Operational logs may include access timestamps and security metadata for abuse prevention. " +
+          "SSW Compass does not use logs for behavioral profiling.\n\n" +
+          "Audit events store hashes only and are retained for 7 years per Gyoseishoshi Act §9. " +
+          "Visa application content and personal identifiers are not stored.\n\n" +
+          "Full trilingual policy:\n" +
           "https://github.com/sugukurukabe/ssw-compass/tree/main/docs/privacy/\n\n" +
           "Contact: a_kabe@sugu-kuru.co.jp\n",
       );

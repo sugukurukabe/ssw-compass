@@ -18,7 +18,7 @@ GET https://mcp.ssw-compass.jp/.well-known/mcp.json
 - `description`: Official-source-grounded informational app for Japanese specified-skilled-worker (SSW / 特定技能) and related visa procedures. Freemium: search, deadline tracking, law updates (Free); document generation, approval workflow (Pro). Information only — does not constitute legal advice.
 - `publisher.name`: スグクル株式会社
 - `publisher.url`: https://mcp.ssw-compass.jp
-- `auth.type`: bearer
+- `auth.type`: none (Free anonymous connector; Pro-only tools enforce JWT/HITL at call time)
 - `license`: Apache-2.0
 - `privacyPolicy`: https://mcp.ssw-compass.jp/privacy
 - `categories`: ["regulated-industry", "immigration", "japan", "informational"]
@@ -98,7 +98,9 @@ Sprint 5 後半で追加予定。基本情報は Anthropic と同一。
 - [x] health check が 200 を返す
 - [x] 全 tools が tools/list に表示される
 - [x] disclaimer が全レスポンスに含まれる
-- [ ] Vertex real mode (fixture mode は审査で問題になりうる — B1 完了が prerequisite)
+- [ ] Vertex real mode (fixture mode は審査で問題になりうる — B1 完了が prerequisite)
+- [x] `/.well-known/ai-plugin.json` returns 200 JSON
+- [x] `/.well-known/openapi.json` returns 200 JSON
 
 ### コンテンツ要件 (行政書士監修後)
 
@@ -106,7 +108,19 @@ Sprint 5 後半で追加予定。基本情報は Anthropic と同一。
 - [ ] ロゴ PNG ≥ 512×512 (A1 ✅: icon-512.png)
 - [ ] スクリーンショット × 3 (A2: Vertex real flip 後)
 - [ ] デモ動画 ≤ 120 秒 (A3)
-- [ ] ライセンス明示 (A5 ✅: Apache-2.0)
+- [x] ライセンス明示 (A5 ✅: Apache-2.0)
+
+### Screenshot prompts (Anthropic MCP Apps carousel)
+
+Anthropic requires 3-5 PNG screenshots, width ≥ 1000px, cropped to app response only.
+Use these paired prompt texts:
+
+| Screenshot | Prompt | Tool / UI |
+|---|---|---|
+| 1 | `特定技能1号 建設分野の在留期間更新手続を教えて` | `search_visa` / search UI |
+| 2 | `直近の法改正情報を教えて。入管法と行政書士法を中心に` | `list_law_updates` / law updates UI |
+| 3 | `特定技能1号 農業分野の必要書類チェックリストを見せて` | `list_visa_documents` / checklist UI |
+| 4 | `留学ビザの人を農業で雇用してよいか確認して` | `validate_zairyu_compatibility` / warning response |
 
 ### 法令要件 (行政書士監修後)
 

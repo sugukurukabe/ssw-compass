@@ -120,6 +120,25 @@ For the full design see [`docs/specs/SPEC-INDEX.md`](docs/specs/SPEC-INDEX.md)
 
 ## Troubleshooting
 
+## Privacy Policy
+
+SSW Compass does not collect personal information. Inputs containing residence card numbers,
+passport numbers, My Number, names, full dates of birth, or home addresses are blocked before
+tool processing. Operational security logs are used only for service reliability and abuse
+prevention.
+
+Full policy: [https://mcp.ssw-compass.jp/privacy](https://mcp.ssw-compass.jp/privacy)
+
+## Usage Examples
+
+Try these prompts in Claude Desktop / Claude Web after connecting the MCP server:
+
+- `特定技能1号 建設分野の在留期間更新手続を教えて`
+- `直近の法改正情報を教えて。入管法と行政書士法を中心に`
+- `特定技能1号 農業分野の必要書類チェックリストを見せて`
+
+Support contact: `a_kabe@sugu-kuru.co.jp`
+
 **SSW does not appear in Claude Desktop.**
 Check that `~/Library/Application Support/Claude/claude_desktop_config.json`
 exists and contains a valid `mcpServers.ssw-local` entry. A single JSON syntax
