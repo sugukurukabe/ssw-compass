@@ -1,270 +1,287 @@
-# ADR-010: Vertex AI Search ingestion failure-mode strategy
+# ADR-010: Vertex AI Search ingestion strategy and Sprint 3–4 deferral
 
 - **Status**: Accepted
-- **Date**: 2026-04-28 (Sprint 3 Batch 4)
+- **Date**: 2026-04-28 (Sprint 3 Batch 4 close)
 - **Deciders**: @kabe, SSW Compass core team
-- **Scope**: [scripts/ingest-sources.ts](../../scripts/ingest-sources.ts),
+- **Scope**:
+  [scripts/ingest-sources.ts](../../scripts/ingest-sources.ts),
   [data/source-index.jsonl](../../data/source-index.jsonl),
+  [data/url-health-report.2026-04-27.md](../../data/url-health-report.2026-04-27.md),
   [infra/terraform/modules/vertex-ai-search/](../../infra/terraform/modules/vertex-ai-search/),
   [apps/server/src/vertex.ts](../../apps/server/src/vertex.ts).
-- **Supersedes**: None. Co-dependent with
-  [ADR-006 (Vertex fixture/real dispatch)](./ADR-006-vertex-fixture-real-dispatch.md)
-  and [ADR-009 (Terraform foundation)](./ADR-009-terraform-foundation.md).
+- **Supersedes**: An earlier Day-1 draft of this ADR that framed
+  Batch 4 as a single-sprint full-ingest exercise. The Path B
+  decision below is the accepted text.
+- **Co-dependent**:
+  [ADR-006 (Vertex fixture/real dispatch)](./ADR-006-vertex-fixture-real-dispatch.md),
+  [ADR-009 (Terraform foundation)](./ADR-009-terraform-foundation.md).
 
 ## Context
 
-Batch 4 wires SSW Compass's `vertexSearch` function to real Vertex AI
-Search (Discovery Engine). Three failure surfaces that fixture mode
-hid become visible the moment `SSW_VERTEX_MODE=real` lands:
+Sprint 3 Batch 4 Day 1 enabled the Vertex AI Search foundation via
+Terraform — three Discovery Engine data stores
+(`visa_legal` / `visa_faq` / `visa_secondary`) were created empty
+in `asia-northeast1` / `default_collection`, and
+`roles/discoveryengine.viewer` was bound to the `ssw-runtime`
+Cloud Run BYOSA. The two new APIs (`discoveryengine.googleapis.com`,
+`aiplatform.googleapis.com`) were enabled.
 
-1. **`documentService.importDocuments` is an async LRO.** Per-document
-   failures (fetch 404, MIME type reject, body too large) return
-   `failureSamples[]` in the operation metadata but do not fail the
-   operation overall. A run that "succeeds" with 38/40 docs ingested
-   is a silent partial outage without explicit handling.
+Batch 4 Day 2 shipped [scripts/ingest-sources.ts](../../scripts/ingest-sources.ts)
+implementing the failure-mode policy in §3 below. A dry-run check
+was performed against the 40 entries in
+[data/source-index.jsonl](../../data/source-index.jsonl) — a
+quick parallel HEAD check with 10 concurrent requests and a 10 s
+timeout, using `User-Agent: ssw-compass-ingest/1.0`, completed in
+10.4 s. See [data/url-health-report.2026-04-27.md](../../data/url-health-report.2026-04-27.md)
+for the full raw report.
 
-2. **Re-runs race with existing data store state.** Ingest is not
-   idempotent by default — `reconciliationMode: INCREMENTAL` will add
-   new docs, but running the same script twice could result in either
-   duplicates or silent no-ops depending on `docId` collisions. No
-   signal distinguishes "already ingested correctly" from "re-ingesting
-   over the top unnecessarily".
+**Headline finding**: 28 / 40 URLs returned 200 OK; **12 / 40
+failed** (30 %). Per data store: `visa_legal` 23 / 34,
+`visa_secondary` 5 / 5, `visa_faq` **0 / 1** — the FAQ data store
+has no live seed content at all. Failure concentration by domain:
+6 on moj.go.jp (subtree restructuring hypothesis), 3 on
+meti.go.jp (timeout — bot-gating or TTFB hypothesis), 1 each on
+maff.go.jp / mhlw.go.jp / mlit.go.jp.
 
-3. **Rollback is non-obvious.** Once a bad document lands in a data
-   store, it will be retrieved by every subsequent `search()` call
-   until explicitly deleted. There is no `import --rollback` flag;
-   recovery requires per-doc delete, data store recreate, or service-
-   level fallback to fixture mode.
+The 30 % failure rate exceeds the 28 % threshold we had adopted
+internally for "proceed with Sprint-3 full ingest". More importantly,
+the 0 / 1 state of `visa_faq` means any real-mode query routed to
+that data store would return empty — `SSW_VERTEX_MODE=real` with
+the current seed would regress existing fixture-mode UX in the FAQ
+tool path.
 
-Without a codified strategy for these three, Sprint 5's scheduled
-re-scrape would be the first place we learn about failure modes —
-exactly the wrong time to learn about them. This ADR is the
-pre-announcement.
+Sprint 1–2 seeded the 40 URLs as a quick lift before gyoseishoshi
+retainer was in place. Sprint 3 is not the right moment to
+unilaterally "fix" those URLs, because the questions surfaced by
+this dry-run — subtree restructuring, bot-gating, ministry
+coverage balance, visa_faq content scope — are business-content
+questions, not engineering questions.
 
 ## Decision
 
-### 1. Partial-failure retry policy
+### 1. Sprint 3 does not execute a real ingest.
 
-The ingestion script classifies failures at two levels:
+The three Discovery Engine data stores remain **apply-complete but
+content-empty** through Sprint 3 closure. The staging Cloud Run
+service continues to run in `SSW_VERTEX_MODE=fixture`. The
+60 / 60 vitest suite remains unchanged. Validation 9 of the
+Batch 4 closure list (real-vertex reply) is deferred to Sprint 4
+and explicitly marked "N/A Sprint 3" in the closure report.
 
-**Per-document fetch / hash stage** (before any Discovery Engine
-call):
+Operationally:
 
-- `PERMANENT`: HTTP 4xx (404, 410), content-type not text/html or
-  application/pdf, body size > 10 MiB, URL parse error.
-  → log WARN; if `--mode=fail-fast` then abort run; if
-  `--mode=best-effort` continue without the doc.
-- `TRANSIENT`: HTTP 5xx, connection timeout (15s), DNS failure,
-  TLS handshake failure.
-  → exponential backoff retry: **30 s → 120 s → 300 s**. After 3
-  failed retries, promote to PERMANENT.
-- Success: compute SHA-256 of the normalised body, attach to entry.
-
-**Per-data-store import stage** (LRO):
-
-- The LRO metadata returns `successCount` and `failureCount`. If
-  `failureCount > 0`, `failureSamples[]` contains up to 10
-  reason strings.
-- `--mode=fail-fast`: any `failureCount > 0` aborts the run (the
-  source-index.jsonl is not written; SHA-256 stays at
-  `__PLACEHOLDER__` for entries that would have succeeded too).
-- `--mode=best-effort`: `failureSamples[]` are logged at WARN,
-  entries whose docs did land get their `contentSha256` updated.
-
-### 2. Deduplication via SHA-256
-
-Before calling `importDocuments`, the script enumerates existing
-documents in the target data store:
-
-```typescript
-documentServiceClient.listDocuments({
-  parent: "projects/.../dataStores/<ds>/branches/0",
-  pageSize: 1000,
-})
+```hcl
+# infra/terraform/envs/staging/main.tf — stays as-is post Batch 4 Day 1
+module "cloud_run" {
+  env_vars = {
+    SSW_ENV          = "staging"
+    SSW_VERTEX_MODE  = "fixture"   # NOT flipped to "real" in Sprint 3
+    LOG_LEVEL        = "info"
+    SSW_BUILD_SOURCE = "batch-2-placeholder"  # will roll forward with future deploys
+  }
+}
 ```
 
-For each source-index.jsonl entry:
+The data stores accrue a near-zero monthly cost (< 10 GiB free tier
+for storage, zero query volume) and stay ready for the Sprint 4
+ingest without further Terraform work.
 
-- **Same `docId` + same content SHA-256** (read from `structData`):
-  skip (no-op, logged DEBUG).
-- **Same `docId` + different SHA-256**: treat as update. The
-  importDocuments call with that `docId` replaces the document
-  in place.
-- **New `docId`**: regular import.
+### 2. Sprint 4 integrates URL cleanup with gyoseishoshi supervision.
 
-This keeps the run cost linear in "entries that actually need
-ingesting" rather than always re-uploading everything.
+`docs/sprint-4-pending.md` Phase 1 captures the work. Summary:
 
-### 3. Rollback strategy — three tiers
+- Present [data/url-health-report.2026-04-27.md](../../data/url-health-report.2026-04-27.md)
+  to the retained gyoseishoshi.
+- 12 dead URLs: replace with the semantically-equivalent surviving
+  page (for moj.go.jp subtree restructuring cases) or remove
+  entirely (for retired pages), logged per-URL in the next dated
+  health report.
+- 28 live URLs: confirm authority / recency / coverage adequacy.
+- Expand `source-index.jsonl` past 50 entries with **a minimum of
+  10 entries in `visa_faq`** and **≥ 2 entries per 特定技能分野**.
+  Current moj-heavy 40 % distribution remains defensible for legal
+  base coverage but non-moj sector ministries need thickening.
+- Run [scripts/ingest-sources.ts](../../scripts/ingest-sources.ts)
+  in `--mode=best-effort`, accept any residual PERMANENT failures
+  as reviewed-and-intentional.
+- Flip `SSW_VERTEX_MODE=real` on staging and re-verify all smoke
+  and integration paths.
 
-**Tier 1: per-document deletion.**
-`documentServiceClient.deleteDocument({ name: "projects/.../documents/<docId>" })`.
-Used when one specific document is known to be wrong (e.g., source URL
-moved and the old cached content is misleading). Surgical, does not
-disturb the other documents in the data store.
+### 3. Ingestion script retry / dedup / rollback policy (carried forward from the Day-1 draft)
 
-**Tier 2: data store recreate via Terraform.**
-`terraform destroy -target=module.vertex_ai_search.google_discovery_engine_data_store.this["<ds>"]`
-→ `terraform apply` to recreate empty → re-run `pnpm run ingest --filter=<ds>`.
-Used when a data store is suspected of corruption / schema drift /
-quota miscount. Preserves other data stores. Takes 1–2 minutes.
+**Per-document fetch stage:**
 
-**Tier 3: env-flip `SSW_VERTEX_MODE=fixture`.**
-```bash
-gcloud run services update ssw-mcp-staging \
-  --region=asia-northeast1 \
-  --set-env-vars=SSW_VERTEX_MODE=fixture
-```
-Used when *any* Vertex-side issue is suspected (outage, quota
-exhaustion, all data stores down, unknown root cause). Cloud Run is
-back to fixture mode in one command, no Terraform round-trip, no
-rebuild. Server behaviour is byte-identical to the pre-Batch-4
-world. **Important: this is the same env-flip path as ADR-009
-§Decision 6 mitigation #4 (staging-service delete) — it is a
-runbook-level tool, not a Terraform-managed state change. Within
-24 h the matching change must land in
-[envs/staging/main.tf](../../infra/terraform/envs/staging/main.tf)
-to re-align TF state and config.**
+- `PERMANENT` failure → HTTP 4xx, unsupported content-type, body
+  > 1 MiB, URL parse error. Log WARN. Under `--mode=fail-fast`
+  abort the run; under `--mode=best-effort` continue without the
+  doc.
+- `TRANSIENT` failure → HTTP 5xx, connection timeout (15 s), DNS
+  failure, TLS handshake failure. Exponential backoff retry at
+  **30 s → 120 s → 300 s**. After 3 failed retries, promote to
+  `PERMANENT`.
+- Success → SHA-256 of the normalised body attached to the entry.
 
-### 4. Monitoring
+**Per-data-store import stage (LRO):**
 
-Cloud Logging filter, saved to operator bookmark:
+- `successCount` and `failureCount` from the operation metadata
+  are logged at INFO and WARN respectively, along with up to 10
+  `failureSamples[]` reasons.
+- `--mode=fail-fast` → any `failureCount > 0` aborts and does
+  NOT rewrite the JSONL (SHA stays `__PLACEHOLDER__`).
+- `--mode=best-effort` → entries whose documents landed get their
+  `contentSha256` updated; entries whose documents failed are
+  logged and carried over without change.
 
-```
-resource.type="discoveryengine.googleapis.com/DataStore"
-(severity>=WARNING OR jsonPayload.operation.error=*)
-```
+**Dedup** via SHA-256 — before import, `documentServiceClient.listDocuments`
+enumerates the existing data store. Same `docId` + same hash →
+skip. Same `docId` + different hash → update. New `docId` → import.
 
-Log-based metric: `vertex_import_failure_count_24h` — counts log
-entries matching the above filter in a rolling 24 h window.
+**Rollback** in three tiers:
 
-Alert policy (Sprint 3 scope): email-only. When
-`vertex_import_failure_count_24h > 0` sustained for 15 min, notify
-`@kabe`. Slack webhook integration is deferred to Sprint 5+ per
-ADR-009 §Decision 4 Secret Manager naming (reservation:
-`slack-webhook-alerts`).
+- Tier 1 — **per-document delete**. Surgical.
+  `documentServiceClient.deleteDocument({ name: "projects/.../documents/<docId>" })`.
+- Tier 2 — **data store recreate via Terraform**.
+  `terraform destroy -target=module.vertex_ai_search.google_discovery_engine_data_store.this["<ds>"]` → `terraform apply` → `pnpm run ingest --filter=<ds>`.
+  Preserves other data stores; ≈ 2 minutes downtime on the targeted one.
+- Tier 3 — **env-flip `SSW_VERTEX_MODE=fixture`**.
+  `gcloud run services update ssw-mcp-staging --set-env-vars=SSW_VERTEX_MODE=fixture`.
+  One command; server byte-identical to pre-Batch-4 behaviour. Used for any
+  suspected Vertex-side issue. Within 24 h the matching
+  change must land in [envs/staging/main.tf](../../infra/terraform/envs/staging/main.tf)
+  to re-align TF state and config.
 
-Post-ingest verification (runbook):
+### 4. URL health check methodology (codified)
+
+The pre-ingest health check is **always** a first-class step, not
+only before Sprint 4 ingest but also Sprint 5+ re-scrape cycles.
+
+Canonical invocations:
 
 ```bash
-pnpm run ingest --dry-run --filter=visa_legal  # compute fresh SHA
-# manually diff --dry-run output against current source-index.jsonl
-# a diff means the upstream source changed; re-run without --dry-run
-# to update.
+# Full dry-run with SHA-256 compute + per-entry diff report.
+# Recommended for every session. Slower (~ N × average fetch time).
+pnpm run ingest -- --dry-run --mode=best-effort
+
+# Quick pass/fail only. Used when scanning upstream availability.
+# Parallel, 10 concurrent, 10 s timeout. See ADR-010 §4 sample in
+# data/url-health-report.2026-04-27.md for the inline Python.
 ```
+
+Every Sprint kickoff (or ad-hoc when suspicion triggers — e.g. a
+production grounding result visibly drifts) runs the quick
+pass/fail, writes the output to
+`data/url-health-report.YYYY-MM-DD.md`, commits it, and hands it
+to the gyoseishoshi for review. The file name is date-stamped
+rather than rotating so a chronological trail exists before the
+Sprint 5 scheduled cron lands. The legacy report at
+`data/url-health-report.2026-04-27.md` is the first entry in that
+trail.
 
 ### 5. `source-index.jsonl` schema addendum (reserved, not yet written)
 
-For Sprint 5+ re-run cycles, the JSONL schema is extended with an
-optional `status` field:
+For Sprint 5+ re-run cycles, an optional `status` field is
+reserved. Batch 4 does NOT write it.
 
 ```typescript
 const SourceEntrySchema = z.object({
-  id: z.string().min(1).max(100),
-  title: z.string().min(1),
-  url: z.string().url(),
-  ministry: z.enum(["moj","mlit","mhlw","maff","meti","cao","soumu","ppc"]),
-  datastore: z.enum(["visa_legal","visa_faq","visa_secondary"]),
-  trustLevel: z.literal("primary_source"),
-  tags: z.array(z.string()),
-  lang: z.enum(["ja","en"]),
-  verifiedAt: z.string(),      // ISO date
-  contentSha256: z.string(),   // 64 hex chars or "__PLACEHOLDER__"
-  notes: z.string().default(""),
-  // --- reserved for ADR-010 future re-runs ---
-  status: z.enum(["ok","failed"]).optional(),
-  lastRunAt: z.string().optional(),          // ISO timestamp of last ingest attempt
-  lastFailureReason: z.string().optional(),  // if status=failed
+  // ... existing 11 fields ...
+  status:            z.enum(["ok", "failed"]).optional(),
+  lastRunAt:         z.string().optional(),  // ISO timestamp
+  lastFailureReason: z.string().optional(),  // set when status==="failed"
 });
 ```
 
-**Batch 4 does NOT write `status`.** Fail-fast mode in the initial
-run means either all 40 succeed (no `status` needed) or the run
-aborts (nothing written). First actual write happens in Sprint 5+
-scheduled re-runs operating in best-effort mode. The optional
-declaration makes the field backward-compat with current 40 entries
-— no migration, no separate ADR needed. Consumers
-(apps/server tool handlers) already ignore every field except
-`datastore`; adding `status` does not affect runtime behaviour.
+The optional declaration is backward-compat with the current 40
+entries. Production MCP server consumers only read `datastore` and
+ignore all other fields.
 
 ## Alternatives rejected
 
-### A. Firestore-backed status table
+### A. Path A — best-effort partial ingest in Sprint 3
 
-A separate Firestore collection tracking per-URL ingestion status
-instead of inline in source-index.jsonl. Rejected: adds a runtime
-dependency (Firestore API enable + SA permissions), creates a second
-source of truth that has to stay in sync with the JSONL, and blocks
-the Sprint 3 closure on Firestore bootstrap. The inline optional
-field matches the current convention and does not need any new
-service.
+Proceed with `--mode=best-effort` now, ingest the 28 surviving URLs
+across the three data stores, flip `SSW_VERTEX_MODE=real`, accept
+that `visa_faq` returns empty. Rejected because:
 
-### B. BigQuery audit log per run
+- `visa_faq` at 0 entries creates a real-mode UX regression: the
+  FAQ tool path refuses-and-redirects for every query, degrading
+  from the fixture mode's canned-but-plausible answer.
+- Individual moj.go.jp URL fixes before the gyoseishoshi-informed
+  subtree-restructuring review would likely be thrown away at
+  Sprint 4 start and redone correctly.
+- Sprint 3's quality bar (adoption-readiness for Sprint 4 external
+  submission) is misaligned with a partial-state staging.
 
-Write every import operation's LRO metadata to a BigQuery table for
-historical analysis. Rejected: over-engineered for one scheduled
-re-scrape per week. Cloud Logging retention (30 d staging / 90 d
-prod per ADR-009) holds enough history for any Sprint 3-4 debugging.
-BigQuery-based audit can be a Sprint 6+ addition if volume grows.
+### B. Quick health-check then retry in Batch 8
 
-### C. Destroy-and-recreate each run
+Defer the problem to Sprint 3's closing batch and attempt a
+cleanup sprint at the end. Rejected because:
 
-Terraform destroy all 3 data stores and re-apply + re-ingest every
-scheduled run. Simpler rollback model. Rejected: 2 + 2 = 4 min of
-data-store downtime on every run; Discovery Engine quota limits on
-data store creation / deletion per day; and the incremental mode
-Discovery Engine already provides does the right thing cheaper.
+- Batch 8's scope is Sprint 3 closure and Sprint 4 handoff, not
+  content-authoring. Shoehorning URL cleanup there compresses the
+  closure work and re-introduces the gyoseishoshi-supervision
+  question anyway.
+- Sprint 4's first phase is already dedicated to this work. No
+  advantage to squeezing it earlier.
 
-### D. `--mode=overwrite` flag that always replaces existing docs
+### C. Retroactively strengthen the Sprint 1–2 seeding methodology
 
-An explicit "nuke and redo" flag that does Tier 2 rollback inline.
-Rejected: the existing `--filter=<ds>` + manual Tier 2 command is
-two lines of runbook, and the blast radius deserves the manual
-confirmation gate. No need for a flag that makes destruction
-one-keystroke-easy.
+The 40 URLs were seeded before gyoseishoshi retainer was in place.
+In principle, the seeding ADR could be revised to require
+health-check-before-merge. Rejected for Sprint 3 scope:
+
+- Retroactive changes to past decisions are out of scope.
+- A Sprint 5+ "seeding and re-scrape ADR" is the right place for
+  the forward-looking convention. Sprint 3 does not have to solve
+  it today.
 
 ## Consequences
 
 ### Positive
 
-- Every ingestion failure has a classified, documented response
-  path before Sprint 5's first unattended re-run.
-- The env-flip Tier 3 rollback means a Vertex outage cannot take
-  down SSW Compass — fixture mode is always 60 seconds away.
-- The `status` field reservation means Sprint 5 can start writing
-  re-run state immediately without needing a new ADR.
+- Sprint 3 closes with a **clean separation** between engineering
+  (TF / Cloud Run / CI-CD / CSP / DLP / sanitizer / VPC / Cloud
+  Armor — all engineering-authored) and content (URL health /
+  ministry coverage / visa_faq scope — gyoseishoshi-authored).
+  No engineering batch needs to block on content judgement.
+- The ingestion script, TF modules, and IAM surface are all built
+  and byte-identical ready for Sprint 4 to pick up.
+- Staging Cloud Run's current 60 / 60 smoke-passing fixture mode
+  is preserved unchanged — ADR-009 §6's public-exposure window
+  still closes in Batch 6 as scheduled, independent of Vertex
+  real-mode.
+- The health report is a tangible Sprint-4 hand-off artefact
+  rather than an agent-produced analysis that evaporates after the
+  Sprint 3 session.
 
 ### Negative / follow-up
 
-- The `listDocuments` + SHA-256 dedup adds O(N) calls per data
-  store per run. For 40 docs this is negligible; if the catalogue
-  grows past ~1000 docs, paginate or switch to a batched diff.
-- Tier 2 rollback (destroy-recreate single data store) will
-  momentarily fail `tools/call search_visa` if the targeted data
-  store is the primary one. Tier 3 is the pre-emptive fix
-  (flip to fixture first, then Tier 2).
-- Alerting is email-only until Sprint 5+ Slack integration.
-  Off-hours failures may go unresponded-to for up to 12 h.
-
-## Verification performed
-
-- Batch 4 Day 1: 3 data stores applied successfully via Terraform,
-  verified via `discoveryengine.googleapis.com/v1/.../dataStores`
-  REST endpoint (asia-northeast1 regional).
-- Batch 4 Day 2 (pending): first ingestion run captures actual LRO
-  operation IDs; this ADR's Verification section is finalised in
-  Day 4 with those IDs inline.
+- Sprint 4 scope grows by one week: URL cleanup + 50+ expansion +
+  gyoseishoshi session + full ingest + real flip + verification.
+  Sprint 4 target (Connectors Directory submission) may shift from
+  end-June to second week of July. This is recorded in
+  `docs/sprint-4-pending.md`.
+- Staging continues to run with fixture-mode answers, meaning
+  external verifiers (Batch 7 6-host verification) see fixture
+  content rather than real Vertex retrievals. The verification
+  still exercises every other surface (tool schemas, PII guards,
+  output sanitizer once it flips, CSP, DLP, disclaimer injection).
+  Real-retrieval verification is deferred into Sprint 4 Phase 1
+  exit criterion.
+- `data/source-index.jsonl` stays unedited in Sprint 3. If another
+  batch (or hotfix) tries to edit it, it must be explicitly flagged
+  as a scope violation.
 
 ## Related
 
 - [ADR-006: Vertex fixture/real dispatch](./ADR-006-vertex-fixture-real-dispatch.md)
-  — the dispatch contract this ADR builds on.
+  — the dispatch seam that makes today's deferral essentially free.
 - [ADR-009: Terraform foundation](./ADR-009-terraform-foundation.md)
-  — §Decision 6 mitigation #4 (Cloud Run service-delete as emergency
-  stop) — structurally similar to Tier 3 env-flip used here.
-- [.cursor/rules/deployment-checklist.mdc](../../.cursor/rules/deployment-checklist.mdc)
-  — operator runbook; Tier 1/2/3 commands belong here for future
-  human lookup.
-- [docs/sprint-3-pending.md](../sprint-3-pending.md) — `Vertex AI
-  Search 実接続` section is resolved by the Batch 4 deliverable;
-  deletion happens in Day 4.
+  §Decision 6 mitigation #4 (service delete) — architectural cousin
+  of Tier 3 env-flip.
+- [data/url-health-report.2026-04-27.md](../../data/url-health-report.2026-04-27.md)
+  — the artefact this ADR hands off to Sprint 4.
+- [docs/sprint-3-pending.md](../sprint-3-pending.md) — "Vertex AI
+  Search 実接続" section removed as resolved by this ADR.
+- [docs/sprint-4-pending.md](../sprint-4-pending.md) — Phase 1 picks
+  up the deferred work.
