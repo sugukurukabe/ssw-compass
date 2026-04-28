@@ -25,6 +25,7 @@ export {
   ProcedureLabelByLang,
 } from "./classify-procedure.js";
 export { DISCLAIMER_BY_LANG } from "./disclaimers.js";
+export { assertDispatchAllowed, DispatchNotAllowedError } from "./dispatch/validate.js";
 export { TierLimitError } from "./errors/tier-limit.js";
 export {
   DEADLINE_KIND,
@@ -109,3 +110,13 @@ export {
 } from "./tools/list-visa-documents-v4.js";
 export type { SearchVisaInputV4 as SearchVisaInputV4Type } from "./tools/search-visa-v4.js";
 export { SearchVisaInputV4 } from "./tools/search-visa-v4.js";
+export type { SubmitGyoseishoshiApprovalInput as SubmitGyoseishoshiApprovalInputType } from "./tools/submit-gyoseishoshi-approval.js";
+export { SubmitGyoseishoshiApprovalInput } from "./tools/submit-gyoseishoshi-approval.js";
+export type {
+  ValidateZairyuCompatibilityInput as ValidateZairyuCompatibilityInputType,
+  ValidateZairyuCompatibilityOutput as ValidateZairyuCompatibilityOutputType,
+} from "./tools/validate-zairyu-compatibility.js";
+export {
+  ValidateZairyuCompatibilityInput,
+  ValidateZairyuCompatibilityOutput,
+} from "./tools/validate-zairyu-compatibility.js";

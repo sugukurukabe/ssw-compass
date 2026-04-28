@@ -19,6 +19,8 @@ import {
 import { registerListVisaDocumentsUiResource } from "./tools/list-visa-documents/ui.js";
 import { registerSearchVisaTool, SEARCH_VISA_ANNOTATION } from "./tools/search-visa/index.js";
 import { registerSearchVisaUiResource } from "./tools/search-visa/ui.js";
+import { submitGyoseishoshiApprovalHandler } from "./tools/submit-gyoseishoshi-approval/handler.js";
+import { validateZairyuCompatibilityHandler } from "./tools/validate-zairyu-compatibility/handler.js";
 
 const SERVER_INFO = {
   name: "ssw-mcp",
@@ -49,6 +51,24 @@ export function createMcpServer(): McpServer {
       "Return law updates feed: gyoseishoshi law revisions, immigration act changes, fee revisions, etc.",
     {},
     listLawUpdatesHandler,
+  );
+
+  // Batch 10: submit_gyoseishoshi_approval (L2, Pro + gyoseishoshi)
+  server.tool(
+    "submit_gyoseishoshi_approval",
+    "行政書士が書類ドラフトを最終承認する。改正行政書士法§19 に基づき Pro + 行政書士認証が必須。" +
+      "Gyoseishoshi final approval for a draft document. Requires Pro + gyoseishoshi auth per §19.",
+    {},
+    submitGyoseishoshiApprovalHandler,
+  );
+
+  // Batch 10: validate_zairyu_compatibility (L1, Free — 情報提供)
+  server.tool(
+    "validate_zairyu_compatibility",
+    "在留資格と想定就労の適合性を判定する (H06 不法就労判定アラート)。" +
+      "Validate compatibility between residence status and intended employment (H06 illegal work alert).",
+    {},
+    validateZairyuCompatibilityHandler,
   );
 
   // ADR-014 §5: validate all registered tool annotations at startup.
