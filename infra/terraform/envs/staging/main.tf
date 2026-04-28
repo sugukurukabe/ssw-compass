@@ -14,6 +14,9 @@ locals {
     "aiplatform.googleapis.com",
     # Batch 5: Cloud DLP 2nd stage for PII guard.
     "dlp.googleapis.com",
+    # Batch 6: Serverless VPC Access connector + Cloud NAT static IP.
+    "vpcaccess.googleapis.com",
+    "compute.googleapis.com",
   ]
 }
 
@@ -84,17 +87,21 @@ module "cloud_run" {
   min_instances         = 0
   concurrency           = 80
   ingress               = "INGRESS_TRAFFIC_ALL"
-  allow_unauthenticated = true
+  allow_unauthenticated = false # Batch 6: ADR-009 §6 mitigation #1 enforced — staging close-public
   env                   = "staging"
   env_vars = {
     SSW_ENV          = "staging"
     SSW_VERTEX_MODE  = "fixture"
     DLP_ENABLED      = "true" # Batch 5: activate Cloud DLP 2nd stage in pii/index.ts
     LOG_LEVEL        = "info"
-    SSW_BUILD_SOURCE = "batch-5-sanitizer-dlp"
+    SSW_BUILD_SOURCE = "batch-6-network-hardening"
   }
 
-  depends_on = [module.service_account]
+  # Batch 6: route all Cloud Run egress through the ssw-vpc connector
+  # so outbound traffic exits via the Cloud NAT static IP (ADR-012).
+  vpc_connector_id = module.vpc_egress.connector_id
+
+  depends_on = [module.service_account, module.vpc_egress]
 }
 
 module "logging" {
@@ -121,13 +128,17 @@ module "vpc_egress" {
   source     = "../../modules/vpc-egress"
   project_id = var.project_id
   region     = var.region
-  enabled    = false
+  enabled    = true # Batch 6: VPC network + Serverless VPC Access + Cloud NAT static egress IP
   env        = "staging"
+
+  depends_on = [google_project_service.enabled]
 }
 
 module "cloud_armor" {
   source     = "../../modules/cloud-armor"
   project_id = var.project_id
-  enabled    = false
+  enabled    = true # Batch 6: define WAF policy (Standard edition); attach to LB in Sprint 4
   env        = "staging"
+
+  depends_on = [google_project_service.enabled]
 }

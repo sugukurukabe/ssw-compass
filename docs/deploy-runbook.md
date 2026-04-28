@@ -172,45 +172,73 @@ gcloud run services describe ssw-mcp-staging \
   --format='value(status.traffic)'
 ```
 
-### Staging URL discipline (ADR-009 §Decision 6 mitigation #1)
+### Staging URL discipline (ADR-012, supersedes ADR-009 §Decision 6 mitigation #1)
 
-Until Batch 8 closes the staging-public exception, the staging URL
-must not appear in any committed file. Periodic check:
+Sprint 3 Batch 6 closed the ADR-009 public-exception window; staging
+is now `allow_unauthenticated=false`. The URL-leak grep rule
+continues under [ADR-012](adr/ADR-012-egress-and-public-exposure.md)
+§Ongoing guards as an operational practice (reduces accidental
+sharing, simplifies rotation during incidents):
 
 ```bash
-git grep -iE 'ssw-mcp-staging-.*\.run\.app' -- ':!docs/adr/ADR-009*'
+git grep -iE 'ssw-mcp-(staging|prod)-[a-z0-9]+[-.][a-z0-9-]+\.(a\.)?run\.app' \
+  -- ':!docs/adr/*' ':!data/url-health-report*'
 ```
 
-Expected output: zero matches. Run before every Batch commit.
-Discovery of a leak is treated as a security finding — redact the
-URL in a new commit (do not force-push if the leak has already been
-pushed; the git history is public).
+Expected output: zero matches. Run before every batch commit.
+Discovery of a leak is a security finding → rotate the Cloud Run
+service (destroy + recreate via Terraform) so the public URL changes.
 
-## Smoke test (manual re-run)
+## Smoke test (manual re-run, ADR-012 ID-token flow)
 
-The same 4 checks the workflow runs, in a terminal:
+Staging requires a Bearer ID token per ADR-012 §Decision 2.
 
 ```bash
 SERVICE_URL=$(gcloud run services describe ssw-mcp-staging \
   --region=asia-northeast1 --format='value(status.url)')
 
+# Mint an ID token bound to the Cloud Run service audience
+TOKEN=$(gcloud auth print-identity-token --audiences="$SERVICE_URL")
+
 # 1. HTTP health
-curl -fsS "$SERVICE_URL/health" | jq -e '.status == "ok" and .service == "ssw-mcp"'
+curl -fsS -H "Authorization: Bearer $TOKEN" "$SERVICE_URL/health" \
+  | jq -e '.status == "ok" and .service == "ssw-mcp"'
 
 # 2. MCP tools/list (expect 5 tools: search_visa, classify_procedure,
 #    get_deadline_timeline, list_visa_documents, _ssw_checklist_schema)
-npx -y @modelcontextprotocol/inspector --cli "$SERVICE_URL/mcp" \
-  --method tools/list | jq -e '(.tools // .result.tools) | length == 5'
+INIT_RESP=$(curl -sS -i -X POST "$SERVICE_URL/mcp" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"manual","version":"1"},"capabilities":{}}}')
+SESSION_ID=$(echo "$INIT_RESP" | grep -i '^mcp-session-id:' | awk '{print $2}' | tr -d '\r\n')
 
-# 3. tools/call search_visa (expect groundedChunks.length >= 2)
-npx -y @modelcontextprotocol/inspector --cli "$SERVICE_URL/mcp" \
-  --method tools/call \
-  --tool-name search_visa \
-  --tool-arg query="特定技能1号 建設分野" \
-  --tool-arg lang=ja | jq -e '(.structuredContent // .result.structuredContent).groundedChunks | length >= 2'
+curl -sS -X POST "$SERVICE_URL/mcp" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "mcp-session-id: $SESSION_ID" \
+  -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+  | awk '/^data: /{sub(/^data: /,""); print; exit}' \
+  | jq -e '.result.tools | length == 5'
+
+# 3. tools/call search_visa (expect results >= 2)
+curl -sS -X POST "$SERVICE_URL/mcp" \
+  -H "Authorization: Bearer $TOKEN" \
+  -H "Content-Type: application/json" \
+  -H "Accept: application/json, text/event-stream" \
+  -H "mcp-session-id: $SESSION_ID" \
+  -d '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"search_visa","arguments":{"query":"特定技能1号 建設分野","lang":"ja","category":"tokutei_ginou_1"}}}' \
+  | awk '/^data: /{sub(/^data: /,""); print; exit}' \
+  | jq -e '.result.structuredContent.results | length >= 2'
 
 # 4. Server Card
-curl -fsS "$SERVICE_URL/.well-known/mcp.json" | jq -e '.name == "SSW Compass"'
+curl -fsS -H "Authorization: Bearer $TOKEN" "$SERVICE_URL/.well-known/mcp.json" \
+  | jq -e '.name == "SSW Compass"'
+
+# 5. Confirm un-authenticated access is blocked (ADR-012 §Decision 2)
+curl -s -o /dev/null -w '%{http_code}\n' "$SERVICE_URL/health"
+# Expected: 401
 ```
 
 ## See also
