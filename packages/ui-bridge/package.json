@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "DOM null-safe helpers shared by SSW UI Resources",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

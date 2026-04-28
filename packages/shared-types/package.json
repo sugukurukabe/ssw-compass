@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "description": "Shared zod schemas and constants for SSW",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "exports": {

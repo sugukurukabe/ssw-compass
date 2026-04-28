@@ -44,6 +44,9 @@ export interface ServerCard {
   compliance: ServerCardCompliance;
   categories: readonly string[];
   limitations: readonly string[];
+  license?: string;
+  privacyPolicy?: string;
+  termsOfService?: string;
 }
 
 const SERVER_CARD: ServerCard = {
@@ -77,7 +80,11 @@ const SERVER_CARD: ServerCard = {
     "Does not perform legal representation under Japanese 行政書士法 §19-1.",
     "Does not accept personal identifiers as input.",
     "Does not generate or file government documents.",
+    "Vertex AI Search currently in fixture mode — real content requires Batch 5 flip.",
   ],
+  license: "Apache-2.0",
+  privacyPolicy: "https://mcp.ssw-compass.jp/privacy",
+  termsOfService: "https://mcp.ssw-compass.jp/privacy",
 };
 
 export function buildServerCard(): ServerCard {

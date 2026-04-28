@@ -21,7 +21,7 @@
     "tokutei-ginou"
   ],
   "author": "Sugukuru Inc.",
-  "license": "ISC",
+  "license": "Apache-2.0",
   "packageManager": "pnpm@10.33.0",
   "engines": {
     "node": ">=22",
