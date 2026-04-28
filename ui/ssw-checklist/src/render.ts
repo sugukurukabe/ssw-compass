@@ -1,4 +1,4 @@
-import type { ListVisaDocumentsOutput, SupportedLanguage } from "@ssw/shared-types";
+import type { ListVisaDocumentsOutput, UILanguage } from "@ssw/shared-types";
 import DOMPurify from "dompurify";
 import type { ChecklistState } from "./state.js";
 import { containsPii, isDirty } from "./state.js";
@@ -84,7 +84,7 @@ export interface RenderContext {
   result: ListVisaDocumentsOutput;
   state: ChecklistState;
   lastCommitted: ChecklistState | null;
-  lang: SupportedLanguage;
+  lang: UILanguage;
   committedOnce: boolean;
 }
 

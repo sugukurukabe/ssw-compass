@@ -1,4 +1,4 @@
-import type { SearchVisaOutput, SupportedLanguage } from "@ssw/shared-types";
+import type { SearchVisaOutput, UILanguage } from "@ssw/shared-types";
 import DOMPurify from "dompurify";
 
 /**
@@ -41,11 +41,7 @@ function escapeAttr(s: string): string {
   });
 }
 
-export function render(
-  result: SearchVisaOutput,
-  lang: SupportedLanguage,
-  rootEl: HTMLElement,
-): void {
+export function render(result: SearchVisaOutput, lang: UILanguage, rootEl: HTMLElement): void {
   const t = I18N[lang];
   const l1 = L1_NOTICE_BY_LANG[lang];
 

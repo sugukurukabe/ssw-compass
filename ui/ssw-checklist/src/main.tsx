@@ -5,7 +5,7 @@ import {
   applyHostStyleVariables,
   PostMessageTransport,
 } from "@modelcontextprotocol/ext-apps";
-import type { ListVisaDocumentsOutput, SupportedLanguage } from "@ssw/shared-types";
+import type { ListVisaDocumentsOutput, UILanguage } from "@ssw/shared-types";
 import { getElement } from "@ssw/ui-bridge";
 import { render } from "./render.js";
 import { renderSkeleton } from "./skeleton.js";
@@ -26,14 +26,14 @@ type HostContextChangedParams = {
   };
 };
 
-function pickLanguage(locale: string | undefined): SupportedLanguage {
+function pickLanguage(locale: string | undefined): UILanguage {
   if (locale === undefined) return "en";
   if (locale.startsWith("ja")) return "ja";
   if (locale.startsWith("id")) return "id";
   return "en";
 }
 
-let currentLang: SupportedLanguage = "ja";
+let currentLang: UILanguage = "ja";
 let current: ChecklistState = EMPTY_STATE;
 let lastCommitted: ChecklistState | null = null;
 let committedOnce = false;

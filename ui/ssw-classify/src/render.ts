@@ -1,4 +1,4 @@
-import type { ClassifyProcedureOutput, SupportedLanguage } from "@ssw/shared-types";
+import type { ClassifyProcedureOutput, UILanguage } from "@ssw/shared-types";
 import DOMPurify from "dompurify";
 
 /**
@@ -52,7 +52,7 @@ function escapeAttr(s: string): string {
 
 export function render(
   result: ClassifyProcedureOutput,
-  lang: SupportedLanguage,
+  lang: UILanguage,
   rootEl: HTMLElement,
 ): void {
   const t = I18N[lang];
