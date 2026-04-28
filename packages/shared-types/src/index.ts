@@ -30,3 +30,9 @@ export {
   ListVisaDocumentsOutput,
 } from "./list-visa-documents.js";
 export { SearchVisaInput, SearchVisaOutput } from "./search-visa.js";
+export {
+  DISPATCH_ALLOWED_INDUSTRIES,
+  type DispatchAllowedIndustry,
+  SSW_INDUSTRIES_ACTIVE,
+  type SswIndustry,
+} from "./ssw-industries.js";
