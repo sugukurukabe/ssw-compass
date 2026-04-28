@@ -1,7 +1,6 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SswCompassToolAnnotation } from "@ssw/shared-types";
 import { validateToolAnnotations } from "./hitl/validate-annotations.js";
-import { registerChecklistSchemaTool } from "./tools/_internal/checklist-schema.js";
 import {
   CLASSIFY_PROCEDURE_ANNOTATION,
   registerClassifyProcedureTool,
@@ -79,7 +78,6 @@ export function createMcpServer(): McpServer {
   registerGetDeadlineTimelineUiResource(server);
   registerListVisaDocumentsTool(server);
   registerListVisaDocumentsUiResource(server);
-  registerChecklistSchemaTool(server);
 
   // Batch 9: list_law_updates (L0, Free)
   server.tool(

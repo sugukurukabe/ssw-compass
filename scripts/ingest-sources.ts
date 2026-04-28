@@ -394,9 +394,19 @@ async function main(): Promise<void> {
   console.log(`flags: dry-run=${args.dryRun} filter=${args.filter ?? "(none)"} mode=${args.mode}`);
 
   const allEntries = await readIndex();
-  const working =
+  const filteredByDatastore =
     args.filter === null ? allEntries : allEntries.filter((e) => e.datastore === args.filter);
-  console.log(`Loaded ${allEntries.length} entries; processing ${working.length}`);
+  const skippedFailed = filteredByDatastore.filter((e) => e.status === "failed");
+  const working = filteredByDatastore.filter((e) => e.status !== "failed");
+  console.log(
+    `Loaded ${allEntries.length} entries; processing ${working.length}` +
+      (skippedFailed.length > 0 ? ` (skipping ${skippedFailed.length} status=failed)` : ""),
+  );
+  for (const skipped of skippedFailed) {
+    console.log(
+      `  [skip] ${skipped.id}: status=failed (${skipped.lastFailureReason ?? "no reason"})`,
+    );
+  }
 
   const { ok, failed } = await fetchAll(working, args.mode);
 
