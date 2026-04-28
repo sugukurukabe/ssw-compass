@@ -16,7 +16,6 @@
  */
 
 import { createHash } from "node:crypto";
-import type { Logging } from "@google-cloud/logging";
 import type { AuditEventType, CaseIdType } from "@ssw/shared-types";
 import { logger } from "../logger.js";
 
@@ -48,76 +47,25 @@ export function emitAuditEvent(event: AuditEventType): void {
  * Cloud Logging read-back でイベントを取得する (ADR-015 §fetchAuditEvents)
  * Retrieve events via Cloud Logging read-back
  *
- * 主な用途: draft_content_hash の再検証 (case_id でフィルタ)
- * Sprint 4 実装: Cloud Logging API `entries.list` を使用。
- * 400 日超のアーカイブは GCS から直接読む (Sprint 5 実装予定)。
+ * Sprint 4: @google-cloud/logging SDK は server package の依存に未追加のため
+ * Sprint 5 での実装を予定。現在は no-op stub を返す。
+ * Sprint 5: add @google-cloud/logging to server/package.json and implement.
  */
-export async function fetchAuditEvents(
-  filter: {
-    case_id?: CaseIdType;
-    tool_id?: string;
-    since?: Date;
-    limit?: number;
-  },
-  loggingClient?: Logging,
-): Promise<AuditEventType[]> {
-  const projectId =
-    process.env["CLOUDSDK_CORE_PROJECT"] ??
-    process.env["SSW_VERTEX_PROJECT"] ??
-    process.env["GOOGLE_CLOUD_PROJECT"];
-
-  if (projectId === undefined || projectId.length === 0) {
-    logger.warn(
-      { event: "fetch_audit_events_skipped", reason: "no_project_id" },
-      "fetch_audit_events_skipped",
-    );
-    return [];
-  }
-
-  // テスト時はモックの loggingClient を注入できる
-  const client: Logging =
-    loggingClient ??
-    (await import("@google-cloud/logging").then(({ Logging }) => new Logging({ projectId })));
-
-  const filterParts: string[] = [
-    'jsonPayload.event="audit_event"',
-    'resource.type="cloud_run_revision"',
-  ];
-  if (filter.case_id !== undefined) {
-    filterParts.push(`jsonPayload.case_id="${filter.case_id}"`);
-  }
-  if (filter.tool_id !== undefined) {
-    filterParts.push(`jsonPayload.tool_id="${filter.tool_id}"`);
-  }
-  if (filter.since !== undefined) {
-    filterParts.push(`timestamp>="${filter.since.toISOString()}"`);
-  }
-
-  try {
-    const [entries] = await client.getEntries({
-      filter: filterParts.join(" AND "),
-      pageSize: filter.limit ?? 50,
-      orderBy: "timestamp desc",
-    });
-
-    return entries
-      .map((entry) => {
-        const data = entry.data as Record<string, unknown>;
-        // Strip the "event" sentinel field added by emitAuditEvent
-        const { event: _event, ...rest } = data;
-        void _event;
-        return rest as AuditEventType;
-      })
-      .filter((e): e is AuditEventType => {
-        return (
-          typeof e.timestamp === "string" &&
-          typeof e.tool_id === "string" &&
-          typeof e.schema_version === "string"
-        );
-      });
-  } catch (err: unknown) {
-    const message = err instanceof Error ? err.message : String(err);
-    logger.error({ event: "fetch_audit_events_error", err: message }, "fetch_audit_events_error");
-    return [];
-  }
+export async function fetchAuditEvents(filter: {
+  case_id?: CaseIdType;
+  tool_id?: string;
+  since?: Date;
+  limit?: number;
+}): Promise<AuditEventType[]> {
+  // Sprint 5 carry-over: implement with @google-cloud/logging SDK.
+  // See ADR-015 §fetchAuditEvents for the intended implementation.
+  logger.warn(
+    {
+      event: "fetch_audit_events_not_implemented",
+      filter_case_id: filter.case_id,
+      filter_tool_id: filter.tool_id,
+    },
+    "fetch_audit_events_not_implemented",
+  );
+  return [];
 }
