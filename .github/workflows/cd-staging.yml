@@ -139,32 +139,67 @@ jobs:
     needs: [build-push, deploy]
     runs-on: ubuntu-latest
     steps:
+      - name: Authenticate to GCP via WIF
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
+          service_account: ${{ secrets.DEPLOY_SA_EMAIL }}
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v2
+        with:
+          project_id: ${{ env.PROJECT_ID }}
+
+      - name: Mint ID token for Cloud Run audience (ADR-012)
+        id: id-token
+        run: |
+          set -euo pipefail
+          URL="${{ needs.deploy.outputs.service_url }}"
+          TOKEN=$(gcloud auth print-identity-token --audiences="$URL")
+          echo "::add-mask::$TOKEN"
+          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+
       - name: HTTP /health probe
         run: |
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
-          echo "Probing $URL/health ..."
-          curl -fsS --max-time 10 "$URL/health" | tee /tmp/health.json
+          TOKEN="${{ steps.id-token.outputs.token }}"
+          echo "Probing $URL/health with Bearer ID token ..."
+          curl -fsS --max-time 10 -H "Authorization: Bearer $TOKEN" "$URL/health" | tee /tmp/health.json
           jq -e '.status == "ok" and .service == "ssw-mcp"' /tmp/health.json
 
       - name: MCP tools/list (expect 5 tools)
         run: |
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
-          npx -y @modelcontextprotocol/inspector --cli "$URL/mcp" \
-            --method tools/list > /tmp/tools.json
-          jq -e '(.tools // .result.tools) | length == 5' /tmp/tools.json
+          TOKEN="${{ steps.id-token.outputs.token }}"
+          INIT_RESP=$(curl -sS -i -X POST "$URL/mcp" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-smoke","version":"1.0"},"capabilities":{}}}')
+          SESSION_ID=$(echo "$INIT_RESP" | grep -i '^mcp-session-id:' | awk '{print $2}' | tr -d '\r\n')
+          test -n "$SESSION_ID" || { echo "No mcp-session-id in initialize response"; exit 1; }
+          curl -sS -X POST "$URL/mcp" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -H "mcp-session-id: $SESSION_ID" \
+            -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
+            > /tmp/tools-raw.txt
+          awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/tools-raw.txt > /tmp/tools.json
+          cat /tmp/tools.json | head -c 300; echo
+          jq -e '.result.tools | length == 5' /tmp/tools.json
 
       - name: MCP tools/call search_visa (expect results >= 2)
         run: |
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
-          # MCP JSON-RPC over streamable HTTP. We must initialize to get a
-          # session id, then include mcp-session-id on subsequent calls.
-          # search_visa's zod schema requires `category` per
-          # apps/server/src/tools/search-visa/schema.ts; fixture mode
-          # returns structuredContent.results[] (not groundedChunks).
+          TOKEN="${{ steps.id-token.outputs.token }}"
+          # MCP JSON-RPC over streamable HTTP. ADR-012: Bearer ID token
+          # required because staging allow_unauthenticated=false.
           INIT_RESP=$(curl -sS -i -X POST "$URL/mcp" \
+            -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-smoke","version":"1.0"},"capabilities":{}}}')
@@ -172,6 +207,7 @@ jobs:
           test -n "$SESSION_ID" || { echo "No mcp-session-id in initialize response"; exit 1; }
 
           curl -sS -X POST "$URL/mcp" \
+            -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -H "mcp-session-id: $SESSION_ID" \
@@ -190,7 +226,8 @@ jobs:
         run: |
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
-          curl -fsS "$URL/.well-known/mcp.json" | tee /tmp/card.json
+          TOKEN="${{ steps.id-token.outputs.token }}"
+          curl -fsS -H "Authorization: Bearer $TOKEN" "$URL/.well-known/mcp.json" | tee /tmp/card.json
           jq -e '.name == "SSW Compass"' /tmp/card.json
 
       - name: Upload smoke test artefacts
