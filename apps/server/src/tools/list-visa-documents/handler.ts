@@ -1,15 +1,32 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { DISCLAIMER_BY_LANG } from "@ssw/shared-types";
+import {
+  DISCLAIMER_BY_LANG,
+  effectiveLegalLevel,
+  HTML_PREVIEW_WATERMARK,
+  ListVisaDocumentsInputV4,
+  type SupportedLanguage,
+} from "@ssw/shared-types";
+import type { Request } from "express";
+import { assertHitlGateRuntime } from "../../hitl/lockgate.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";
 import { lookupDocuments } from "./document-catalog.js";
-import { ListVisaDocumentsInput, ListVisaDocumentsOutput } from "./schema.js";
+import { ListVisaDocumentsOutput } from "./schema.js";
 
 export const listVisaDocumentsHandler = instrumentTool(
   "list_visa_documents",
-  async (rawArgs: unknown): Promise<CallToolResult> => {
-    const args = ListVisaDocumentsInput.parse(rawArgs);
+  async (rawArgs: unknown, _extra?: { req?: Request }): Promise<CallToolResult> => {
+    // v4 schema: output_format + include_omission_conditions + 10言語 (extends v3)
+    const args = ListVisaDocumentsInputV4.parse(rawArgs);
+
+    // ADR-020 + ADR-014 §Per-call escalation:
+    // pdf_draft / csv escalates from L1 → L2 (Pro + gyoseishoshi required)
+    const runtimeLevel = effectiveLegalLevel(args);
+    const authContext = (
+      _extra?.req as { authContext?: import("@ssw/shared-types").AuthContextType } | undefined
+    )?.authContext;
+    assertHitlGateRuntime(authContext ?? null, "list_visa_documents", "L1", runtimeLevel);
 
     const piiCheck = await scrubInputForPII(args);
     if (piiCheck.blocked) {
@@ -31,7 +48,8 @@ export const listVisaDocumentsHandler = instrumentTool(
     }
 
     const t0 = performance.now();
-    const documents = [...lookupDocuments(args)];
+    // lookupDocuments expects v3 args; pass compatible subset
+    const documents = [...lookupDocuments({ ...args, language: "ja" as const })];
 
     if (documents.length === 0) {
       logger.info(
@@ -50,9 +68,10 @@ export const listVisaDocumentsHandler = instrumentTool(
       };
     }
 
+    const lang = args.language as SupportedLanguage;
     const payload = ListVisaDocumentsOutput.parse({
       documents,
-      disclaimer: DISCLAIMER_BY_LANG[args.language],
+      disclaimer: DISCLAIMER_BY_LANG[lang],
       asOf: new Date().toISOString().slice(0, 10),
     });
 
@@ -63,12 +82,38 @@ export const listVisaDocumentsHandler = instrumentTool(
         visa_category: args.visaCategory,
         industry: args.industry,
         document_count: payload.documents.length,
+        output_format: args.output_format,
         status: "ok",
       },
       "list_visa_documents_ok",
     );
 
-    const summary = payload.documents.map((d) => `・${d.label[args.language]}`).join("\n");
+    // label は ja/en/id のみ対応 → UILanguage fallback
+    const labelLang = (["ja", "en", "id"] as const).includes(args.language as "ja" | "en" | "id")
+      ? (args.language as "ja" | "en" | "id")
+      : "en";
+    const summary = payload.documents.map((d) => `・${d.label[labelLang]}`).join("\n");
+
+    // output_format に応じた付加情報
+    const extraContent: Record<string, unknown> = {};
+    if (args.output_format === "html_preview") {
+      // Free tier: watermarked HTML preview
+      extraContent["html_preview"] =
+        `<ul>${documents.map((d) => `<li>${d.label[labelLang]}</li>`).join("")}</ul>`;
+      extraContent["watermark"] = HTML_PREVIEW_WATERMARK;
+    } else if (args.output_format === "pdf_draft") {
+      // Sprint 4: pdf_draft は pro+ 確認済み、実 PDF 生成は Sprint 5
+      extraContent["pdf_draft_available"] = true;
+      extraContent["pdf_draft_note"] =
+        "PDF 生成は Sprint 5 で実装予定です。現在は書類リストのみ返します。";
+      extraContent["html_preview"] =
+        `<ul>${documents.map((d) => `<li>${d.label[labelLang]}</li>`).join("")}</ul>`;
+    } else if (args.output_format === "csv") {
+      // Sprint 4: csv は pro+ 確認済み、実 CSV 生成は Sprint 5
+      extraContent["csv_available"] = true;
+      extraContent["csv_note"] =
+        "CSV 生成は Sprint 5 で実装予定です。現在は書類リストのみ返します。";
+    }
 
     return {
       content: [
@@ -77,7 +122,7 @@ export const listVisaDocumentsHandler = instrumentTool(
           text: `${summary}\n\n${payload.disclaimer}`,
         },
       ],
-      structuredContent: payload,
+      structuredContent: { ...payload, ...extraContent },
     };
   },
 );
