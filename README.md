@@ -1,3 +1,5 @@
+![SSW Compass Japan](assets/logo/ssw-compass-lockup-sm.png)
+
 # SSW Compass (SSW)
 
 > *The compass for Japanese visa procedures.*
