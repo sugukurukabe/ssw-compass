@@ -1,9 +1,22 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { SswCompassToolAnnotation } from "@ssw/shared-types";
 import { getDeadlineTimelineHandler } from "./handler.js";
 import { GetDeadlineTimelineInput } from "./schema.js";
 
 const UI_RESOURCE_URI = "ui://ssw-timeline/mcp-app.html";
+
+export const GET_DEADLINE_TIMELINE_ANNOTATION: SswCompassToolAnnotation = {
+  readOnlyHint: true,
+  idempotentHint: true,
+  openWorldHint: false,
+  destructiveHint: false,
+  title: "Get Japanese visa statutory deadline timeline",
+  legalLevel: "L1",
+  requiresGyoseishoshiAuth: false,
+  hitlControls: ["H07_PII_AUTO_MASKING", "H10_LAW_AUTO_UPDATE"],
+  tier: "free",
+};
 
 export function registerGetDeadlineTimelineTool(server: McpServer): void {
   registerAppTool(
@@ -21,12 +34,7 @@ export function registerGetDeadlineTimelineTool(server: McpServer): void {
         "the overall visa timeline looks. Information only — does not constitute legal advice. " +
         "Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers).",
       inputSchema: GetDeadlineTimelineInput.shape,
-      annotations: {
-        readOnlyHint: true,
-        idempotentHint: true,
-        openWorldHint: false,
-        destructiveHint: false,
-      },
+      annotations: GET_DEADLINE_TIMELINE_ANNOTATION,
       _meta: {
         ui: {
           resourceUri: UI_RESOURCE_URI,

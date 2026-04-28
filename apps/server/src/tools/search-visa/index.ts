@@ -1,9 +1,22 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import type { SswCompassToolAnnotation } from "@ssw/shared-types";
 import { searchVisa } from "./handler.js";
 import { SearchVisaInput } from "./schema.js";
 
 const UI_RESOURCE_URI = "ui://ssw-search/mcp-app.html";
+
+export const SEARCH_VISA_ANNOTATION: SswCompassToolAnnotation = {
+  readOnlyHint: true,
+  idempotentHint: true,
+  openWorldHint: false,
+  destructiveHint: false,
+  title: "Search Japanese visa procedures",
+  legalLevel: "L0",
+  requiresGyoseishoshiAuth: false,
+  hitlControls: ["H07_PII_AUTO_MASKING", "H10_LAW_AUTO_UPDATE"],
+  tier: "free",
+};
 
 export function registerSearchVisaTool(server: McpServer): void {
   registerAppTool(
@@ -18,12 +31,7 @@ export function registerSearchVisaTool(server: McpServer): void {
         "deadlines. Information only — does not constitute legal advice. " +
         "Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers).",
       inputSchema: SearchVisaInput.shape,
-      annotations: {
-        readOnlyHint: true,
-        idempotentHint: true,
-        openWorldHint: false,
-        destructiveHint: false,
-      },
+      annotations: SEARCH_VISA_ANNOTATION,
       _meta: {
         ui: {
           resourceUri: UI_RESOURCE_URI,
