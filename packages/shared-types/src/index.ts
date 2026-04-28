@@ -1,4 +1,9 @@
 export type {
+  AuditAction as AuditActionType,
+  AuditEvent as AuditEventType,
+} from "./audit/AuditEvent.js";
+export { AuditAction, AuditEvent } from "./audit/AuditEvent.js";
+export type {
   AuthContext as AuthContextType,
   AuthTier as AuthTierType,
 } from "./auth/AuthContext.js";

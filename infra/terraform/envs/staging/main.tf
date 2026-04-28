@@ -138,6 +138,21 @@ module "logging" {
   depends_on = [google_project_service.enabled]
 }
 
+# ADR-015: 7-year WORM audit log bucket (bucket_lock irreversible).
+# Cloud Logging sink filter: jsonPayload.event="audit_event"
+module "audit_log" {
+  source      = "../../modules/audit-log"
+  project_id  = var.project_id
+  bucket_name = "ssw-compass-audit-7y"
+  env         = "staging"
+  # Cloud Logging service account for this project.
+  # Obtain with: gcloud logging sinks describe _Default --project=PROJECT --format='value(writerIdentity)'
+  # Placeholder — set before terraform apply. See ADR-015 §Consequences.
+  logging_sa_email = var.audit_logging_sa_email
+
+  depends_on = [google_project_service.enabled]
+}
+
 module "vertex_ai_search" {
   source     = "../../modules/vertex-ai-search"
   project_id = var.project_id
