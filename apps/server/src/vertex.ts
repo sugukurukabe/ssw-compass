@@ -14,9 +14,15 @@ import { SearchServiceClient } from "@google-cloud/discoveryengine";
  *   any one throws immediately (silent fallback to fixture is rejected
  *   for auditability).
  *
- * Confidence scoring is fixed at 0.9 for both modes in Sprint 2. Real
- * data-store-side relevance tuning lands in Sprint 3 together with v3
- * §23.2 egress controls (VPC connector + Cloud NAT + safeFetch).
+ * Confidence scoring is **currently fixed at 0.9 for both modes** as a
+ * Sprint 2 carry-over. This means `args.confidenceThreshold` (the
+ * handler-site >= 0.7 guard) is satisfied trivially in real mode today,
+ * and fine-grained ranking from Vertex is not yet honoured.
+ * Sprint 4 Phase 1.4 replaces this with a real mapping from Vertex
+ * `modelScores` (see docs/sprint-4-pending.md) and makes the threshold
+ * meaningful end-to-end. Until that lands, do NOT rely on confidence
+ * in real mode for filtering business logic beyond the handler-level
+ * `>= 0.7` smoke check.
  *
  * The `VertexSearchArgs` / `VertexSearchResult` / `GroundedChunk` contract
  * is frozen — handler sites (search-visa, classify-procedure,
@@ -105,7 +111,6 @@ function resolveRealConfig(): RealSearchConfig {
         "Set them or switch back to SSW_VERTEX_MODE=fixture for local development.",
     );
   }
-  // biome-ignore lint/style/noNonNullAssertion: the missing-guard above is exhaustive
   return {
     project: project as string,
     location: location as string,
@@ -183,6 +188,10 @@ function resultToChunk(result: SearchResult): GroundedChunk | null {
     title,
     snippet,
     uri: link,
+    // Placeholder — Sprint 4 Phase 1.4 will replace this with a
+    // mapping from Vertex `modelScores` so `confidenceThreshold`
+    // actually filters low-relevance results in real mode. See the
+    // top-of-file docstring for the migration plan.
     confidence: 0.9,
     publishedAt,
     docId,
