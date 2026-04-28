@@ -2,18 +2,20 @@
  * Output sanitizer for retrieved snippets — defense against indirect prompt
  * injection per v3 §23.1. Pattern set is fully defined below.
  *
- * Sprint 1 behavior: pass-through. The function returns the raw snippet
- * unchanged and flagged=false. This exists so handler sites can depend on the
- * stable SanitizeResult shape today; Sprint 3 flips SANITIZATION_ACTIVE to
- * true once data-store ingestion controls (source allowlist, content hashing)
- * are in place and E2E tested.
+ * Sprint 3 Batch 5 activated: SANITIZATION_ACTIVE = true. All retrieved
+ * snippets pass through the 4 pattern categories (INJECTION_PATTERNS,
+ * SUSPICIOUS_URL, CODE_FENCE, CONTROL_CHARS) and any hit is replaced with
+ * a neutralising marker + logged via `event: "retrieved_content_sanitized"`
+ * in Cloud Logging. Fixture mode (current staging SSW_VERTEX_MODE) produces
+ * clean content so activation should not change observable output until
+ * Sprint 4 Phase 1 flips to real Vertex where sanitizer catches any bad
+ * retrievals.
  *
  * .cursor/rules/security.mdc forbids bypass "for performance" — any change
- * here requires a paired snapshot test update (test/safety/sanitizer.snapshot.ts)
- * which is introduced in Sprint 3.
+ * here requires a paired snapshot test update (test/safety/sanitizer.snapshot.test.ts).
  */
 
-const SANITIZATION_ACTIVE = false;
+const SANITIZATION_ACTIVE = true;
 
 export const INJECTION_PATTERNS: readonly RegExp[] = [
   /ignore\s+(all\s+)?(previous|above|prior)\s+(instructions?|prompts?)/i,
