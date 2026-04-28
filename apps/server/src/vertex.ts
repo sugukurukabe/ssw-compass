@@ -170,6 +170,12 @@ type SearchResultDoc = {
 };
 type SearchResult = { document?: SearchResultDoc | null };
 
+function discoveryEngineApiEndpoint(location: string): string {
+  return location === "global"
+    ? "discoveryengine.googleapis.com"
+    : `${location}-discoveryengine.googleapis.com`;
+}
+
 function resultToChunk(result: SearchResult): GroundedChunk | null {
   const doc = result.document;
   if (doc === undefined || doc === null) return null;
@@ -222,7 +228,10 @@ let _client: SearchClientLike | null = null;
 
 function getSearchClient(): SearchClientLike {
   if (_client !== null) return _client;
-  _client = new SearchServiceClient() as unknown as SearchClientLike;
+  const location = process.env["SSW_VERTEX_LOCATION"] ?? "global";
+  _client = new SearchServiceClient({
+    apiEndpoint: discoveryEngineApiEndpoint(location),
+  }) as unknown as SearchClientLike;
   return _client;
 }
 
