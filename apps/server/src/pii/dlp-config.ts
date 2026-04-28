@@ -46,10 +46,14 @@ export const DLP_CONFIG = {
     "CREDIT_CARD_NUMBER",
   ] as const,
 
-  /** カスタム infoType — DLP 組み込みにない在留カード番号パターン */
+  /**
+   * カスタム infoType — DLP 組み込みにない在留カード番号パターン
+   * Note: @google-cloud/dlp SDK uses camelCase (infoType, not info_type).
+   * Using snake_case caused "Custom info type must have a name" error in prod.
+   */
   customInfoTypes: [
     {
-      info_type: { name: "ZAIRYU_CARD_NUMBER" },
+      infoType: { name: "ZAIRYU_CARD_NUMBER" },
       regex: { pattern: "\\b[A-Z]{2}[0-9]{8}[A-Z]{2}\\b" },
     },
   ],
