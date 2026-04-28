@@ -9,7 +9,7 @@
 | ID | Blocker | Status | Owner |
 |---|---|---|---|
 | B1 | Privacy policy final gyoseishoshi review | Pending | Wall + gyoseishoshi |
-| B2 | Vertex real mode (fixture currently) | Pending | Engineering + gyoseishoshi URL cleanup |
+| B2 | Vertex real mode (content imported; Cloud Run flip pending) | In progress — import succeeded 41/41 | Engineering |
 | B3 | 3-5 compliant screenshots (PNG, width ≥1000, app response only) | Pending | Wall |
 | B4 | 6-host verification (Claude Desktop + Web minimum) | Pending | Wall |
 | B5 | Internal `_ssw_checklist_schema` visible in tools/list | Resolved — removed from public registration | Engineering |
@@ -28,6 +28,7 @@
 | ai-plugin endpoint | Pass — live 200 |
 | OpenAPI endpoint | Pass — live 200 |
 | Tool annotations | Pass — internal helper removed from public tools/list |
+| Vertex source import | Pass — 41 documents imported, 0 failures |
 
 ## Acceptance checklist before submission
 
@@ -36,7 +37,7 @@
 - [x] `curl -fsS https://mcp.ssw-compass.jp/.well-known/openapi.json` returns 200 JSON
 - [x] `/.well-known/mcp.json` includes license/privacy/terms URLs live
 - [x] `data/source-index.jsonl` has zero `__PLACEHOLDER__` values
-- [ ] Vertex real mode returns source URLs from ingested content
+- [ ] Vertex real mode returns source URLs from ingested content (Cloud Run env flip pending)
 - [ ] 3-5 screenshots committed under `assets/screenshots/`
 - [ ] Privacy policy has no placeholders and is reviewed
 - [x] Tool inventory reviewed; Pro-only/write-like tools clearly classified

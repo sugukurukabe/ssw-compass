@@ -98,7 +98,7 @@ Sprint 5 後半で追加予定。基本情報は Anthropic と同一。
 - [x] health check が 200 を返す
 - [x] 全 tools が tools/list に表示される
 - [x] disclaimer が全レスポンスに含まれる
-- [ ] Vertex real mode (fixture mode は審査で問題になりうる — B1 完了が prerequisite)
+- [ ] Vertex real mode (content imported 41/41; Cloud Run env flip smoke pending)
 - [x] `/.well-known/ai-plugin.json` returns 200 JSON
 - [x] `/.well-known/openapi.json` returns 200 JSON
 - [x] Internal helper `_ssw_checklist_schema` removed from public tools/list
