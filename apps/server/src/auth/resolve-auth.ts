@@ -11,6 +11,10 @@
  * 適用対象: POST /mcp のみ (health / .well-known は public)
  * Applied to: POST /mcp only (health / .well-known are public)
  * Diterapkan pada: POST /mcp saja (health / .well-known bersifat publik)
+ *
+ * Note: We use a type cast approach (AuthedRequest) instead of
+ * `declare module "express-serve-static-core"` because module augmentation
+ * is unreliable in tsc --build (composite) contexts used in the Docker build.
  */
 
 import type { AuthContextType as AuthContext } from "@ssw/shared-types";
@@ -18,11 +22,8 @@ import type { NextFunction, Request, Response } from "express";
 import { logger } from "../logger.js";
 import { extractBearerToken, getTokenVerifier } from "./token-verifier.js";
 
-declare module "express-serve-static-core" {
-  interface Request {
-    authContext?: AuthContext;
-  }
-}
+/** Request with optional authContext attached by resolveAuth middleware */
+export type AuthedRequest = Request & { authContext?: AuthContext };
 
 export async function resolveAuth(req: Request, res: Response, next: NextFunction): Promise<void> {
   const authHeader = req.header("Authorization");
@@ -53,7 +54,7 @@ export async function resolveAuth(req: Request, res: Response, next: NextFunctio
     return;
   }
 
-  req.authContext = ctx;
+  (req as AuthedRequest).authContext = ctx;
   next();
 }
 
@@ -65,7 +66,7 @@ export async function resolveAuth(req: Request, res: Response, next: NextFunctio
  * tool handler はこれを通じて tier / gyoseishoshi_verified を参照する。
  */
 export function getAuthContext(req: Request): AuthContext {
-  const ctx = req.authContext;
+  const ctx = (req as AuthedRequest).authContext;
   if (ctx === undefined) {
     // Should never happen if resolveAuth middleware is applied correctly.
     throw new Error(
