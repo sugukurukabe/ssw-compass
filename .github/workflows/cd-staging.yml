@@ -249,7 +249,9 @@ jobs:
           # Expect one contents[] entry, mimeType=text/html, text starts
           # with the doctype, and the Report-Only CSP header is present.
           jq -e '.result.contents | length == 1' /tmp/ui.json
-          jq -e '.result.contents[0].mimeType == "text/html"' /tmp/ui.json
+          # ext-apps serves MCP UI resources with mimeType
+          # "text/html;profile=mcp-app" (RESOURCE_MIME_TYPE constant).
+          jq -e '.result.contents[0].mimeType | startswith("text/html")' /tmp/ui.json
           jq -r '.result.contents[0].text' /tmp/ui.json > /tmp/ui.html
           head -c 120 /tmp/ui.html; echo
           grep -q 'Content-Security-Policy-Report-Only' /tmp/ui.html
