@@ -159,7 +159,7 @@ jobs:
           URL="${{ needs.deploy.outputs.service_url }}"
           TOKEN="${{ steps.id-token.outputs.id_token }}"
           echo "Probing $URL/health with Bearer ID token ..."
-          curl -fsS --max-time 10 -H "Authorization: Bearer $TOKEN" "$URL/health" | tee /tmp/health.json
+          curl -fsS --max-time 10 -H "X-Serverless-Authorization: Bearer $TOKEN" "$URL/health" | tee /tmp/health.json
           jq -e '.status == "ok" and .service == "ssw-mcp"' /tmp/health.json
 
       - name: MCP tools/list (expect >= 5 tools)
@@ -168,14 +168,14 @@ jobs:
           URL="${{ needs.deploy.outputs.service_url }}"
           TOKEN="${{ steps.id-token.outputs.id_token }}"
           INIT_RESP=$(curl -sS -i -X POST "$URL/mcp" \
-            -H "Authorization: Bearer $TOKEN" \
+            -H "X-Serverless-Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-smoke","version":"1.0"},"capabilities":{}}}')
           SESSION_ID=$(echo "$INIT_RESP" | grep -i '^mcp-session-id:' | awk '{print $2}' | tr -d '\r\n')
           test -n "$SESSION_ID" || { echo "No mcp-session-id in initialize response"; exit 1; }
           curl -sS -X POST "$URL/mcp" \
-            -H "Authorization: Bearer $TOKEN" \
+            -H "X-Serverless-Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -H "mcp-session-id: $SESSION_ID" \
@@ -197,7 +197,7 @@ jobs:
           # MCP JSON-RPC over streamable HTTP. ADR-012: Bearer ID token
           # required because staging allow_unauthenticated=false.
           INIT_RESP=$(curl -sS -i -X POST "$URL/mcp" \
-            -H "Authorization: Bearer $TOKEN" \
+            -H "X-Serverless-Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-smoke","version":"1.0"},"capabilities":{}}}')
@@ -205,7 +205,7 @@ jobs:
           test -n "$SESSION_ID" || { echo "No mcp-session-id in initialize response"; exit 1; }
 
           curl -sS -X POST "$URL/mcp" \
-            -H "Authorization: Bearer $TOKEN" \
+            -H "X-Serverless-Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -H "mcp-session-id: $SESSION_ID" \
@@ -229,7 +229,7 @@ jobs:
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
           TOKEN="${{ steps.id-token.outputs.id_token }}"
-          curl -fsS -H "Authorization: Bearer $TOKEN" "$URL/.well-known/mcp.json" | tee /tmp/card.json
+          curl -fsS -H "X-Serverless-Authorization: Bearer $TOKEN" "$URL/.well-known/mcp.json" | tee /tmp/card.json
           jq -e '.name == "SSW Compass"' /tmp/card.json
           # Submission metadata fields were added in Sprint 5. Log them for
           # reviewer visibility, but do not block deployment during transition
@@ -243,11 +243,11 @@ jobs:
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
           TOKEN="${{ steps.id-token.outputs.id_token }}"
-          curl -fsS -H "Authorization: Bearer $TOKEN" "$URL/privacy" | tee /tmp/privacy.txt
+          curl -fsS -H "X-Serverless-Authorization: Bearer $TOKEN" "$URL/privacy" | tee /tmp/privacy.txt
           grep -q 'SSW Compass Privacy Policy' /tmp/privacy.txt
-          curl -fsS -H "Authorization: Bearer $TOKEN" "$URL/.well-known/ai-plugin.json" | tee /tmp/ai-plugin.json
+          curl -fsS -H "X-Serverless-Authorization: Bearer $TOKEN" "$URL/.well-known/ai-plugin.json" | tee /tmp/ai-plugin.json
           jq -e '.name_for_human == "SSW Compass Japan"' /tmp/ai-plugin.json
-          curl -fsS -H "Authorization: Bearer $TOKEN" "$URL/.well-known/openapi.json" | tee /tmp/openapi.json
+          curl -fsS -H "X-Serverless-Authorization: Bearer $TOKEN" "$URL/.well-known/openapi.json" | tee /tmp/openapi.json
           jq -e '.openapi == "3.1.0"' /tmp/openapi.json
 
       - name: MCP resources/read ui://ssw-search/mcp-app.html (Batch 7 UI dist)
@@ -259,14 +259,14 @@ jobs:
           # UI dist (Batch 7 Commit 1 closed the Batch-3 gap by adding
           # /app/ui/<name>/dist COPY + UI_DIST_ROOT env to the image).
           INIT_RESP=$(curl -sS -i -X POST "$URL/mcp" \
-            -H "Authorization: Bearer $TOKEN" \
+            -H "X-Serverless-Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-smoke","version":"1.0"},"capabilities":{}}}')
           SESSION_ID=$(echo "$INIT_RESP" | grep -i '^mcp-session-id:' | awk '{print $2}' | tr -d '\r\n')
           test -n "$SESSION_ID" || { echo "No mcp-session-id"; exit 1; }
           curl -sS -X POST "$URL/mcp" \
-            -H "Authorization: Bearer $TOKEN" \
+            -H "X-Serverless-Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -H "mcp-session-id: $SESSION_ID" \
