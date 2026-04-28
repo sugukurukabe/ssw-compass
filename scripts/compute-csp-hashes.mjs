@@ -82,11 +82,13 @@ async function hardenHtml(path) {
     );
   }
   const csp = buildCsp(scriptHashes, styleHashes);
-  const replacement = `<meta http-equiv="Content-Security-Policy-Report-Only" content="${csp}" />`;
+  // Sprint 4 Batch 11: flip from Report-Only to enforcing CSP.
+  // Sprint 3 observation window showed zero violations.
+  const replacement = `<meta http-equiv="Content-Security-Policy" content="${csp}" />`;
   const rewritten = original.replace(META_CSP_REGEX, replacement);
   await writeFile(path, rewritten, "utf8");
   console.log(
-    `  ${path}: ${scriptHashes.length} script hash(es), ${styleHashes.length} style hash(es), Report-Only applied`,
+    `  ${path}: ${scriptHashes.length} script hash(es), ${styleHashes.length} style hash(es), CSP enforcing applied`,
   );
 }
 

@@ -287,10 +287,123 @@ Settings → Feature Preview → Custom Connectors → Add:
 See [host-verification-report.md](host-verification-report.md)
 per-host sections for VS Code Copilot, Goose, Postman MCP, MCPJam.
 
+## Batch 11: prod first deploy + LB + Cloud Armor + CSP enforce
+
+### Pre-apply checklist
+
+All items must be complete before `terraform apply envs/prod/`:
+
+- [ ] `ssw-jwt-secret` created in Secret Manager (prod):
+  ```bash
+  gcloud secrets create ssw-jwt-secret --project=ssw-compass-prod-494613
+  printf '%s' "$(openssl rand -base64 48)" | \
+    gcloud secrets versions add ssw-jwt-secret --data-file=- --project=ssw-compass-prod-494613
+  ```
+- [ ] Cloud Logging SA obtained for audit-log bucket:
+  ```bash
+  gcloud logging sinks describe _Default \
+    --project=ssw-compass-prod-494613 \
+    --format='value(writerIdentity)'
+  ```
+- [ ] DNS: Cloudflare DNS `mcp.ssw-compass.jp` A record provisionally
+  set to a placeholder IP until LB IP is known (avoids cert provisioning
+  failure). After `terraform apply`, update to `output.lb_ip_address`.
+
+### Apply sequence
+
+```bash
+cd infra/terraform/envs/prod
+eval $(direnv export bash)
+
+# 1. Cloud Run + Secrets + audit log (foundation layer)
+terraform apply \
+  -target=module.cloud_run \
+  -target=module.audit_log \
+  -target=module.logging \
+  -var="audit_logging_sa_email=<writer_identity>"
+
+# 2. VPC + Cloud Armor (network layer)
+terraform apply \
+  -target=module.vpc_egress \
+  -target=module.cloud_armor
+
+# 3. LB + cert (requires Cloud Run running + Cloud Armor policy existing)
+terraform apply -target=module.lb
+
+# 4. Full state (picks up any remaining resources)
+terraform apply -var="audit_logging_sa_email=<writer_identity>"
+```
+
+### Post-apply: DNS cut-over
+
+```bash
+# Get LB static IP
+terraform output -raw lb_ip  # from module.lb output lb_ip_address
+
+# Update Cloudflare DNS: mcp.ssw-compass.jp A → <LB_IP>
+# Enable Cloudflare WAF + Bot Fight Mode + Proxied
+
+# Wait for Google-managed cert to provision (can take 5-60 min)
+gcloud compute ssl-certificates describe ssw-prod-cert \
+  --global --format='value(managed.status)'
+# expect: ACTIVE
+```
+
+### Prod smoke test (5-stage)
+
+```bash
+URL="https://mcp.ssw-compass.jp"
+TOKEN=$(gcloud auth print-identity-token)
+
+# 1. Health
+curl -s "$URL/health" | jq '.status'
+# expected: "ok"
+
+# 2. tools/list (7 tools)
+curl -s -H "Authorization: Bearer $TOKEN" "$URL/mcp" \
+  -d '{"jsonrpc":"2.0","method":"tools/list","id":1}' | \
+  jq '.result.tools | length'
+# expected: 7
+
+# 3. tools/call search_visa (disclaimer + results)
+curl -s -H "Authorization: Bearer $TOKEN" "$URL/mcp" \
+  -d '{"jsonrpc":"2.0","method":"tools/call","params":{"name":"search_visa","arguments":{"query":"特定技能1号 建設分野","language":"ja"}},"id":2}' | \
+  jq '.result.structuredContent.disclaimer' | head -c 50
+# expected: "本回答は一般情報の提供..."
+
+# 4. .well-known/mcp.json
+curl -s "$URL/.well-known/mcp.json" | jq '.publisher.url'
+# expected: "https://mcp.ssw-compass.jp"
+
+# 5. UI Resource
+curl -s -H "Authorization: Bearer $TOKEN" "$URL/mcp" \
+  -d '{"jsonrpc":"2.0","method":"resources/read","params":{"uri":"ui://ssw-search/mcp-app.html"},"id":3}' | \
+  jq '.result.contents[0].mimeType | startswith("text/html")'
+# expected: true
+```
+
+### Cloud Armor validation
+
+```bash
+# Rate limit test: 11th request to /mcp should get 429
+for i in $(seq 1 12); do
+  STATUS=$(curl -s -o /dev/null -w "%{http_code}" "$URL/mcp" \
+    -H "Content-Type: application/json" -d '{}')
+  echo "$i: $STATUS"
+done
+# expect: first 10 = 4xx/200, 11th+ = 429
+
+# Geo-block: check Cloud Armor logs in Cloud Console
+# (cannot simulate from within Japan without VPN)
+```
+
+---
+
 ## See also
 
 - [ADR-009: Terraform foundation](adr/ADR-009-terraform-foundation.md)
 - [ADR-012: Egress + public exposure](adr/ADR-012-egress-and-public-exposure.md)
+- [ADR-015: Audit log 7-year retention](adr/ADR-015-audit-log-7year-retention.md)
 - [docs/host-verification-report.md](host-verification-report.md) — 6-host verification matrix
 - [docs/onboarding.md](onboarding.md) — developer setup (direnv etc.)
 - [.cursor/rules/deployment-checklist.mdc](../.cursor/rules/deployment-checklist.mdc)
