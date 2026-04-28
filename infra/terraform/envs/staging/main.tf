@@ -67,10 +67,16 @@ module "artifact_registry" {
 }
 
 module "secrets" {
-  source           = "../../modules/secret-manager"
-  project_id       = var.project_id
-  env              = "shared"
-  secret_names     = []
+  source     = "../../modules/secret-manager"
+  project_id = var.project_id
+  env        = "shared"
+  # ADR-013: ssw-jwt-secret holds the HS256 signing key for application-layer
+  # JWT auth (Path Y). Value set manually:
+  #   gcloud secrets create ssw-jwt-secret --project=PROJECT_ID
+  #   echo -n "$(openssl rand -base64 48)" | \
+  #     gcloud secrets versions add ssw-jwt-secret --data-file=- --project=PROJECT_ID
+  # Rotation is operational; Terraform only declares the secret name.
+  secret_names     = ["ssw-jwt-secret"]
   accessor_members = [module.service_account.runtime_member]
 
   depends_on = [google_project_service.enabled]
@@ -95,14 +101,23 @@ module "cloud_run" {
     # DLP_ENABLED temporarily false on staging pending sensitivity
     # tuning: minLikelihood=POSSIBLE flagged the neutral smoke
     # query "特定技能1号 建設分野" as PII (false positive).
-    # Sprint 4 task: raise minLikelihood to LIKELY and/or calibrate
-    # allow-list tokens, then re-enable. Unit tests in
-    # apps/server/test/pii/dlp.test.ts continue to cover the code
-    # path with mocked DLP responses.
+    # Sprint 4 Batch 4 (ADR-011): raise minLikelihood to LIKELY then re-enable.
     DLP_ENABLED           = "false"
     CLOUDSDK_CORE_PROJECT = var.project_id
     LOG_LEVEL             = "info"
-    SSW_BUILD_SOURCE      = "batch-6-network-hardening"
+    SSW_BUILD_SOURCE      = "sprint4-batch2-auth"
+    # ADR-013: SSW_AUTH_MODE controls the auth path.
+    # "jwt" = Path Y (HS256 JWT self-verify, requires SSW_JWT_SECRET).
+    # "anonymous" = bypass all auth (local dev only, must NOT be used in staging/prod).
+    SSW_AUTH_MODE = "jwt"
+  }
+  # ADR-013: SSW_JWT_SECRET injected from Secret Manager at deploy time.
+  # The secret must be created before terraform apply:
+  #   gcloud secrets create ssw-jwt-secret --project=$PROJECT_ID
+  #   echo -n "$(openssl rand -base64 48)" | \
+  #     gcloud secrets versions add ssw-jwt-secret --data-file=- --project=$PROJECT_ID
+  secret_env_vars = {
+    SSW_JWT_SECRET = "ssw-jwt-secret"
   }
 
   # Batch 6: route all Cloud Run egress through the ssw-vpc connector

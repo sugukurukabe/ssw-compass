@@ -20,7 +20,13 @@ module "cloud_run" {
     SSW_ENV          = "prod"
     SSW_VERTEX_MODE  = "real"
     LOG_LEVEL        = "info"
-    SSW_BUILD_SOURCE = "batch-2-placeholder"
+    SSW_BUILD_SOURCE = "sprint4-batch2-auth"
+    SSW_AUTH_MODE    = "jwt"
+  }
+  # ADR-013: SSW_JWT_SECRET from Secret Manager (same secret name as staging).
+  # Create before first prod deploy (Batch 11).
+  secret_env_vars = {
+    SSW_JWT_SECRET = "ssw-jwt-secret"
   }
 }
 
