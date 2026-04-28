@@ -139,31 +139,24 @@ jobs:
     needs: [build-push, deploy]
     runs-on: ubuntu-latest
     steps:
-      - name: Authenticate to GCP via WIF
+      # ADR-012 §Decision 5: mint an ID token with audience=service URL
+      # directly from the WIF exchange instead of calling
+      # `gcloud auth print-identity-token --audiences=...`, which does
+      # not accept the federated credential (Invalid account type).
+      - name: Authenticate + mint ID token via WIF
+        id: id-token
         uses: google-github-actions/auth@v2
         with:
           workload_identity_provider: ${{ secrets.WIF_PROVIDER }}
           service_account: ${{ secrets.DEPLOY_SA_EMAIL }}
-
-      - name: Setup gcloud
-        uses: google-github-actions/setup-gcloud@v2
-        with:
-          project_id: ${{ env.PROJECT_ID }}
-
-      - name: Mint ID token for Cloud Run audience (ADR-012)
-        id: id-token
-        run: |
-          set -euo pipefail
-          URL="${{ needs.deploy.outputs.service_url }}"
-          TOKEN=$(gcloud auth print-identity-token --audiences="$URL")
-          echo "::add-mask::$TOKEN"
-          echo "token=$TOKEN" >> "$GITHUB_OUTPUT"
+          token_format: id_token
+          id_token_audience: ${{ needs.deploy.outputs.service_url }}
 
       - name: HTTP /health probe
         run: |
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
-          TOKEN="${{ steps.id-token.outputs.token }}"
+          TOKEN="${{ steps.id-token.outputs.id_token }}"
           echo "Probing $URL/health with Bearer ID token ..."
           curl -fsS --max-time 10 -H "Authorization: Bearer $TOKEN" "$URL/health" | tee /tmp/health.json
           jq -e '.status == "ok" and .service == "ssw-mcp"' /tmp/health.json
@@ -172,7 +165,7 @@ jobs:
         run: |
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
-          TOKEN="${{ steps.id-token.outputs.token }}"
+          TOKEN="${{ steps.id-token.outputs.id_token }}"
           INIT_RESP=$(curl -sS -i -X POST "$URL/mcp" \
             -H "Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
@@ -195,7 +188,7 @@ jobs:
         run: |
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
-          TOKEN="${{ steps.id-token.outputs.token }}"
+          TOKEN="${{ steps.id-token.outputs.id_token }}"
           # MCP JSON-RPC over streamable HTTP. ADR-012: Bearer ID token
           # required because staging allow_unauthenticated=false.
           INIT_RESP=$(curl -sS -i -X POST "$URL/mcp" \
@@ -226,7 +219,7 @@ jobs:
         run: |
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
-          TOKEN="${{ steps.id-token.outputs.token }}"
+          TOKEN="${{ steps.id-token.outputs.id_token }}"
           curl -fsS -H "Authorization: Bearer $TOKEN" "$URL/.well-known/mcp.json" | tee /tmp/card.json
           jq -e '.name == "SSW Compass"' /tmp/card.json
 
