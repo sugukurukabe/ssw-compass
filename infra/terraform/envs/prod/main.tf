@@ -23,11 +23,16 @@ module "cloud_run" {
   allow_unauthenticated = true
   env                   = "prod"
   env_vars = {
-    SSW_ENV          = "prod"
-    SSW_VERTEX_MODE  = "fixture" # flip to "real" in Batch 5 (Sprint 4 Phase 1)
-    LOG_LEVEL        = "info"
-    SSW_BUILD_SOURCE = "sprint4-batch11-prod-deploy"
-    SSW_AUTH_MODE    = "jwt"
+    SSW_ENV                      = "prod"
+    SSW_VERTEX_MODE              = "real"
+    SSW_VERTEX_PROJECT           = "ssw-compass-prod-494613"
+    SSW_VERTEX_LOCATION          = "asia-northeast1"
+    SSW_VERTEX_COLLECTION        = "default_collection"
+    SSW_VERTEX_DATA_STORE_ID     = "visa_legal"
+    SSW_VERTEX_SERVING_CONFIG_ID = "default_config"
+    LOG_LEVEL                    = "info"
+    SSW_BUILD_SOURCE             = "sprint4-batch11-prod-deploy"
+    SSW_AUTH_MODE                = "jwt"
     # DLP_ENABLED temporarily false on prod: fail-closed DLP API errors block all
     # search_visa queries (same issue as staging Sprint 3 Batch 6).
     # Diagnosis: ssw-runtime SA may lack roles/dlp.user in prod context, or
