@@ -137,6 +137,8 @@ module "vpc_egress" {
 module "cloud_armor" {
   source     = "../../modules/cloud-armor"
   project_id = var.project_id
-  enabled    = false
+  enabled    = true # Batch 6: define WAF policy (Standard edition); attach to LB in Sprint 4
   env        = "staging"
+
+  depends_on = [google_project_service.enabled]
 }
