@@ -98,11 +98,11 @@ module "cloud_run" {
   env_vars = {
     SSW_ENV         = "staging"
     SSW_VERTEX_MODE = "fixture"
-    # DLP_ENABLED temporarily false on staging pending sensitivity
-    # tuning: minLikelihood=POSSIBLE flagged the neutral smoke
-    # query "特定技能1号 建設分野" as PII (false positive).
-    # Sprint 4 Batch 4 (ADR-011): raise minLikelihood to LIKELY then re-enable.
-    DLP_ENABLED           = "false"
+    # ADR-011: DLP re-enabled with minLikelihood=LIKELY (4).
+    # Sprint 3 false-positive (POSSIBLE flagging "特定技能1号 建設分野") is
+    # resolved by raising the threshold. EMAIL_ADDRESS/PHONE_NUMBER/IBAN_CODE
+    # removed from BLOCKING_INFO_TYPES in dlp-config.ts.
+    DLP_ENABLED           = "true"
     CLOUDSDK_CORE_PROJECT = var.project_id
     LOG_LEVEL             = "info"
     SSW_BUILD_SOURCE      = "sprint4-batch2-auth"
