@@ -16,11 +16,30 @@ attorney for individual cases, and the pipeline blocks personal identifiers
 
 ## Status
 
-**Sprint 1 complete — Pre-alpha.** The monorepo skeleton, MCP server, first
-tool (`search_visa`) with fixture data, single-file UI Resource, and Server
-Card discovery endpoint are wired end-to-end locally. Vertex AI Search
-real-integration, Cloud DLP, CSP hashing, and Directory submission are tracked
-for Sprint 2–4.
+**Sprint 3 complete.** Production-grade infrastructure in place:
+
+- staging Cloud Run service deployed with IAM-gated access
+- VPC-egress-pinned (Cloud NAT static IP)
+- 4 UI Resources bundled in the container image
+- Output sanitizer active; Cloud DLP 2nd stage implemented (gated off
+  on staging pending Sprint 4 sensitivity tuning)
+- Hash-based CSP with Trusted Types (Report-Only rollout window)
+- Cloud Armor security policy defined, pending Sprint 4 attach
+
+**Sprint 4 (in planning, June 2026)**: Vertex AI Search content
+(gyoseishoshi-supervised), custom domain `mcp.ssw-compass.jp`,
+Cloud Armor + Cloudflare attach, and Connectors Directory
+submission packet.
+
+For staging URL discovery (developer access only):
+
+```bash
+gcloud run services describe ssw-mcp-staging \
+  --region=asia-northeast1 --format='value(status.url)'
+```
+
+See [docs/sprint-3-summary.md](docs/sprint-3-summary.md) for the full
+Sprint 3 retrospective.
 
 ## Quick start
 
