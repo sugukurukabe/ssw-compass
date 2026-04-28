@@ -12,6 +12,8 @@ locals {
     # Batch 4: Vertex AI Search + foundation platform APIs.
     "discoveryengine.googleapis.com",
     "aiplatform.googleapis.com",
+    # Batch 5: Cloud DLP 2nd stage for PII guard.
+    "dlp.googleapis.com",
   ]
 }
 
@@ -39,6 +41,7 @@ module "service_account" {
   source                        = "../../modules/service-account"
   project_id                    = var.project_id
   enable_discoveryengine_viewer = true # Batch 4: bind ssw-runtime to roles/discoveryengine.viewer
+  enable_dlp_user               = true # Batch 5: bind ssw-runtime to roles/dlp.user for inspectContent
 
   depends_on = [google_project_service.enabled]
 }
@@ -86,8 +89,9 @@ module "cloud_run" {
   env_vars = {
     SSW_ENV          = "staging"
     SSW_VERTEX_MODE  = "fixture"
+    DLP_ENABLED      = "true" # Batch 5: activate Cloud DLP 2nd stage in pii/index.ts
     LOG_LEVEL        = "info"
-    SSW_BUILD_SOURCE = "batch-2-placeholder"
+    SSW_BUILD_SOURCE = "batch-5-sanitizer-dlp"
   }
 
   depends_on = [module.service_account]
