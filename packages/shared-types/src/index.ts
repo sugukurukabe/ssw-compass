@@ -42,6 +42,21 @@ export type {
   SswCompassToolAnnotation,
 } from "./hitl/HitlControl.js";
 export { HitlControlId, LegalLevel } from "./hitl/HitlControl.js";
+export type {
+  AffectingRole as AffectingRoleType,
+  ImpactSeverity as ImpactSeverityType,
+  LawUpdate as LawUpdateType,
+  LawUpdateCategory as LawUpdateCategoryType,
+  LawUpdateStatus as LawUpdateStatusType,
+} from "./law-updates.js";
+export {
+  AffectingRole,
+  ImpactSeverity,
+  KNOWN_LAW_UPDATES_FIXTURE,
+  LawUpdate,
+  LawUpdateCategory,
+  LawUpdateStatus,
+} from "./law-updates.js";
 export {
   DOCUMENT_CATEGORY,
   DOCUMENTS_INDUSTRY,
@@ -58,3 +73,8 @@ export {
   SSW_INDUSTRIES_ACTIVE,
   type SswIndustry,
 } from "./ssw-industries.js";
+export type {
+  ListLawUpdatesInput as ListLawUpdatesInputType,
+  ListLawUpdatesOutput as ListLawUpdatesOutputType,
+} from "./tools/list-law-updates.js";
+export { ListLawUpdatesInput, ListLawUpdatesOutput } from "./tools/list-law-updates.js";
