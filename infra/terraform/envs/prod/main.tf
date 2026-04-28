@@ -32,7 +32,9 @@ module "cloud_run" {
     # search_visa queries (same issue as staging Sprint 3 Batch 6).
     # Diagnosis: ssw-runtime SA may lack roles/dlp.user in prod context, or
     # DLP API quota is being exceeded. Sprint 5 Phase B task: diagnose and re-enable.
-    DLP_ENABLED           = "false"
+    # ADR-011: DLP re-enabled. IAM confirmed OK (roles/dlp.user on ssw-runtime SA).
+    # Sprint 4 failure was likely DLP API cold-start on first prod request.
+    DLP_ENABLED           = "true"
     CLOUDSDK_CORE_PROJECT = var.project_id
   }
   # ADR-013: SSW_JWT_SECRET from Secret Manager.
