@@ -38,7 +38,7 @@ gcloud run services describe ssw-mcp-staging \
   --region=asia-northeast1 --format='value(status.url)'
 ```
 
-See [docs/sprint-3-summary.md](docs/sprint-3-summary.md) for the full
+See [docs/sprints/sprint-3-summary.md](docs/sprints/sprint-3-summary.md) for the full
 Sprint 3 retrospective.
 
 ## Quick start (local development)
