@@ -241,9 +241,57 @@ curl -s -o /dev/null -w '%{http_code}\n' "$SERVICE_URL/health"
 # Expected: 401
 ```
 
+## 6-host integration (Batch 7 onward)
+
+Staging requires ID-token auth (ADR-012 §Decision 2). Each MCP host
+needs to carry the token in its MCP request path. Concrete config
+snippets and per-host findings are tracked in
+[host-verification-report.md](host-verification-report.md).
+
+### Common setup: mint an ID token
+
+```bash
+SERVICE_URL=$(gcloud run services describe ssw-mcp-staging \
+  --region=asia-northeast1 --format='value(status.url)')
+TOKEN=$(gcloud auth print-identity-token --audiences="$SERVICE_URL")
+```
+
+### Claude Desktop (mcp-remote)
+
+Append to `~/Library/Application Support/Claude/claude_desktop_config.json`:
+
+```json
+{
+  "mcpServers": {
+    "ssw-compass-staging": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote", "<SERVICE_URL>/mcp",
+               "--header", "Authorization:${ID_TOKEN}"],
+      "env": { "ID_TOKEN": "Bearer <TOKEN>" }
+    }
+  }
+}
+```
+
+Quit and relaunch Claude Desktop (Cmd+Q). Token expires in 1 h —
+re-mint and replace the `<TOKEN>` value in config when prompted.
+
+### Claude Web
+
+Settings → Feature Preview → Custom Connectors → Add:
+- URL: `<SERVICE_URL>/mcp`
+- Auth header: `Authorization: Bearer <TOKEN>`
+
+### Other hosts
+
+See [host-verification-report.md](host-verification-report.md)
+per-host sections for VS Code Copilot, Goose, Postman MCP, MCPJam.
+
 ## See also
 
 - [ADR-009: Terraform foundation](adr/ADR-009-terraform-foundation.md)
+- [ADR-012: Egress + public exposure](adr/ADR-012-egress-and-public-exposure.md)
+- [docs/host-verification-report.md](host-verification-report.md) — 6-host verification matrix
 - [docs/onboarding.md](onboarding.md) — developer setup (direnv etc.)
 - [.cursor/rules/deployment-checklist.mdc](../.cursor/rules/deployment-checklist.mdc)
   — Sprint 1 cheat-sheet (kept for historical reference; this

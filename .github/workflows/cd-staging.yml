@@ -223,6 +223,39 @@ jobs:
           curl -fsS -H "Authorization: Bearer $TOKEN" "$URL/.well-known/mcp.json" | tee /tmp/card.json
           jq -e '.name == "SSW Compass"' /tmp/card.json
 
+      - name: MCP resources/read ui://ssw-search/mcp-app.html (Batch 7 UI dist)
+        run: |
+          set -euo pipefail
+          URL="${{ needs.deploy.outputs.service_url }}"
+          TOKEN="${{ steps.id-token.outputs.id_token }}"
+          # Confirms apps/server/src/ui-assets.ts can locate the bundled
+          # UI dist (Batch 7 Commit 1 closed the Batch-3 gap by adding
+          # /app/ui/<name>/dist COPY + UI_DIST_ROOT env to the image).
+          INIT_RESP=$(curl -sS -i -X POST "$URL/mcp" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-smoke","version":"1.0"},"capabilities":{}}}')
+          SESSION_ID=$(echo "$INIT_RESP" | grep -i '^mcp-session-id:' | awk '{print $2}' | tr -d '\r\n')
+          test -n "$SESSION_ID" || { echo "No mcp-session-id"; exit 1; }
+          curl -sS -X POST "$URL/mcp" \
+            -H "Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -H "mcp-session-id: $SESSION_ID" \
+            -d '{"jsonrpc":"2.0","id":2,"method":"resources/read","params":{"uri":"ui://ssw-search/mcp-app.html"}}' \
+            > /tmp/ui-raw.txt
+          awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/ui-raw.txt > /tmp/ui.json
+          # Expect one contents[] entry, mimeType=text/html, text starts
+          # with the doctype, and the Report-Only CSP header is present.
+          jq -e '.result.contents | length == 1' /tmp/ui.json
+          jq -e '.result.contents[0].mimeType == "text/html"' /tmp/ui.json
+          jq -r '.result.contents[0].text' /tmp/ui.json > /tmp/ui.html
+          head -c 120 /tmp/ui.html; echo
+          grep -q 'Content-Security-Policy-Report-Only' /tmp/ui.html
+          grep -q 'trusted-types ssw-purify' /tmp/ui.html
+          echo "UI resource read OK (size=$(wc -c < /tmp/ui.html) bytes)"
+
       - name: Upload smoke test artefacts
         if: always()
         uses: actions/upload-artifact@v4
@@ -233,6 +266,8 @@ jobs:
             /tmp/tools.json
             /tmp/search.json
             /tmp/card.json
+            /tmp/ui.json
+            /tmp/ui.html
           if-no-files-found: warn
 
   revert-on-failure:
