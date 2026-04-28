@@ -7,17 +7,20 @@ provider "google" {
 }
 
 module "cloud_run" {
-  source                = "../../modules/cloudrun"
-  project_id            = var.project_id
-  location              = var.region
-  service_name          = "ssw-mcp-prod"
-  image                 = "gcr.io/cloudrun/hello"
-  runtime_sa_email      = var.runtime_sa_email
-  max_instances         = 20
-  min_instances         = 0
-  concurrency           = 80
-  ingress               = "INGRESS_TRAFFIC_ALL" # auth required via IAM (allow_unauthenticated=false)
-  allow_unauthenticated = false
+  source           = "../../modules/cloudrun"
+  project_id       = var.project_id
+  location         = var.region
+  service_name     = "ssw-mcp-prod"
+  image            = "gcr.io/cloudrun/hello"
+  runtime_sa_email = var.runtime_sa_email
+  max_instances    = 20
+  min_instances    = 0
+  concurrency      = 80
+  ingress          = "INGRESS_TRAFFIC_ALL"
+  # allow_unauthenticated=true: LB + Cloud Armor (ssw-waf-policy-prod) protect the service.
+  # Application-layer auth (SSW_AUTH_MODE=jwt) distinguishes Free/Pro tiers.
+  # See ADR-013 §Cloud Run ingress for the auth layering rationale.
+  allow_unauthenticated = true
   env                   = "prod"
   env_vars = {
     SSW_ENV               = "prod"
