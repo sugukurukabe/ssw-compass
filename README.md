@@ -41,25 +41,31 @@ gcloud run services describe ssw-mcp-staging \
 See [docs/sprint-3-summary.md](docs/sprint-3-summary.md) for the full
 Sprint 3 retrospective.
 
-## Quick start
+## Quick start (local development)
 
-Prerequisites (macOS): Node 22, pnpm 10, [`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/),
-and Claude Desktop. Docker is **not** required in Sprint 1.
-Sprint 3 onward also requires [`direnv`](https://direnv.net/) and
-`gcloud` for Terraform workflows — see
+Prerequisites (macOS): Node 22, pnpm 10,
+[`cloudflared`](https://developers.cloudflare.com/cloudflare-one/connections/connect-networks/get-started/),
+and Claude Desktop. Docker is **not** required for local iteration; the
+Cloud Run build uses a distroless image produced in CI (see
+[apps/server/Dockerfile](apps/server/Dockerfile)).
+Working on infrastructure also requires
+[`direnv`](https://direnv.net/) and `gcloud` — see
 [docs/onboarding.md](docs/onboarding.md) for the one-time setup.
 
 ```bash
 # 1. Clone & install
-git clone https://github.com/<owner>/ssw-public.git
-cd ssw-public && pnpm install
+git clone https://github.com/sugukurukabe/ssw-compass.git
+cd ssw-compass && pnpm install
 
 # 2. Build shared workspaces (UI depends on @ssw/shared-types + @ssw/ui-bridge)
 pnpm -F @ssw/shared-types build
 pnpm -F @ssw/ui-bridge build
 
-# 3. Build the search UI bundle (single-file HTML, ~292 KB)
+# 3. Build the 4 UI bundles (single-file HTML, ~300 KB each)
 pnpm -F @ssw/ui-ssw-search build
+pnpm -F @ssw/ui-ssw-classify build
+pnpm -F @ssw/ui-ssw-timeline build
+pnpm -F @ssw/ui-ssw-checklist build
 
 # 4. Start the MCP server on http://localhost:8080
 pnpm -F @ssw/server dev
@@ -68,6 +74,11 @@ pnpm -F @ssw/server dev
 cloudflared tunnel --url http://localhost:8080
 #    → copy the printed https://*.trycloudflare.com URL for the next step
 ```
+
+For staging Cloud Run access (no local server required), see
+[docs/deploy-runbook.md](docs/deploy-runbook.md) and use an ID token
+minted with `gcloud auth print-identity-token` against the service URL
+returned by the command in the Status section above.
 
 ### Claude Desktop connection
 
@@ -85,8 +96,8 @@ cloudflared tunnel --url http://localhost:8080
 
 | Mode | When to use | Command |
 |---|---|---|
-| Quick tunnel (Sprint 1 default) | Ephemeral URL, no account setup | `cloudflared tunnel --url http://localhost:8080` |
-| Named tunnel (Sprint 2+) | Stable URL, requires login + DNS | `cloudflared tunnel login`<br>`cloudflared tunnel create ssw-dev`<br>`cloudflared tunnel route dns ssw-dev ssw-dev.<your-domain>`<br>`cloudflared tunnel run --url http://localhost:8080 ssw-dev` |
+| Quick tunnel (local default) | Ephemeral URL, no account setup | `cloudflared tunnel --url http://localhost:8080` |
+| Named tunnel | Stable URL, requires login + DNS | `cloudflared tunnel login`<br>`cloudflared tunnel create ssw-dev`<br>`cloudflared tunnel route dns ssw-dev ssw-dev.<your-domain>`<br>`cloudflared tunnel run --url http://localhost:8080 ssw-dev` |
 
 ## Architecture
 

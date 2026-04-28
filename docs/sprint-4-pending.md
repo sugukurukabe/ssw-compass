@@ -68,6 +68,17 @@ Target outcomes, not a fixed add-count:
   `module "cloud_run"` `env_vars` block. Add
   `SSW_VERTEX_MODE = "real"` and the 5 `SSW_VERTEX_*` config vars
   per ADR-006.
+- **Prereq code change**: replace the hard-coded `confidence: 0.9`
+  in [apps/server/src/vertex.ts](../apps/server/src/vertex.ts)
+  `resultToChunk` with a mapping from Vertex's `modelScores`
+  (`search_result.model_scores["relevance_score"]` or the first
+  available numeric score) and apply a post-filter
+  `chunks.filter((c) => c.confidence >= args.confidenceThreshold)`
+  inside `realSearch`. Without this, `args.confidenceThreshold`
+  (the v3 §confidenceThreshold ≥ 0.7 rule) is satisfied trivially
+  by every real-mode result. Add tests:
+  `test/vertex.test.ts` with mocked `modelScores` in three bands
+  (0.95 high / 0.72 borderline / 0.45 reject).
 - `terraform plan` → expect `0 to add, 1 to change, 0 to destroy`
   (Cloud Run env update only; image stays ignore_changes).
 - `terraform apply`.
@@ -77,13 +88,15 @@ Target outcomes, not a fixed add-count:
   - `tools/call search_visa` returns `structuredContent.results[]`
     with ≥ 1 URL drawn from the newly-ingested
     `data/source-index.jsonl` (not fixture URLs).
+  - Every returned chunk has `confidence !== 0.9` (confirms
+    real-score mapping is wired, not the legacy placeholder).
   - Cloud Logging 5-min ERROR = 0.
 - Enable opt-in
   [apps/server/test/vertex.integration.test.ts](../apps/server/test/vertex.integration.test.ts)
   if not already present from Batch 4 Day 3 pre-work (not shipped
   in Sprint 3 per ADR-010 Path B).
-- Commit chain: TF flip → apply → smoke artefact → integration
-  test.
+- Commit chain: confidence-map code → TF flip → apply → smoke
+  artefact → integration test.
 
 ### 5. Phase 1 exit criteria (must all pass)
 
@@ -291,6 +304,26 @@ to serve under normal MCP traffic." The Batch 3-6 gap (UI dist not
 bundled until Batch 7) demonstrated that backend-only smoke can hide
 a resource-serving regression for many deploys. Sprint 4 batches
 add an explicit check to the Interface Freeze template.
+
+### 11. UI + ui-bridge test coverage expansion (post-Sprint-3 cleanup finding)
+
+Currently `pnpm test` runs vitest only at the workspace root and in
+`apps/server`. UI workspaces (`ui/ssw-search|classify|timeline|checklist`)
+and `packages/ui-bridge` have **zero automated tests**. Add light
+coverage to catch UI regressions before they hit Cloud Run smoke:
+
+- `packages/ui-bridge/test/`: DOM-null-safety unit tests
+  (happy-dom environment) for each helper exported from
+  `src/index.ts`. Target: 1 test file, ~10 cases.
+- Per UI workspace: one snapshot test asserting that the built
+  `dist/mcp-app.html` still contains `sha256-*` hashes in the CSP
+  meta, the trilingual disclaimer footer, and the `trusted-types`
+  directive. This protects against regressions in
+  `scripts/compute-csp-hashes.mjs` and UI template drift.
+- Wire into `turbo.json` `test` task so `pnpm run test` picks them
+  up without manual per-workspace invocation.
+
+Optional Sprint 4 stretch (defer to Sprint 5 if time is tight).
 
 ---
 

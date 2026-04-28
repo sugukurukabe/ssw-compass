@@ -22,12 +22,19 @@
 import { logger } from "../logger.js";
 import { inspectWithDlp } from "./dlp-client.js";
 
+// Regex stage blocks only the three hard-PII categories enumerated in
+// v2 §7.1. Email addresses and phone numbers are intentionally NOT
+// blocked here — they are legitimate inputs for some visa queries
+// (e.g., embassy contact lookups) and are handled one layer over by:
+// (a) pino redaction in apps/server/src/logger.ts (`*.email`,
+//     `*.phone`) for log hygiene, and
+// (b) Cloud DLP's built-in EMAIL_ADDRESS / PHONE_NUMBER infoTypes in
+//     the stage-2 path when DLP_ENABLED=true (see dlp-client.ts).
+// Any expansion of this list requires an ADR per .cursor/rules/security.mdc.
 const REGEX = {
   zairyu: /\b[A-Z]{2}[0-9]{8}[A-Z]{2}\b/,
   myNumber: /\b\d{12}\b/,
   passport: /\b[A-Z]{1,2}\d{7}\b/,
-  email: /\b[\w.+-]+@[\w-]+\.[\w.-]+\b/,
-  phone: /(?:\+?81|0)\d{1,4}-?\d{1,4}-?\d{3,4}/,
 } as const;
 
 const HOTWORDS: readonly string[] = [
