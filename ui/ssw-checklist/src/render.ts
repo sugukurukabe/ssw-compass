@@ -1,4 +1,5 @@
 import type { ListVisaDocumentsOutput, UILanguage } from "@ssw/shared-types";
+import { setInnerHTML } from "@ssw/ui-bridge";
 import DOMPurify from "dompurify";
 import type { ChecklistState } from "./state.js";
 import { containsPii, isDirty } from "./state.js";
@@ -148,7 +149,7 @@ export function render(ctx: RenderContext, rootEl: HTMLElement, cb: RenderCallba
   `;
 
   const sanitized = DOMPurify.sanitize(fullHtml);
-  rootEl.innerHTML = sanitized;
+  setInnerHTML(rootEl, sanitized);
 
   for (const checkbox of Array.from(
     rootEl.querySelectorAll<HTMLInputElement>('input[type="checkbox"][data-doc-id]'),
