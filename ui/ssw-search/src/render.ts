@@ -1,4 +1,5 @@
 import type { SearchVisaOutput, UILanguage } from "@ssw/shared-types";
+import { setInnerHTML } from "@ssw/ui-bridge";
 import DOMPurify from "dompurify";
 
 /**
@@ -71,7 +72,7 @@ export function render(result: SearchVisaOutput, lang: UILanguage, rootEl: HTMLE
     ALLOWED_URI_REGEXP: ALLOWED_HREF,
   });
 
-  rootEl.innerHTML = sanitized;
+  setInnerHTML(rootEl, sanitized);
 
   requestAnimationFrame(() => {
     const cards = rootEl.querySelectorAll<HTMLElement>(".card");

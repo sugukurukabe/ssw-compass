@@ -1,22 +1,12 @@
-import {
-  App,
-  applyDocumentTheme,
-  applyHostFonts,
-  applyHostStyleVariables,
-  PostMessageTransport,
-} from "@modelcontextprotocol/ext-apps";
+import { App, applyDocumentTheme, PostMessageTransport } from "@modelcontextprotocol/ext-apps";
 import type { ClassifyProcedureOutput, UILanguage } from "@ssw/shared-types";
-import { getElement } from "@ssw/ui-bridge";
+import { getElement, setInnerHTML } from "@ssw/ui-bridge";
 import { render } from "./render.js";
 import { renderSkeleton } from "./skeleton.js";
 
 type HostContextChangedParams = {
   theme?: Parameters<typeof applyDocumentTheme>[0];
   locale?: string;
-  styles?: {
-    variables?: Parameters<typeof applyHostStyleVariables>[0];
-    css?: { fonts?: Parameters<typeof applyHostFonts>[0] };
-  };
 };
 
 function pickLanguage(locale: string | undefined): UILanguage {
@@ -30,23 +20,19 @@ let currentLang: UILanguage = "ja";
 
 const root = getElement("root", HTMLDivElement);
 
+setInnerHTML(root, renderSkeleton(currentLang));
+
 const app = new App({ name: "SSW", version: "1.0.0" }, {});
 
 app.onhostcontextchanged = (params: HostContextChangedParams) => {
   if (params.theme !== undefined) {
     applyDocumentTheme(params.theme);
   }
-  if (params.styles?.variables !== undefined) {
-    applyHostStyleVariables(params.styles.variables);
-  }
-  if (params.styles?.css?.fonts !== undefined) {
-    applyHostFonts(params.styles.css.fonts);
-  }
   currentLang = pickLanguage(params.locale);
 };
 
 app.ontoolinput = () => {
-  root.innerHTML = renderSkeleton(currentLang);
+  setInnerHTML(root, renderSkeleton(currentLang));
 };
 
 app.ontoolresult = (params) => {
