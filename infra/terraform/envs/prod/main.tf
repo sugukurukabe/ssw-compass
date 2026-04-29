@@ -30,9 +30,6 @@ module "cloud_run" {
     SSW_VERTEX_COLLECTION        = "default_collection"
     SSW_VERTEX_DATA_STORE_ID     = "visa_legal"
     SSW_VERTEX_SERVING_CONFIG_ID = "default_config"
-    LOG_LEVEL                    = "info"
-    SSW_BUILD_SOURCE             = "sprint4-batch11-prod-deploy"
-    SSW_AUTH_MODE                = "jwt"
     # DLP_ENABLED temporarily false on prod: fail-closed DLP API errors block all
     # search_visa queries (same issue as staging Sprint 3 Batch 6).
     # Diagnosis: ssw-runtime SA may lack roles/dlp.user in prod context, or
@@ -94,6 +91,12 @@ module "cloud_armor" {
   env        = "prod"
   # Use prod-specific policy name to avoid 409 conflict with staging's ssw-waf-policy
   policy_name = "ssw-waf-policy-prod"
+
+  # Anthropic / OpenAI のクラウドインフラは Claude.ai / ChatGPT の全ユーザー
+  # で NAT IP を共有するため、10 rpm/IP だと一瞬で 429 を返してしまう。
+  # 本番は 600 rpm (10 rps) = 1 IP あたり同時 60 ユーザーセッションを許容。
+  # DDoS 耐性は Cloud Armor Standard の標準機能 + Cloud Run autoscaling で担保。
+  mcp_rate_limit_rpm = 600
 }
 
 # Global HTTPS LB + Cloud Armor attach (ADR-012 §Decision 1)
