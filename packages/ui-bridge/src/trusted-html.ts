@@ -35,7 +35,7 @@ function getPolicy(): TrustedTypePolicy | null {
     return null;
   }
   try {
-    cachedPolicy = api.createPolicy("ssw-compass", {
+    cachedPolicy = api.createPolicy("ssw-purify", {
       createHTML: (input: string) => input,
     });
     return cachedPolicy;
