@@ -37,6 +37,34 @@ export const FormsCatalogEntryKind = z.enum([
 ]);
 export type FormsCatalogEntryKind = z.infer<typeof FormsCatalogEntryKind>;
 
+export const TranslationLanguage = z.enum([
+  "en",
+  "vi",
+  "tl",
+  "id",
+  "th",
+  "my",
+  "km",
+  "mn",
+  "ne",
+  "zh",
+]);
+export type TranslationLanguage = z.infer<typeof TranslationLanguage>;
+
+export const MultilingualFormMetadata = z
+  .object({
+    applicantUnderstandingRequired: z.boolean(),
+    translationsAvailable: z.boolean(),
+    sourcePage: z.string().url(),
+    languages: z.array(TranslationLanguage).min(1),
+    wordUrls: z.record(TranslationLanguage, z.string().url()).optional(),
+    excelUrls: z.record(TranslationLanguage, z.string().url()).optional(),
+    pdfUrls: z.record(TranslationLanguage, z.string().url()).optional(),
+    variableDataNote: z.string().min(1),
+  })
+  .strict();
+export type MultilingualFormMetadata = z.infer<typeof MultilingualFormMetadata>;
+
 export const FormBundleCatalogEntry = z
   .object({
     id: z.string().min(1),
@@ -62,9 +90,11 @@ export const ReferenceFormCatalogEntry = z
     referenceNumber: z.string().min(1),
     title_ja: z.string().min(1),
     url: z.string().url(),
+    ingestUrl: z.string().url().optional(),
     officialReferencePage: z.string().url(),
     stability: z.literal("stable_content_url"),
     appliesTo: z.array(z.string().min(1)).min(1),
+    multilingual: MultilingualFormMetadata.optional(),
     notes: z.string().min(1),
   })
   .strict();
