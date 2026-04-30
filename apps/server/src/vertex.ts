@@ -145,6 +145,8 @@ function getStringField(
   struct: { fields?: { [k: string]: unknown } | null | undefined } | null | undefined,
   key: string,
 ): string | undefined {
+  const direct = (struct as unknown as Record<string, unknown> | null | undefined)?.[key];
+  if (typeof direct === "string") return direct;
   const fields = struct?.fields;
   if (fields === undefined || fields === null) return undefined;
   const value = fields[key];
@@ -157,6 +159,10 @@ function getStringListField(
   struct: { fields?: { [k: string]: unknown } | null | undefined } | null | undefined,
   key: string,
 ): string[] {
+  const direct = (struct as unknown as Record<string, unknown> | null | undefined)?.[key];
+  if (Array.isArray(direct)) {
+    return direct.filter((item): item is string => typeof item === "string");
+  }
   const fields = struct?.fields;
   if (fields === undefined || fields === null) return [];
   const value = fields[key];
