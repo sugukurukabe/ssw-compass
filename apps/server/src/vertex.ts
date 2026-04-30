@@ -147,11 +147,15 @@ function getStringField(
 ): string | undefined {
   const direct = (struct as unknown as Record<string, unknown> | null | undefined)?.[key];
   if (typeof direct === "string") return direct;
-  const fields = struct?.fields;
+  const rawFields = (struct as unknown as { fields?: unknown } | null | undefined)?.fields;
+  const fields =
+    rawFields instanceof Map
+      ? Object.fromEntries(rawFields.entries())
+      : (rawFields as { [k: string]: unknown } | null | undefined);
   if (fields === undefined || fields === null) return undefined;
   const value = fields[key];
-  if (value === undefined || value === null || typeof value !== "object") return undefined;
   if (typeof value === "string") return value;
+  if (value === undefined || value === null || typeof value !== "object") return undefined;
   const maybeString = (value as { stringValue?: unknown }).stringValue;
   if (typeof maybeString === "string") return maybeString;
   const maybeSnakeString = (value as { string_value?: unknown }).string_value;
@@ -166,7 +170,11 @@ function getStringListField(
   if (Array.isArray(direct)) {
     return direct.filter((item): item is string => typeof item === "string");
   }
-  const fields = struct?.fields;
+  const rawFields = (struct as unknown as { fields?: unknown } | null | undefined)?.fields;
+  const fields =
+    rawFields instanceof Map
+      ? Object.fromEntries(rawFields.entries())
+      : (rawFields as { [k: string]: unknown } | null | undefined);
   if (fields === undefined || fields === null) return [];
   const value = fields[key];
   if (Array.isArray(value)) {
