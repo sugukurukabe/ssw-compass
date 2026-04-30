@@ -211,11 +211,13 @@ function resultToChunk(result: SearchResult): GroundedChunk | null {
   const struct = doc.structData ?? undefined;
 
   const link =
-    getStringField(derived, "link") ??
+    getStringField(struct, "canonicalUrl") ??
+    getStringField(struct, "url") ??
     getStringField(struct, "uri") ??
-    // ingest-sources.ts stores the primary source URL as structData.url.
-    // Discovery Engine may not populate derivedStructData.link for all imported docs.
-    getStringField(struct, "url");
+    // GCS-backed Agent Search imports expose derivedStructData.link as the
+    // gs:// object URI. Use it only as a last resort; user-facing source URLs
+    // and host allowlisting must prefer official canonical URLs from structData.
+    getStringField(derived, "link");
   if (link === undefined) return null;
 
   const title = getStringField(derived, "title") ?? getStringField(struct, "title") ?? "(no title)";
