@@ -1,6 +1,6 @@
 # Submission Readiness Audit
 
-> **Date**: 2026-04-29
+> **Date**: 2026-05-01
 > **Scope**: Anthropic Connectors Directory + OpenAI Apps SDK readiness
 > **Status**: Not ready for final submission until blockers are resolved
 
@@ -13,6 +13,7 @@
 | B3 | 5 compliant screenshots for redesigned MCP Apps (PNG, width ≥1000, app response only) | Pending | Wall + chrome-devtools-mcp |
 | B4 | 6-host verification (Claude Desktop + Web minimum) | Pending | Wall |
 | B5 | Internal `_ssw_checklist_schema` visible in tools/list | Resolved — removed from public registration | Engineering |
+| B6 | Demo video ≤120 seconds | Pending | Wall |
 
 ## Ready items
 
@@ -28,9 +29,10 @@
 | ai-plugin endpoint | Pass — live 200 |
 | OpenAPI endpoint | Pass — live 200 |
 | Tool annotations | Pass — internal helper removed from public tools/list |
-| Vertex source import | Pass — 41 documents imported, 0 failures |
+| MCP tools/resources/prompts | Pass — tools, UI resources, catalog resources, prompts verified by `smoke:mcp` |
+| Vertex source import | Pass — `visa_legal_core_v2` 139 docs, `visa_forms_v2` 118 docs imported |
 | Vertex real mode | Pass — prod search_visa returns source-index URLs |
-| MCP Apps UX redesign | Implemented locally — awaiting deployment and screenshot recapture |
+| MCP Apps UX redesign | Pass — production deployed |
 
 ## Acceptance checklist before submission
 
@@ -40,7 +42,8 @@
 - [x] `/.well-known/mcp.json` includes license/privacy/terms URLs live
 - [x] `data/source-index.jsonl` has zero `__PLACEHOLDER__` values
 - [x] Vertex real mode returns source URLs from ingested content
-- [ ] 5 redesigned MCP Apps screenshots committed under `assets/screenshots/`
+- [x] MCP `tools/list`, `resources/list`, `prompts/list`, and catalog resources pass smoke
+- [ ] 5 redesigned MCP Apps screenshots committed under `docs/screenshots/`
 - [ ] `pnpm check:submission:strict` passes
 - [ ] Privacy policy has no placeholders and is reviewed
 - [x] Tool inventory reviewed; Pro-only/write-like tools clearly classified
@@ -48,4 +51,4 @@
 
 ## Recommendation
 
-Do not submit to Anthropic/OpenAI until remaining human-side blockers are resolved. The product is production-deployed, submission endpoints are live, and Vertex real grounding is working. Remaining blockers: final privacy review, screenshots, and two-host verification.
+Do not submit to Anthropic/OpenAI until remaining human-side blockers are resolved. The product is production-deployed, submission endpoints are live, MCP tools/resources/prompts smoke passes, and Vertex real grounding is working. Remaining blockers: final privacy review, screenshots, demo video, and host verification.

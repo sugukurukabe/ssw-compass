@@ -1,7 +1,7 @@
 # Anthropic Connectors Directory 提出パケット
 
 > **提出アカウント**: a_kabe@sugu-kuru.co.jp
-> **提出予定**: Sprint 5 Phase A 完了後
+> **提出予定**: Screenshot / video / privacy review 完了後
 > **前提条件**: A1(logo)✅ A2(screenshots)🔜 A3(video)🔜 A4(privacy)🔜監修待 A5(license)✅
 
 ---
@@ -39,7 +39,7 @@ GET https://mcp.ssw-compass.jp/.well-known/mcp.json
 | **Privacy Policy URL** | https://mcp.ssw-compass.jp/privacy |
 | **Terms of Service URL** | https://mcp.ssw-compass.jp/privacy |
 | **License** | Apache-2.0 |
-| **Allowed link URIs** | https://www.moj.go.jp |
+| **Allowed link URIs** | https://www.moj.go.jp, https://www.mhlw.go.jp, https://www.mlit.go.jp, https://www.maff.go.jp |
 
 ### ターゲットユーザー
 
@@ -68,7 +68,7 @@ GET https://mcp.ssw-compass.jp/.well-known/mcp.json
 - 7年 WORM 監査ログ (行政書士法§9 業務帳簿義務準拠)
 - Cloud Armor WAF + Global LB
 - 越境移転なし (asia-northeast1 のみ)
-- MCP Apps の外部リンクは `https://www.moj.go.jp` の公式 URL のみに限定
+- MCP Apps の外部リンクは原則 `go.jp` 公式 URL に限定。試験実施団体は省庁リンク済みの delegated official source として catalog metadata で区別。
 
 ---
 
@@ -100,10 +100,11 @@ Sprint 5 後半で追加予定。基本情報は Anthropic と同一。
 - [x] health check が 200 を返す
 - [x] 全 tools が tools/list に表示される
 - [x] disclaimer が全レスポンスに含まれる
-- [x] Vertex real mode (content imported 41/41; prod smoke returns 5 source-index URLs)
+- [x] Vertex real mode (`visa_legal_core_v2` 139 docs, `visa_forms_v2` 118 docs imported; prod smoke returns source-index URLs)
 - [x] `/.well-known/ai-plugin.json` returns 200 JSON
 - [x] `/.well-known/openapi.json` returns 200 JSON
 - [x] Internal helper `_ssw_checklist_schema` removed from public tools/list
+- [x] MCP tools/resources/prompts smoke passes, including catalog resources
 
 ### コンテンツ要件 (行政書士監修後)
 
@@ -120,10 +121,10 @@ Use these paired prompt texts:
 
 | Screenshot | Prompt | Tool / UI |
 |---|---|---|
-| 1 | `技能実習2号から特定技能1号・農業へ変更したい。どの申請で、どの表が必要？` | `classify_procedure` / 4-step classifier UI |
-| 2 | `特定技能1号・農業で必要書類チェックリストを見せて。省略できる書類も分けて` | `list_visa_documents` / grouped checklist UI |
+| 1 | `技能実習2号から特定技能1号・農業へ変更したい。どの申請で、どの表が必要？` | `classify_procedure` / 4-step classifier UI with technical-intern field-mapping warning |
+| 2 | `特定技能1号・農業で必要書類チェックリストを見せて。省略できる書類も分けて` | `list_visa_documents` / grouped checklist UI with omission and multilingual badges |
 | 3 | `特定技能1号・農業の手続きで、まず何から確認すべき？` | `search_visa` / summary-first source-collapsed UI |
-| 4 | `特定技能1号の更新期限を2026年7月基準で確認して` | `get_deadline_timeline` / compact deadline UI |
+| 4 | `支援計画を変更したときの届出期限と様式を確認して` | `get_deadline_timeline` / compact deadline UI with related form links |
 | 5 | `留学ビザの人を農業でフルタイム雇用してよいか確認して` | `validate_zairyu_compatibility` / H06 warning UI |
 
 ### 法令要件 (行政書士監修後)
@@ -139,7 +140,7 @@ Use these paired prompt texts:
 | マイルストーン | 依存 | 期日目安 |
 |---|---|---|
 | 行政書士監修完了 | 金曜レビュー + 指摘反映 | ~1-2 週間 |
-| UX redesign deploy | 本 PR merge + prod deploy | 直近 |
+| UX redesign deploy | 完了 | 完了 |
 | Screenshots 撮影 | UX redesign deploy + Claude Web verification | deploy 後 |
 | 提出パケット完成 | privacy review + screenshots + demo video | 2026-06 第1週 |
 | **Anthropic 提出** | パケット完成 | 2026-06 第2週 |
