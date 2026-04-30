@@ -20,7 +20,8 @@
     "import:rag": "node scripts/import-agent-search.mjs",
     "check:submission": "node scripts/check-submission-assets.mjs",
     "check:submission:strict": "node scripts/check-submission-assets.mjs --strict",
-    "smoke:mcp": "node scripts/smoke-mcp.mjs"
+    "smoke:mcp": "node scripts/smoke-mcp.mjs",
+    "smoke:search": "node scripts/smoke-search.mjs"
   },
   "keywords": [
     "mcp",
