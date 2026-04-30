@@ -87,6 +87,9 @@ const INDUSTRY_TITLE_TERMS_BY_TAG: Readonly<Record<string, readonly string[]>> =
 
 const BROAD_ROUTING_TAGS = new Set(["ssw_1", "procedure"]);
 const FIELD_SPECIFIC_SOURCE_TYPES = new Set(["operation_guide", "operation_policy"]);
+const INDUSTRY_SPECIFIC_TAGS = new Set(
+  Object.keys(INDUSTRY_TITLE_TERMS_BY_TAG).filter((tag) => !BROAD_ROUTING_TAGS.has(tag)),
+);
 
 const FIXTURE_CHUNKS: readonly GroundedChunk[] = [
   {
@@ -301,6 +304,7 @@ function resultToChunk(result: SearchResult): GroundedChunk | null {
 function routingScore(chunk: GroundedChunk, args: VertexSearchArgs): number {
   let score = 0;
   if (hasPreferredTitleTerm(chunk.title, args.preferredTags ?? [])) score += 100;
+  if (hasConflictingTitleTerm(chunk.title, args.preferredTags ?? [])) score -= 80;
   if (args.preferredMinistries?.includes(chunk.ministry ?? "") === true) score += 50;
   if (args.dataStoreGroup !== undefined && chunk.dataStoreGroup === args.dataStoreGroup)
     score += 15;
@@ -309,6 +313,7 @@ function routingScore(chunk: GroundedChunk, args: VertexSearchArgs): number {
     if (!tags.includes(tag)) continue;
     score += BROAD_ROUTING_TAGS.has(tag) ? 10 : 50;
   }
+  if (hasConflictingIndustryTag(tags, args.preferredTags ?? [])) score -= 80;
   if (FIELD_SPECIFIC_SOURCE_TYPES.has(chunk.sourceType ?? "")) score += 30;
   if (chunk.confidence >= args.confidenceThreshold) score += chunk.confidence;
   return score;
@@ -321,6 +326,25 @@ function hasPreferredTitleTerm(title: string, preferredTags: readonly string[]):
     if (terms?.some((term) => title.includes(term)) === true) return true;
   }
   return false;
+}
+
+function hasConflictingTitleTerm(title: string, preferredTags: readonly string[]): boolean {
+  const preferred = new Set(preferredTags.filter((tag) => !BROAD_ROUTING_TAGS.has(tag)));
+  if (preferred.size === 0) return false;
+  for (const [tag, terms] of Object.entries(INDUSTRY_TITLE_TERMS_BY_TAG)) {
+    if (preferred.has(tag)) continue;
+    if (terms.some((term) => title.includes(term))) return true;
+  }
+  return false;
+}
+
+function hasConflictingIndustryTag(
+  tags: readonly string[],
+  preferredTags: readonly string[],
+): boolean {
+  const preferred = new Set(preferredTags.filter((tag) => !BROAD_ROUTING_TAGS.has(tag)));
+  if (preferred.size === 0) return false;
+  return tags.some((tag) => INDUSTRY_SPECIFIC_TAGS.has(tag) && !preferred.has(tag));
 }
 
 /**
