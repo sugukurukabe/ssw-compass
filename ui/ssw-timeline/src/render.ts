@@ -19,6 +19,7 @@ const I18N = {
     timelineHeading: "期限タイムライン",
     asOf: "情報基準日",
     dueByPrefix: "期限 (目安)",
+    relatedForms: "関連様式",
     trustLevel: {
       primary_source: "一次情報",
       secondary: "二次情報",
@@ -29,6 +30,7 @@ const I18N = {
     timelineHeading: "Deadline timeline",
     asOf: "As of",
     dueByPrefix: "Due (approx.)",
+    relatedForms: "Related forms",
     trustLevel: {
       primary_source: "Primary source",
       secondary: "Secondary",
@@ -39,6 +41,7 @@ const I18N = {
     timelineHeading: "Linimasa tenggat waktu",
     asOf: "Per tanggal",
     dueByPrefix: "Tenggat (kira-kira)",
+    relatedForms: "Formulir terkait",
     trustLevel: {
       primary_source: "Sumber utama",
       secondary: "Sekunder",
@@ -78,6 +81,15 @@ export function render(
         d.dueBy !== undefined
           ? `<span class="due-by">${escapeAttr(t.dueByPrefix)}: ${escapeAttr(d.dueBy)}</span>`
           : "";
+      const formsHtml =
+        d.relatedForms !== undefined && d.relatedForms.length > 0
+          ? `<div class="related-forms"><strong>${escapeAttr(t.relatedForms)}</strong><ul>${d.relatedForms
+              .map(
+                (form) =>
+                  `<li><a href="${escapeAttr(form.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeAttr(form.title)}</a></li>`,
+              )
+              .join("")}</ul></div>`
+          : "";
       const trustClass =
         d.trustLevel === "primary_source"
           ? "trust-badge trust-badge--primary"
@@ -88,6 +100,7 @@ export function render(
         <h3>${escapeAttr(labelText)} <span class="${trustClass}" aria-label="${escapeAttr(trustText)}">${escapeAttr(trustText)}</span></h3>
         <span class="relative">${escapeAttr(relativeText)}</span>${dueByHtml}
         <p class="description">${escapeAttr(d.description)}</p>
+        ${formsHtml}
       </li>`;
     })
     .join("");

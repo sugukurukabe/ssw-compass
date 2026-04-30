@@ -144,6 +144,56 @@ const DEADLINE_FACTS: Record<
   },
 };
 
+const RELATED_FORMS_BY_CONTEXT: Partial<
+  Record<
+    GetDeadlineTimelineInput["eventContext"],
+    Array<{ id: string; title: string; sourceUrl: string }>
+  >
+> = {
+  contract_start: [
+    {
+      id: "ref-3-1-1-employment-contract-change",
+      title: "特定技能雇用契約の変更に係る届出書 (参考様式第3-1-1号)",
+      sourceUrl: "https://www.moj.go.jp/isa/content/001340519.xlsx",
+    },
+  ],
+  contract_end: [
+    {
+      id: "ref-3-1-2-employment-contract-end",
+      title: "特定技能雇用契約の終了又は締結に係る届出書 (参考様式第3-1-2号)",
+      sourceUrl: "https://www.moj.go.jp/isa/content/001378824.xlsx",
+    },
+  ],
+  employment_contract_change: [
+    {
+      id: "ref-3-1-1-employment-contract-change",
+      title: "特定技能雇用契約の変更に係る届出書 (参考様式第3-1-1号)",
+      sourceUrl: "https://www.moj.go.jp/isa/content/001340519.xlsx",
+    },
+  ],
+  support_plan_change: [
+    {
+      id: "ref-3-2-support-plan-change",
+      title: "支援計画変更に係る届出書 (参考様式第3-2号)",
+      sourceUrl: "https://www.moj.go.jp/isa/content/001340521.xlsx",
+    },
+  ],
+  organization_change: [
+    {
+      id: "ref-4-4-registration-change-appendix",
+      title: "登録事項変更に関する届出書別紙 (参考様式第4-4号)",
+      sourceUrl: "https://www.moj.go.jp/isa/content/001340539.docx",
+    },
+  ],
+  regular_report: [
+    {
+      id: "ref-3-6-regular-report",
+      title: "受入れ・活動・支援実施状況に係る届出書 (参考様式第3-6号)",
+      sourceUrl: "https://www.moj.go.jp/isa/content/001454511.xlsx",
+    },
+  ],
+};
+
 /**
  * Subtract `months` from a YYYY-MM string and return the resulting YYYY-MM.
  * Handles cross-year boundaries (e.g. 2026-02 minus 3 months = 2025-11).
@@ -176,6 +226,16 @@ function selectKinds(
 ): DeadlineKind[] {
   if (eventContext === "contract_end") {
     return ["notification_14days"];
+  }
+  if (
+    eventContext === "employment_contract_change" ||
+    eventContext === "support_plan_change" ||
+    eventContext === "organization_change"
+  ) {
+    return ["notification_14days"];
+  }
+  if (eventContext === "regular_report") {
+    return ["annual_report"];
   }
   if (eventContext === "bridge_transition") {
     return ["bridge_preparation"];
@@ -217,6 +277,10 @@ export function computeTimeline(args: GetDeadlineTimelineInput): DeadlineEntry[]
     };
     if (kind === "renewal_earliest" && args.referenceYearMonth !== undefined) {
       entry.dueBy = subtractMonths(args.referenceYearMonth, 3);
+    }
+    const relatedForms = RELATED_FORMS_BY_CONTEXT[args.eventContext];
+    if (relatedForms !== undefined && relatedForms.length > 0) {
+      entry.relatedForms = relatedForms;
     }
     return entry;
   });

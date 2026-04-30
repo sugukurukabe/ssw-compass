@@ -50,6 +50,18 @@ describe("computeTimeline — deadline calculation", () => {
     expect(out[0]?.kind).toBe("notification_14days");
   });
 
+  it("support_plan_change → 14日以内届出 + 関連様式", () => {
+    const out = computeTimeline(mkArgs({ eventContext: "support_plan_change" }));
+    expect(out.map((d) => d.kind)).toEqual(["notification_14days"]);
+    expect(out[0]?.relatedForms?.[0]?.id).toBe("ref-3-2-support-plan-change");
+  });
+
+  it("regular_report → annual_report のみ", () => {
+    const out = computeTimeline(mkArgs({ eventContext: "regular_report" }));
+    expect(out.map((d) => d.kind)).toEqual(["annual_report"]);
+    expect(out[0]?.relatedForms?.[0]?.id).toBe("ref-3-6-regular-report");
+  });
+
   it("ginou_jisshu / bridge_transition → bridge_preparation のみ", () => {
     const out = computeTimeline(
       mkArgs({ visaCategory: "ginou_jisshu", eventContext: "bridge_transition" }),
