@@ -18,6 +18,13 @@ const REQUIRED_UI_RESOURCES = [
   "ui://ssw-validate/mcp-app.html",
 ];
 
+const REQUIRED_CATALOG_RESOURCES = [
+  "ssw://catalog/manifest",
+  "ssw://catalog/source-index",
+  "ssw://catalog/forms-catalog",
+  "ssw://catalog/industry-resource-candidates",
+];
+
 const REQUIRED_PROMPTS = ["ssw_route_and_documents", "ssw_notification_deadlines"];
 
 const mcpUrl = process.env["MCP_URL"];
@@ -113,6 +120,9 @@ const resourceUris = resourceList.map((resource) => resource.uri);
 for (const resourceUri of REQUIRED_UI_RESOURCES) {
   expect(resourceUris.includes(resourceUri), `resources/list includes ${resourceUri}`);
 }
+for (const resourceUri of REQUIRED_CATALOG_RESOURCES) {
+  expect(resourceUris.includes(resourceUri), `resources/list includes ${resourceUri}`);
+}
 
 for (let i = 0; i < REQUIRED_UI_RESOURCES.length; i += 1) {
   const uri = REQUIRED_UI_RESOURCES[i];
@@ -128,6 +138,13 @@ for (let i = 0; i < REQUIRED_UI_RESOURCES.length; i += 1) {
     `${uri} includes Trusted Types CSP`,
   );
 }
+
+const manifest = await rpc("resources/read", { uri: "ssw://catalog/manifest" }, 20, sessionId);
+const manifestText = manifest.payload.result?.contents?.[0]?.text ?? "";
+expect(
+  typeof manifestText === "string" && manifestText.includes("sourceIndexByGroup"),
+  "catalog manifest includes sourceIndexByGroup",
+);
 
 const prompts = await rpc("prompts/list", {}, 30, sessionId);
 const promptList = prompts.payload.result?.prompts ?? [];
