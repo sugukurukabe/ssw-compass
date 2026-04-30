@@ -18,6 +18,8 @@ const REQUIRED_UI_RESOURCES = [
   "ui://ssw-validate/mcp-app.html",
 ];
 
+const REQUIRED_PROMPTS = ["ssw_route_and_documents", "ssw_notification_deadlines"];
+
 const mcpUrl = process.env["MCP_URL"];
 if (mcpUrl === undefined || mcpUrl.length === 0) {
   console.error(
@@ -126,5 +128,32 @@ for (let i = 0; i < REQUIRED_UI_RESOURCES.length; i += 1) {
     `${uri} includes Trusted Types CSP`,
   );
 }
+
+const prompts = await rpc("prompts/list", {}, 30, sessionId);
+const promptList = prompts.payload.result?.prompts ?? [];
+const promptNames = promptList.map((prompt) => prompt.name);
+for (const promptName of REQUIRED_PROMPTS) {
+  expect(promptNames.includes(promptName), `prompts/list includes ${promptName}`);
+}
+
+const routePrompt = await rpc(
+  "prompts/get",
+  {
+    name: "ssw_route_and_documents",
+    arguments: {
+      current_status: "技能実習2号",
+      target_status: "特定技能1号",
+      industry: "農業",
+      receiving_organization_profile: "法人",
+    },
+  },
+  40,
+  sessionId,
+);
+const routePromptText = routePrompt.payload.result?.messages?.[0]?.content?.text ?? "";
+expect(
+  typeof routePromptText === "string" && routePromptText.includes("classify_procedure"),
+  "ssw_route_and_documents prompt mentions classify_procedure",
+);
 
 console.log("\nMCP smoke completed.");
