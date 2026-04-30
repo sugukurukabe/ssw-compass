@@ -13,14 +13,14 @@
       "file": "docs/screenshots/01-classifier.png",
       "prompt": "技能実習2号から特定技能1号・農業へ変更したい。どの申請で、どの表が必要？",
       "tool": "classify_procedure",
-      "expectedUi": "4-step classifier UI: procedure, receiving organization, applicant profile, industry"
+      "expectedUi": "4-step classifier UI with technical-intern field-mapping warning"
     },
     {
       "id": "02-documents-checklist",
       "file": "docs/screenshots/02-documents-checklist.png",
       "prompt": "特定技能1号・農業で必要書類チェックリストを見せて。省略できる書類も分けて",
       "tool": "list_visa_documents",
-      "expectedUi": "Grouped checklist UI with Table 1, Table 2, Table 3, reference forms, and omission candidates"
+      "expectedUi": "Grouped checklist UI with Table 1, Table 2, Table 3, reference forms, omission candidates, and multilingual badges"
     },
     {
       "id": "03-search-summary",
@@ -32,9 +32,9 @@
     {
       "id": "04-deadline-timeline",
       "file": "docs/screenshots/04-deadline-timeline.png",
-      "prompt": "特定技能1号の更新期限を2026年7月基準で確認して",
+      "prompt": "支援計画を変更したときの届出期限と様式を確認して",
       "tool": "get_deadline_timeline",
-      "expectedUi": "Compact deadline timeline UI without default source-card stack"
+      "expectedUi": "Compact deadline timeline UI with related official form links"
     },
     {
       "id": "05-zairyu-warning",

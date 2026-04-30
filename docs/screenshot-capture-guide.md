@@ -7,10 +7,10 @@
 
 | # | Prompt | Expected UI | File name |
 |---|---|---|---|
-| 1 | `技能実習2号から特定技能1号・農業へ変更したい。どの申請で、どの表が必要？` | `classify_procedure` 4-step classifier | `01-classifier.png` |
-| 2 | `特定技能1号・農業で必要書類チェックリストを見せて。省略できる書類も分けて` | grouped `list_visa_documents` checklist | `02-documents-checklist.png` |
+| 1 | `技能実習2号から特定技能1号・農業へ変更したい。どの申請で、どの表が必要？` | `classify_procedure` 4-step classifier with technical-intern field-mapping warning | `01-classifier.png` |
+| 2 | `特定技能1号・農業で必要書類チェックリストを見せて。省略できる書類も分けて` | grouped `list_visa_documents` checklist with omission + multilingual badges | `02-documents-checklist.png` |
 | 3 | `特定技能1号・農業の手続きで、まず何から確認すべき？` | summary-first `search_visa` card, sources collapsed | `03-search-summary.png` |
-| 4 | `特定技能1号の更新期限を2026年7月基準で確認して` | compact `get_deadline_timeline` UI | `04-deadline-timeline.png` |
+| 4 | `支援計画を変更したときの届出期限と様式を確認して` | compact `get_deadline_timeline` UI with related form links | `04-deadline-timeline.png` |
 | 5 | `留学ビザの人を農業でフルタイム雇用してよいか確認して` | `validate_zairyu_compatibility` H06 warning UI | `05-zairyu-warning.png` |
 
 ## Manual capture
@@ -34,8 +34,9 @@ sips -g pixelWidth docs/screenshots/*.png
 - Claude sidebar / composer / browser chrome are not visible.
 - The app card width is >= 1000px.
 - Screenshot #3 has sources collapsed by default.
-- Screenshot #1 shows the four classifier rows.
-- Screenshot #2 shows grouped sections including at least one omission candidate.
+- Screenshot #1 shows the four classifier rows and the technical-intern field-mapping warning.
+- Screenshot #2 shows grouped sections including at least one omission candidate and multilingual/native-language badges.
+- Screenshot #4 shows a related official form link.
 - Screenshot #5 shows a warning or illegal-work risk state.
 
 ## Machine checks
