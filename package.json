@@ -17,6 +17,7 @@
     "validate:source-index": "node scripts/validate-source-index.mjs",
     "validate:industry-candidates": "node scripts/validate-industry-resource-candidates.mjs",
     "merge:industry-candidates": "node scripts/merge-industry-candidates.mjs",
+    "merge:multilingual-forms": "node scripts/merge-multilingual-forms.mjs",
     "check:industry-routing": "node scripts/check-industry-routing-coverage.mjs",
     "prepare:manual-sources": "node scripts/prepare-manual-sources.mjs",
     "prepare:rag": "node scripts/prepare-sources.mjs",

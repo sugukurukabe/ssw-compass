@@ -46,6 +46,7 @@ const formEntries = (await readJsonl(formsCatalogPath))
     id: `forms-${entry.id}`,
     title: entry.title_ja,
     url: entry.url,
+    ...(entry.ingestUrl !== undefined ? { fetchUrl: entry.ingestUrl } : {}),
     canonicalUrl: entry.url,
     ministry: "moj",
     datastore: "visa_forms_v2",
@@ -90,11 +91,12 @@ for (const [index, entry] of selected.entries()) {
   const group = groupForEntry(entry);
   const dataStore = dataStoreForGroup(routing, group);
   const canonicalUrl = entry.canonicalUrl ?? canonicalizeUrl(entry.url);
+  const fetchUrl = entry.fetchUrl ?? canonicalUrl;
   const controller = new AbortController();
   const timeoutId = setTimeout(() => controller.abort(), FETCH_TIMEOUT_MS);
   try {
-    process.stdout.write(`[${index + 1}/${selected.length}] ${entry.id} ${canonicalUrl}... `);
-    const response = await fetch(canonicalUrl, {
+    process.stdout.write(`[${index + 1}/${selected.length}] ${entry.id} ${fetchUrl}... `);
+    const response = await fetch(fetchUrl, {
       headers: { "User-Agent": USER_AGENT, Accept: ACCEPT_MIME_TYPES },
       signal: controller.signal,
       redirect: "follow",
@@ -106,7 +108,7 @@ for (const [index, entry] of selected.entries()) {
     }
     const buffer = Buffer.from(await response.arrayBuffer());
     const mimeType = mimeFromUrlAndContentType(
-      canonicalUrl,
+      fetchUrl,
       response.headers.get("content-type") ?? "",
     );
     const sha = sha256Hex(buffer);
