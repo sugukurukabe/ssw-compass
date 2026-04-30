@@ -13,16 +13,24 @@ const CATEGORY_QUERY_JA: Partial<Record<SearchVisaInput["category"], string>> = 
 const INDUSTRY_QUERY_JA: Partial<Record<NonNullable<SearchVisaInput["industry"]>, string>> = {
   agriculture: "農業 農林水産省",
   fishery: "漁業 水産庁 農林水産省",
+  food_manufacturing: "飲食料品製造業 農林水産省",
   food_service: "外食業 農林水産省",
   manufacturing: "工業製品製造業 経済産業省",
+  industrial_products_manufacturing: "工業製品製造業 経済産業省",
   construction: "建設 国土交通省",
   nursing_care: "介護 厚生労働省",
   building_cleaning: "ビルクリーニング 厚生労働省",
   automobile_repair: "自動車整備 国土交通省",
+  automobile_maintenance: "自動車整備 国土交通省",
   aviation: "航空 国土交通省",
   lodging: "宿泊 国土交通省 観光庁",
+  accommodation: "宿泊 国土交通省 観光庁",
   shipbuilding: "造船 舶用工業 国土交通省",
   electronics: "工業製品製造業 電気電子 経済産業省",
+  automobile_transportation: "自動車運送業 国土交通省",
+  railway: "鉄道 国土交通省",
+  forestry: "林業 農林水産省 林野庁",
+  wood_products: "木材産業 農林水産省 林野庁",
 };
 
 export function buildQuery(args: SearchVisaInput): string {

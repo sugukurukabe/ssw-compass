@@ -15,6 +15,7 @@
     "ingest": "tsx scripts/ingest-sources.ts",
     "normalize:source-index": "node scripts/normalize-source-index.mjs",
     "validate:source-index": "node scripts/validate-source-index.mjs",
+    "prepare:manual-sources": "node scripts/prepare-manual-sources.mjs",
     "prepare:rag": "node scripts/prepare-sources.mjs",
     "import:rag": "node scripts/import-agent-search.mjs",
     "check:submission": "node scripts/check-submission-assets.mjs",
@@ -36,7 +37,9 @@
   },
   "devDependencies": {
     "@biomejs/biome": "^2.4.0",
+    "@types/yauzl": "^2.10.3",
     "turbo": "^2.9.0",
-    "typescript": "^5.7.0"
+    "typescript": "^5.7.0",
+    "yauzl": "^3.3.0"
   }
 }
