@@ -15,6 +15,11 @@ export type FormSection = z.infer<typeof FormSection>;
 export const ReceivingOrganizationProfile = z.enum([
   "same_fiscal_year_repeat",
   "table2_1_eligible",
+  "listed_company",
+  "mutual_company",
+  "innovation_company",
+  "withholding_tax_10m",
+  "continuous_acceptance_3y",
   "corporation",
   "sole_proprietor",
   "not_applicable",

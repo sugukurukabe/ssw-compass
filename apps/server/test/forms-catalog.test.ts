@@ -74,4 +74,26 @@ describe("forms-catalog", () => {
     expect(bundle.requiredSections).toEqual(["table1", "table2_2", "table3"]);
     expect(bundle.omittedSections).toEqual(["table2_1", "table2_3"]);
   });
+
+  it("buildFormBundle maps detailed Table 2-1 eligible profiles to Table 2-1", () => {
+    for (const receivingOrganizationProfile of [
+      "listed_company",
+      "mutual_company",
+      "innovation_company",
+      "withholding_tax_10m",
+      "continuous_acceptance_3y",
+    ] as const) {
+      const bundle = buildFormBundle({
+        procedure: "change",
+        sswLevel: "i",
+        receivingOrganizationProfile,
+        applicantProfile: "no_exemption",
+        industry: "agriculture",
+        officialReferencePage:
+          "https://www.moj.go.jp/isa/applications/status/specifiedskilledworker.html",
+      });
+      expect(bundle.requiredSections).toEqual(["table1", "table2_1", "table3"]);
+      expect(bundle.omittedSections).toEqual(["table2_2", "table2_3"]);
+    }
+  });
 });

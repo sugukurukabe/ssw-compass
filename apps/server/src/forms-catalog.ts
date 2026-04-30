@@ -46,13 +46,26 @@ function table2Sections(profile: FormBundleType["receivingOrganizationProfile"])
   if (profile === "not_applicable" || profile === "same_fiscal_year_repeat") {
     return { required: [], omitted: ["table2_1", "table2_2", "table2_3"] };
   }
-  if (profile === "table2_1_eligible") {
+  if (isTable21EligibleProfile(profile)) {
     return { required: ["table2_1"], omitted: ["table2_2", "table2_3"] };
   }
   if (profile === "corporation") {
     return { required: ["table2_2"], omitted: ["table2_1", "table2_3"] };
   }
   return { required: ["table2_3"], omitted: ["table2_1", "table2_2"] };
+}
+
+function isTable21EligibleProfile(
+  profile: FormBundleType["receivingOrganizationProfile"],
+): boolean {
+  return (
+    profile === "table2_1_eligible" ||
+    profile === "listed_company" ||
+    profile === "mutual_company" ||
+    profile === "innovation_company" ||
+    profile === "withholding_tax_10m" ||
+    profile === "continuous_acceptance_3y"
+  );
 }
 
 export function buildFormBundle(
