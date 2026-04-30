@@ -80,6 +80,11 @@ export interface RenderCallbacks {
 const ORG_LABEL: Record<ReceivingOrganizationProfile, string> = {
   same_fiscal_year_repeat: "同年度2人目以降",
   table2_1_eligible: "第2表の1 該当",
+  listed_company: "上場企業",
+  mutual_company: "相互会社",
+  innovation_company: "イノベーション創出企業等",
+  withholding_tax_10m: "源泉徴収税額1000万円以上",
+  continuous_acceptance_3y: "3年継続受入実績",
   corporation: "法人",
   sole_proprietor: "個人事業主",
   not_applicable: "第2表不要",
@@ -177,6 +182,11 @@ export function render(
         [
           ["same_fiscal_year_repeat", ORG_LABEL.same_fiscal_year_repeat],
           ["table2_1_eligible", ORG_LABEL.table2_1_eligible],
+          ["listed_company", ORG_LABEL.listed_company],
+          ["mutual_company", ORG_LABEL.mutual_company],
+          ["innovation_company", ORG_LABEL.innovation_company],
+          ["withholding_tax_10m", ORG_LABEL.withholding_tax_10m],
+          ["continuous_acceptance_3y", ORG_LABEL.continuous_acceptance_3y],
           ["corporation", ORG_LABEL.corporation],
           ["sole_proprietor", ORG_LABEL.sole_proprietor],
         ],
@@ -302,7 +312,7 @@ function sectionLabel(section: string): string {
 function requiredSectionsForState(state: ClassifierState): string[] {
   const sections = ["table1"];
   if (state.procedure !== "renewal") {
-    if (state.receivingOrganizationProfile === "table2_1_eligible") sections.push("table2_1");
+    if (isTable21EligibleProfile(state.receivingOrganizationProfile)) sections.push("table2_1");
     if (state.receivingOrganizationProfile === "corporation") sections.push("table2_2");
     if (state.receivingOrganizationProfile === "sole_proprietor") sections.push("table2_3");
   }
@@ -317,10 +327,21 @@ function omittedSectionsForState(state: ClassifierState): string[] {
   ) {
     return ["table2_1", "table2_2", "table2_3"];
   }
-  if (state.receivingOrganizationProfile === "table2_1_eligible") return ["table2_2", "table2_3"];
+  if (isTable21EligibleProfile(state.receivingOrganizationProfile)) return ["table2_2", "table2_3"];
   if (state.receivingOrganizationProfile === "corporation") return ["table2_1", "table2_3"];
   if (state.receivingOrganizationProfile === "sole_proprietor") return ["table2_1", "table2_2"];
   return [];
+}
+
+function isTable21EligibleProfile(profile: ReceivingOrganizationProfile): boolean {
+  return (
+    profile === "table2_1_eligible" ||
+    profile === "listed_company" ||
+    profile === "mutual_company" ||
+    profile === "innovation_company" ||
+    profile === "withholding_tax_10m" ||
+    profile === "continuous_acceptance_3y"
+  );
 }
 
 function isProcedure(value: string | null): value is Procedure {
@@ -331,6 +352,11 @@ function isOrganization(value: string | null): value is ReceivingOrganizationPro
   return (
     value === "same_fiscal_year_repeat" ||
     value === "table2_1_eligible" ||
+    value === "listed_company" ||
+    value === "mutual_company" ||
+    value === "innovation_company" ||
+    value === "withholding_tax_10m" ||
+    value === "continuous_acceptance_3y" ||
     value === "corporation" ||
     value === "sole_proprietor"
   );
