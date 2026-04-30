@@ -129,5 +129,6 @@
 - 行政書士向け: [`gyoseishoshi-review-packet.md`](gyoseishoshi-review-packet.md)
 - UX release checklist: [`ux-redesign-release-checklist.md`](ux-redesign-release-checklist.md)
 - RAG pipeline runbook: [`rag-pipeline-runbook.md`](rag-pipeline-runbook.md)
+- 16分野資料収集: [`industry-source-gap-instructions.md`](industry-source-gap-instructions.md)
 - Screenshot capture: [`screenshot-capture-guide.md`](screenshot-capture-guide.md)
 - Screenshot script: [`demo-script.md`](demo-script.md)
