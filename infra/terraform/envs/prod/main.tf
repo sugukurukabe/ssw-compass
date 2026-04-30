@@ -77,11 +77,14 @@ module "rag_buckets" {
 }
 
 module "vertex_ai_search" {
-  source               = "../../modules/vertex-ai-search"
-  project_id           = var.project_id
-  location             = var.region
-  enabled              = true # data stores mirror staging (Batch 5 will ingest content)
-  enable_rag_v2_stores = true
+  source     = "../../modules/vertex-ai-search"
+  project_id = var.project_id
+  location   = var.region
+  enabled    = true # data stores mirror staging (Batch 5 will ingest content)
+  # v2 RAG data stores are project/collection scoped and already managed by
+  # staging in the shared project. Do not create duplicate prod state entries
+  # for the same global Discovery Engine resources.
+  enable_rag_v2_stores = false
 }
 
 module "vpc_egress" {
