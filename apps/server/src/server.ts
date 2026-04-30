@@ -1,6 +1,7 @@
 import { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import type { SswCompassToolAnnotation } from "@ssw/shared-types";
 import { validateToolAnnotations } from "./hitl/validate-annotations.js";
+import { registerWorkflowPrompts } from "./prompts/workflows.js";
 import {
   CLASSIFY_PROCEDURE_ANNOTATION,
   registerClassifyProcedureTool,
@@ -51,6 +52,7 @@ export function createMcpServer(): McpServer {
     capabilities: {
       tools: {},
       resources: {},
+      prompts: {},
     },
   });
   registerSearchVisaTool(server);
@@ -65,6 +67,7 @@ export function createMcpServer(): McpServer {
   registerValidateZairyuCompatibilityUiResource(server);
 
   registerListLawUpdatesTool(server);
+  registerWorkflowPrompts(server);
 
   // Batch 10: submit_gyoseishoshi_approval (L2, Pro + gyoseishoshi)
   server.tool(
