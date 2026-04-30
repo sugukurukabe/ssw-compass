@@ -56,28 +56,43 @@ async function authedFetch(url, init = {}) {
   return JSON.parse(text);
 }
 
-const operation = await authedFetch(`https://${ENDPOINT}/v1/${parent}/documents:import`, {
-  method: "POST",
-  body: JSON.stringify({
-    inlineSource: { documents },
-    reconciliationMode: "INCREMENTAL",
-  }),
-});
-
-console.log(`LRO started: ${operation.name ?? "(unnamed)"}`);
-
-let current = operation;
-for (let i = 0; i < 120; i += 1) {
-  if (current.done === true) break;
-  await new Promise((resolveDelay) => setTimeout(resolveDelay, 5000));
-  current = await authedFetch(`https://${ENDPOINT}/v1/${current.name}`, { method: "GET" });
-  console.log(`poll ${i + 1}: done=${current.done === true}`);
+function chunkDocuments(values, size) {
+  const chunks = [];
+  for (let i = 0; i < values.length; i += size) {
+    chunks.push(values.slice(i, i + size));
+  }
+  return chunks;
 }
 
-if (current.done !== true) {
-  throw new Error(`Import operation did not finish within polling window: ${operation.name}`);
+async function importBatch(batch, batchIndex, batchCount) {
+  const operation = await authedFetch(`https://${ENDPOINT}/v1/${parent}/documents:import`, {
+    method: "POST",
+    body: JSON.stringify({
+      inlineSource: { documents: batch },
+      reconciliationMode: "INCREMENTAL",
+    }),
+  });
+
+  console.log(`LRO started batch=${batchIndex}/${batchCount}: ${operation.name ?? "(unnamed)"}`);
+
+  let current = operation;
+  for (let i = 0; i < 120; i += 1) {
+    if (current.done === true) break;
+    await new Promise((resolveDelay) => setTimeout(resolveDelay, 5000));
+    current = await authedFetch(`https://${ENDPOINT}/v1/${current.name}`, { method: "GET" });
+    console.log(`poll batch=${batchIndex}/${batchCount} ${i + 1}: done=${current.done === true}`);
+  }
+
+  if (current.done !== true) {
+    throw new Error(`Import operation did not finish within polling window: ${operation.name}`);
+  }
+  if (current.error !== undefined) {
+    throw new Error(`Import operation failed: ${JSON.stringify(current.error)}`);
+  }
+  console.log("operation:", JSON.stringify(current, null, 2));
 }
-if (current.error !== undefined) {
-  throw new Error(`Import operation failed: ${JSON.stringify(current.error)}`);
+
+const batches = chunkDocuments(documents, 100);
+for (const [index, batch] of batches.entries()) {
+  await importBatch(batch, index + 1, batches.length);
 }
-console.log("operation:", JSON.stringify(current, null, 2));

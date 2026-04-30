@@ -15,6 +15,15 @@ import {
 } from "./rag-shared.mjs";
 
 const USER_AGENT = "ssw-compass-rag-prepare/1.0 (+https://github.com/sugukurukabe/ssw-compass)";
+const ACCEPT_MIME_TYPES = [
+  "text/html",
+  "application/pdf",
+  "text/plain",
+  "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+  "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+  "application/msword",
+  "application/vnd.ms-excel",
+].join(",");
 const FETCH_TIMEOUT_MS = 15_000;
 const sourceIndexPath = resolve(process.cwd(), "data/source-index.jsonl");
 const formsCatalogPath = resolve(process.cwd(), "data/forms-catalog.jsonl");
@@ -86,7 +95,7 @@ for (const [index, entry] of selected.entries()) {
   try {
     process.stdout.write(`[${index + 1}/${selected.length}] ${entry.id} ${canonicalUrl}... `);
     const response = await fetch(canonicalUrl, {
-      headers: { "User-Agent": USER_AGENT, Accept: "text/html,application/pdf,text/plain" },
+      headers: { "User-Agent": USER_AGENT, Accept: ACCEPT_MIME_TYPES },
       signal: controller.signal,
       redirect: "follow",
     });
