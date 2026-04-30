@@ -26,3 +26,15 @@ variable "data_stores" {
   type        = list(string)
   default     = ["visa_legal", "visa_faq", "visa_secondary"]
 }
+
+variable "enable_rag_v2_stores" {
+  description = "Create v2 chunked Agent Search data stores for GCS-backed RAG ingestion."
+  type        = bool
+  default     = false
+}
+
+variable "rag_v2_data_stores" {
+  description = "Chunked v2 Agent Search data store IDs."
+  type        = list(string)
+  default     = ["visa_legal_core_v2", "visa_forms_v2", "visa_faq_v2", "visa_law_updates_v2"]
+}

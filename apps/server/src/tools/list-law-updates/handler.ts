@@ -17,11 +17,30 @@ import {
 import { filterActiveLawUpdates } from "../../law-updates/active-filter.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
+import { scrubInputForPII } from "../../pii/index.js";
 
 export const listLawUpdatesHandler = instrumentTool(
   "list_law_updates",
   async (rawArgs: unknown): Promise<CallToolResult> => {
     const args = ListLawUpdatesInput.parse(rawArgs);
+    const piiCheck = await scrubInputForPII(args);
+    if (piiCheck.blocked) {
+      logger.warn(
+        { tool: "list_law_updates", reason: "pii_blocked", findings: piiCheck.types },
+        "pii_blocked",
+      );
+      return {
+        isError: true,
+        content: [
+          {
+            type: "text",
+            text:
+              "個人情報 (在留番号・パスポート番号・マイナンバー等) は入力できません。" +
+              "一般的な質問のみ受け付けます。",
+          },
+        ],
+      };
+    }
 
     const t0 = performance.now();
 

@@ -10,7 +10,7 @@
 |---|---|---|---|
 | B1 | Privacy policy final gyoseishoshi review | Pending | Wall + gyoseishoshi |
 | B2 | Vertex real mode | Resolved — prod returns 5 real-source results | Engineering |
-| B3 | 3-5 compliant screenshots (PNG, width ≥1000, app response only) | Pending | Wall |
+| B3 | 5 compliant screenshots for redesigned MCP Apps (PNG, width ≥1000, app response only) | Pending | Wall + chrome-devtools-mcp |
 | B4 | 6-host verification (Claude Desktop + Web minimum) | Pending | Wall |
 | B5 | Internal `_ssw_checklist_schema` visible in tools/list | Resolved — removed from public registration | Engineering |
 
@@ -30,6 +30,7 @@
 | Tool annotations | Pass — internal helper removed from public tools/list |
 | Vertex source import | Pass — 41 documents imported, 0 failures |
 | Vertex real mode | Pass — prod search_visa returns source-index URLs |
+| MCP Apps UX redesign | Implemented locally — awaiting deployment and screenshot recapture |
 
 ## Acceptance checklist before submission
 
@@ -39,7 +40,8 @@
 - [x] `/.well-known/mcp.json` includes license/privacy/terms URLs live
 - [x] `data/source-index.jsonl` has zero `__PLACEHOLDER__` values
 - [x] Vertex real mode returns source URLs from ingested content
-- [ ] 3-5 screenshots committed under `assets/screenshots/`
+- [ ] 5 redesigned MCP Apps screenshots committed under `assets/screenshots/`
+- [ ] `pnpm check:submission:strict` passes
 - [ ] Privacy policy has no placeholders and is reviewed
 - [x] Tool inventory reviewed; Pro-only/write-like tools clearly classified
 - [ ] Claude Desktop + Claude Web verification pass

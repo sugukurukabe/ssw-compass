@@ -1,0 +1,77 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "SSW Compass source-index entry",
+  "type": "object",
+  "required": [
+    "id",
+    "title",
+    "url",
+    "ministry",
+    "datastore",
+    "trustLevel",
+    "tags",
+    "lang",
+    "verifiedAt",
+    "contentSha256"
+  ],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "title": { "type": "string", "minLength": 1 },
+    "url": { "type": "string", "format": "uri" },
+    "canonicalUrl": { "type": "string", "format": "uri" },
+    "ministry": {
+      "type": "string",
+      "enum": ["moj", "mlit", "mhlw", "maff", "meti", "cao", "soumu", "ppc"]
+    },
+    "datastore": {
+      "type": "string",
+      "enum": [
+        "visa_legal",
+        "visa_faq",
+        "visa_secondary",
+        "visa_legal_core_v2",
+        "visa_forms_v2",
+        "visa_faq_v2",
+        "visa_law_updates_v2",
+        "dev_context_v2"
+      ]
+    },
+    "dataStoreGroup": {
+      "type": "string",
+      "enum": ["visa_legal_core", "visa_forms", "visa_faq", "visa_law_updates", "dev_context"]
+    },
+    "trustLevel": { "type": "string", "const": "primary_source" },
+    "sourceType": { "type": "string", "enum": ["official_page", "official_form", "official_faq"] },
+    "tags": { "type": "array", "items": { "type": "string", "minLength": 1 } },
+    "lang": { "type": "string", "enum": ["ja", "en"] },
+    "verifiedAt": { "type": "string" },
+    "contentSha256": { "type": "string", "minLength": 1 },
+    "contentMimeType": {
+      "type": "string",
+      "enum": [
+        "text/html",
+        "text/plain",
+        "text/markdown",
+        "application/pdf",
+        "application/xhtml+xml",
+        "application/json",
+        "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+        "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        "application/msword",
+        "application/vnd.ms-excel"
+      ]
+    },
+    "gcsObjectName": { "type": "string", "minLength": 1 },
+    "chunkProfile": { "type": "string", "enum": ["native_500_heading", "structured_boundary"] },
+    "notes": { "type": "string" },
+    "status": { "type": "string", "enum": ["ok", "failed"] },
+    "lastRunAt": { "type": "string" },
+    "lastFailureReason": { "type": "string" }
+  }
+}

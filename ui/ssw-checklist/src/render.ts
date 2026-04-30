@@ -26,6 +26,19 @@ const I18N = {
     piiWarning:
       "個人番号・在留カード番号・パスポート番号は入力できません。" +
       "一般的な説明のみ備考に記入してください。",
+    groups: {
+      table1: "第1表: 申請人",
+      table2: "第2表: 所属機関",
+      table3: "第3表: 分野",
+      reference_form: "参考様式",
+      omission: "省略候補",
+    },
+    statuses: {
+      required: "必須",
+      omitted_due_to_category: "条件により省略",
+      applicant_specific: "申請人次第",
+      sector_specific: "分野別",
+    },
     asOf: "情報基準日",
     ministryPrefix: "所管",
   },
@@ -38,6 +51,19 @@ const I18N = {
     piiWarning:
       "Residence card numbers, passport numbers and individual numbers cannot be entered. " +
       "Please write only general information in the notes.",
+    groups: {
+      table1: "Table 1: Applicant",
+      table2: "Table 2: Organization",
+      table3: "Table 3: Industry",
+      reference_form: "Reference forms",
+      omission: "Omission candidates",
+    },
+    statuses: {
+      required: "Required",
+      omitted_due_to_category: "Omission possible",
+      applicant_specific: "Applicant-specific",
+      sector_specific: "Sector-specific",
+    },
     asOf: "As of",
     ministryPrefix: "Ministry",
   },
@@ -50,6 +76,19 @@ const I18N = {
     piiWarning:
       "Nomor kartu tinggal, nomor paspor, dan nomor individu tidak dapat dimasukkan. " +
       "Tuliskan hanya informasi umum pada catatan.",
+    groups: {
+      table1: "Tabel 1: Pemohon",
+      table2: "Tabel 2: Organisasi",
+      table3: "Tabel 3: Bidang",
+      reference_form: "Formulir referensi",
+      omission: "Kandidat penghilangan",
+    },
+    statuses: {
+      required: "Wajib",
+      omitted_due_to_category: "Dapat dihilangkan",
+      applicant_specific: "Tergantung pemohon",
+      sector_specific: "Khusus sektor",
+    },
     asOf: "Per tanggal",
     ministryPrefix: "Kementerian",
   },
@@ -99,25 +138,36 @@ export function render(ctx: RenderContext, rootEl: HTMLElement, cb: RenderCallba
   const dirty = isDirty(state, lastCommitted);
   const canCommit = dirty && !notesHasPii;
 
-  const rowsHtml = result.documents
-    .map((d) => {
-      const labelText = d.label[lang];
-      const trustText = trustLabels[d.trustLevel];
-      const checked = state.checkedDocIds.has(d.id);
-      const ministryHtml =
-        d.ministry !== undefined && d.ministry.length > 0
-          ? `<small class="ministry">${escapeAttr(t.ministryPrefix)}: ${escapeAttr(d.ministry)}</small>`
-          : "";
-      return `<li class="doc-row">
-        <input type="checkbox" id="doc-${escapeAttr(d.id)}"${checked ? " checked" : ""} data-doc-id="${escapeAttr(d.id)}" />
-        <div class="doc-meta">
-          <label class="doc-label" for="doc-${escapeAttr(d.id)}">
-            <h3>${escapeAttr(labelText)} <span class="${trustClass(d.trustLevel)}" aria-label="${escapeAttr(trustText)}">${escapeAttr(trustText)}</span></h3>
-          </label>
-          <p class="desc">${escapeAttr(d.description)}</p>
-          ${ministryHtml}
-        </div>
-      </li>`;
+  const groups = ["table1", "table2", "table3", "reference_form", "omission"] as const;
+  const rowsHtml = groups
+    .map((group) => {
+      const docs = result.documents.filter((d) => d.group === group);
+      if (docs.length === 0) return "";
+      const items = docs
+        .map((d) => {
+          const labelText = d.label[lang];
+          const trustText = trustLabels[d.trustLevel];
+          const checked = state.checkedDocIds.has(d.id);
+          const ministryHtml =
+            d.ministry !== undefined && d.ministry.length > 0
+              ? `<small class="ministry">${escapeAttr(t.ministryPrefix)}: ${escapeAttr(d.ministry)}</small>`
+              : "";
+          return `<li class="doc-row">
+            <input type="checkbox" id="doc-${escapeAttr(d.id)}"${checked ? " checked" : ""} data-doc-id="${escapeAttr(d.id)}" />
+            <div class="doc-meta">
+              <label class="doc-label" for="doc-${escapeAttr(d.id)}">
+                <h3>${escapeAttr(labelText)} <span class="status-badge status-${escapeAttr(d.status)}">${escapeAttr(t.statuses[d.status])}</span> <span class="${trustClass(d.trustLevel)}" aria-label="${escapeAttr(trustText)}">${escapeAttr(trustText)}</span></h3>
+              </label>
+              <p class="desc">${escapeAttr(d.description)}</p>
+              ${ministryHtml}
+            </div>
+          </li>`;
+        })
+        .join("");
+      return `<section class="doc-group" aria-label="${escapeAttr(t.groups[group])}">
+        <h2>${escapeAttr(t.groups[group])}</h2>
+        <ul>${items}</ul>
+      </section>`;
     })
     .join("");
 
@@ -132,7 +182,7 @@ export function render(ctx: RenderContext, rootEl: HTMLElement, cb: RenderCallba
 
   const fullHtml = `
     <small class="notice-l1" role="note" aria-label="service scope notice">${escapeAttr(l1)}</small>
-    <ul class="doc-list">${rowsHtml}</ul>
+    <div class="doc-list">${rowsHtml}</div>
     <div class="notes">
       <label for="ssw-notes">${escapeAttr(t.notesLabel)}</label>
       <textarea id="ssw-notes" placeholder="${escapeAttr(t.notesPlaceholder)}">${escapeAttr(state.notes)}</textarea>

@@ -24,6 +24,7 @@ import { emitAuditEvent, sha256Hex } from "../../audit/writer.js";
 import { assertHitlGate } from "../../hitl/lockgate.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
+import { scrubInputForPII } from "../../pii/index.js";
 
 /**
  * テスト可能な内部実装 (instrumentTool の外)
@@ -34,6 +35,24 @@ export async function _submitGyoseishoshiApprovalInner(
   authContext?: import("@ssw/shared-types").AuthContextType | null,
 ): Promise<CallToolResult> {
   const args = SubmitGyoseishoshiApprovalInput.parse(rawArgs);
+  const piiCheck = await scrubInputForPII(args);
+  if (piiCheck.blocked) {
+    logger.warn(
+      { tool: "submit_gyoseishoshi_approval", reason: "pii_blocked", findings: piiCheck.types },
+      "pii_blocked",
+    );
+    return {
+      isError: true,
+      content: [
+        {
+          type: "text",
+          text:
+            "個人情報 (在留番号・パスポート番号・マイナンバー等) は入力できません。" +
+            "一般的な識別子のみ受け付けます。",
+        },
+      ],
+    };
+  }
   assertHitlGate(authContext ?? null, "submit_gyoseishoshi_approval", "L2");
   if (args.approval_method === "esign") {
     throw new Error(

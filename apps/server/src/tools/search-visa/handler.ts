@@ -1,5 +1,6 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { DISCLAIMER_BY_LANG, isVertexGrounded, SearchVisaInputV4 } from "@ssw/shared-types";
+import { routeForIndustry } from "../../industry-routing.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";
@@ -43,12 +44,17 @@ export const searchVisa = instrumentTool(
     }
 
     const t0 = performance.now();
+    const route = routeForIndustry(args.industry);
     const grounded = await vertexSearch({
       // buildQuery uses category/industry/yearMonth only — language field is irrelevant
       query: buildQuery({ ...args, language: "ja" as const }),
       datastore: "visa_legal",
       confidenceThreshold: 0.7,
-      sourceAllowlist: ["*.go.jp"],
+      sourceAllowlist: route.sourceAllowlist,
+      preferredMinistries: route.preferredMinistries,
+      preferredTags: route.preferredTags,
+      dataStoreGroup: route.dataStoreGroup,
+      maxChunks: 5,
     });
 
     if (grounded.chunks.length === 0) {
@@ -85,7 +91,7 @@ export const searchVisa = instrumentTool(
     });
 
     const payload = SearchVisaOutput.parse({
-      results: sanitizedChunks.map((c) => ({
+      results: sanitizedChunks.slice(0, 5).map((c) => ({
         title: c.title,
         snippet: c.snippet,
         sourceUrl: c.uri,

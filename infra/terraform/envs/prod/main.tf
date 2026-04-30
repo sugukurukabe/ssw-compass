@@ -66,11 +66,22 @@ module "audit_log" {
   env         = "prod"
 }
 
+module "rag_buckets" {
+  source               = "../../modules/rag-buckets"
+  project_id           = var.project_id
+  location             = var.region
+  env                  = "prod"
+  raw_bucket_name      = "ssw-compass-rag-raw-prod"
+  metadata_bucket_name = "ssw-compass-rag-metadata-prod"
+  writer_members       = ["serviceAccount:${var.runtime_sa_email}"]
+}
+
 module "vertex_ai_search" {
-  source     = "../../modules/vertex-ai-search"
-  project_id = var.project_id
-  location   = var.region
-  enabled    = true # data stores mirror staging (Batch 5 will ingest content)
+  source               = "../../modules/vertex-ai-search"
+  project_id           = var.project_id
+  location             = var.region
+  enabled              = true # data stores mirror staging (Batch 5 will ingest content)
+  enable_rag_v2_stores = true
 }
 
 module "vpc_egress" {

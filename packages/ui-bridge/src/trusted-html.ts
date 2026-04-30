@@ -24,7 +24,7 @@ type TrustedTypesApi = {
   createPolicy: (name: string, rules: { createHTML: (s: string) => string }) => TrustedTypePolicy;
 };
 
-let cachedPolicy: TrustedTypePolicy | null | undefined = undefined;
+let cachedPolicy: TrustedTypePolicy | null | undefined;
 
 function getPolicy(): TrustedTypePolicy | null {
   if (cachedPolicy !== undefined) return cachedPolicy;

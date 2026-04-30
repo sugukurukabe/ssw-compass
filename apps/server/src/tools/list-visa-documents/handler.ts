@@ -1,6 +1,7 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import {
   DISCLAIMER_BY_LANG,
+  type DocumentEntry,
   effectiveLegalLevel,
   HTML_PREVIEW_WATERMARK,
   ListVisaDocumentsInputV4,
@@ -50,6 +51,43 @@ export const listVisaDocumentsHandler = instrumentTool(
     const t0 = performance.now();
     // lookupDocuments expects v3 args; pass compatible subset
     const documents = [...lookupDocuments({ ...args, language: "ja" as const })];
+    if (args.include_omission_conditions) {
+      const omissionDocs: DocumentEntry[] = [
+        {
+          id: "table2_omission_same_fiscal_year_repeat",
+          label: {
+            ja: "第2表の1〜3 (同一年度内2人目以降の場合は不要)",
+            en: "Table 2-1 to 2-3 (omitted for same-fiscal-year repeat applications)",
+            id: "Tabel 2-1 hingga 2-3 (dapat dihilangkan untuk permohonan lanjutan pada tahun fiskal yang sama)",
+          },
+          description:
+            "同一年度内に特定技能外国人を既に受け入れている所属機関は、第2表の1〜3の書類が不要となる場合があります。",
+          category: "conditional",
+          status: "omitted_due_to_category",
+          group: "omission",
+          ministry: "法務省",
+          trustLevel: "primary_source",
+          sourceUrl: "https://www.moj.go.jp/isa/applications/status/specifiedskilledworker.html",
+        },
+        {
+          id: "reference_form_1_29_omission_pledge",
+          label: {
+            ja: "書類省略に当たっての誓約書 (参考様式第1-29号)",
+            en: "Pledge for document omission (Reference Form 1-29)",
+            id: "Surat pernyataan penghilangan dokumen (Formulir Referensi 1-29)",
+          },
+          description:
+            "第2表の1又は同一年度内2人目以降の省略条件を利用する場合に確認すべき参考様式です。",
+          category: "conditional",
+          status: "omitted_due_to_category",
+          group: "omission",
+          ministry: "法務省",
+          trustLevel: "primary_source",
+          sourceUrl: "https://www.moj.go.jp/isa/content/001378963.docx",
+        },
+      ];
+      documents.push(...omissionDocs);
+    }
 
     if (documents.length === 0) {
       logger.info(

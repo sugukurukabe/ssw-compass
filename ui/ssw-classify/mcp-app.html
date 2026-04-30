@@ -65,6 +65,68 @@
       .decision ol.next-steps li {
         margin-bottom: 4px;
       }
+      .classifier-step {
+        border-top: 1px solid var(--ssw-border);
+        padding-top: 10px;
+        margin-top: 10px;
+      }
+      .classifier-step h4,
+      .result-panel h4 {
+        margin: 0 0 8px;
+        font-size: 13px;
+        color: var(--ssw-fg-muted);
+      }
+      .chip-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+      }
+      .chip,
+      .primary-action,
+      .secondary-action {
+        min-height: 44px;
+        border: 1px solid var(--ssw-border);
+        border-radius: 999px;
+        background: var(--ssw-bg-muted);
+        color: var(--ssw-fg);
+        padding: 8px 12px;
+        font: inherit;
+        cursor: pointer;
+      }
+      .chip--selected,
+      .primary-action {
+        background: var(--ssw-accent);
+        border-color: var(--ssw-accent);
+        color: #fff;
+      }
+      .chip:disabled {
+        opacity: 0.55;
+        cursor: not-allowed;
+      }
+      .result-panel {
+        margin-top: 12px;
+        padding: 10px 12px;
+        border-radius: 8px;
+        background: var(--ssw-bg-muted);
+      }
+      .result-panel ul {
+        margin: 0;
+        padding-left: 18px;
+      }
+      .omission {
+        margin: 8px 0 0;
+        color: var(--ssw-fg-muted);
+        font-size: 12px;
+      }
+      .action-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin-top: 12px;
+      }
+      .secondary-action {
+        background: var(--ssw-bg);
+      }
       .refs h4 {
         margin: 18px 0 6px;
         font-size: 13px;

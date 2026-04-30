@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      http-equiv="Content-Security-Policy"
+      content="default-src 'none'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self'; frame-src 'none'; object-src 'none'; base-uri 'self'; form-action 'none';"
+    />
+    <title>SSW Compass — Zairyu</title>
+    <style>
+      :root {
+        --ssw-fg: var(--color-text-primary, #111);
+        --ssw-fg-muted: var(--color-text-secondary, #555);
+        --ssw-bg: var(--color-bg-primary, #fff);
+        --ssw-bg-muted: var(--color-bg-secondary, #f6f6f6);
+        --ssw-accent: var(--color-accent, #0a2540);
+        --ssw-border: var(--color-border, #e5e7eb);
+        --ssw-danger-bg: var(--color-background-danger, #fee2e2);
+        --ssw-danger-fg: var(--color-text-danger, #991b1b);
+        --ssw-warning-bg: var(--color-background-warning, #fffbeb);
+        --ssw-warning-fg: var(--color-text-warning, #713f12);
+        --ssw-success-bg: var(--color-background-success, #ecfdf5);
+        --ssw-success-fg: var(--color-text-success, #065f46);
+        --ssw-font: var(--font-family-body, -apple-system, BlinkMacSystemFont, "Segoe UI", "Hiragino Sans", "Noto Sans JP", sans-serif);
+      }
+      html, body { margin: 0; padding: 0; background: var(--ssw-bg); color: var(--ssw-fg); font-family: var(--ssw-font); font-size: 14px; line-height: 1.6; }
+      #root { padding: 16px; }
+      .panel { border: 1px solid var(--ssw-border); border-radius: 10px; padding: 14px 16px; background: var(--ssw-bg); }
+      .panel h2 { margin: 0 0 8px; font-size: 16px; color: var(--ssw-accent); }
+      .badge { display: inline-flex; border-radius: 999px; padding: 4px 10px; font-weight: 700; margin-bottom: 10px; }
+      .badge.OK { background: var(--ssw-success-bg); color: var(--ssw-success-fg); }
+      .badge.WARNING { background: var(--ssw-warning-bg); color: var(--ssw-warning-fg); }
+      .badge.ILLEGAL { background: var(--ssw-danger-bg); color: var(--ssw-danger-fg); }
+      .issues { margin: 10px 0; padding-left: 18px; }
+      .cta { margin-top: 12px; padding: 10px 12px; border-radius: 8px; background: var(--ssw-bg-muted); }
+      .disclaimer { margin-top: 14px; color: var(--ssw-fg-muted); font-size: 12px; }
+    </style>
+  </head>
+  <body>
+    <div id="root" role="region" aria-label="SSW Compass zairyu compatibility"></div>
+    <script type="module" src="./src/main.tsx"></script>
+  </body>
+</html>

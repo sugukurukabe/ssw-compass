@@ -28,7 +28,7 @@ function resolveDistPath(uiName: string): string {
 }
 
 export async function loadUiHtml(
-  uiName: "ssw-search" | "ssw-classify" | "ssw-timeline" | "ssw-checklist",
+  uiName: "ssw-search" | "ssw-classify" | "ssw-timeline" | "ssw-checklist" | "ssw-validate",
 ): Promise<string> {
   const cached = cache.get(uiName);
   if (cached !== undefined) {

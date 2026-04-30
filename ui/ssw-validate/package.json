@@ -1,0 +1,28 @@
+{
+  "name": "@ssw/ui-ssw-validate",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "description": "SSW zairyu compatibility UI Resource (single-file HTML)",
+  "license": "Apache-2.0",
+  "scripts": {
+    "build": "vite build",
+    "build:watch": "vite build --watch",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "lint": "biome check .",
+    "postbuild": "node ../../scripts/compute-csp-hashes.mjs dist/mcp-app.html"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/ext-apps": "^1.6.0",
+    "@ssw/shared-types": "workspace:*",
+    "@ssw/ui-bridge": "workspace:*",
+    "dompurify": "^3.4.1"
+  },
+  "devDependencies": {
+    "@types/dompurify": "^3.0.0",
+    "@ssw/tsconfig": "workspace:*",
+    "typescript": "^5.7.0",
+    "vite": "^5.4.0",
+    "vite-plugin-singlefile": "^2.0.0"
+  }
+}

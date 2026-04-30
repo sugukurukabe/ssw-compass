@@ -40,6 +40,45 @@
         font-size: 12px;
         padding: 4px 0 12px;
       }
+      .summary-card {
+        background: var(--ssw-bg);
+        border: 1px solid var(--ssw-border);
+        border-left: 4px solid var(--ssw-accent);
+        border-radius: 10px;
+        padding: 14px 16px;
+        margin-bottom: 12px;
+      }
+      .summary-card h2 {
+        margin: 0 0 8px;
+        color: var(--ssw-accent);
+        font-size: 15px;
+      }
+      .summary-card p {
+        margin: 0 0 10px;
+      }
+      .followup-row {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        margin: 10px 0;
+      }
+      .followup-chip,
+      .sources-chip {
+        display: inline-flex;
+        min-height: 36px;
+        align-items: center;
+        border-radius: 999px;
+        border: 1px solid var(--ssw-border);
+        background: var(--ssw-bg-muted);
+        color: var(--ssw-fg);
+        padding: 6px 10px;
+        font: inherit;
+        font-size: 12px;
+      }
+      .sources-chip {
+        min-height: 44px;
+        cursor: pointer;
+      }
       .card {
         background: var(--ssw-bg);
         border: 1px solid var(--ssw-border);

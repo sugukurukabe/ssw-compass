@@ -19,6 +19,7 @@ import {
 } from "@ssw/shared-types";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
+import { scrubInputForPII } from "../../pii/index.js";
 
 /** 就労が基本的に不可な在留資格 */
 const WORK_INELIGIBLE_STATUSES = new Set([
@@ -30,6 +31,24 @@ export const validateZairyuCompatibilityHandler = instrumentTool(
   "validate_zairyu_compatibility",
   async (rawArgs: unknown): Promise<CallToolResult> => {
     const args = ValidateZairyuCompatibilityInput.parse(rawArgs);
+    const piiCheck = await scrubInputForPII(args);
+    if (piiCheck.blocked) {
+      logger.warn(
+        { tool: "validate_zairyu_compatibility", reason: "pii_blocked", findings: piiCheck.types },
+        "pii_blocked",
+      );
+      return {
+        isError: true,
+        content: [
+          {
+            type: "text",
+            text:
+              "個人情報 (在留番号・パスポート番号・マイナンバー等) は入力できません。" +
+              "一般的な質問のみ受け付けます。",
+          },
+        ],
+      };
+    }
 
     const t0 = performance.now();
     const today = new Date();

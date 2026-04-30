@@ -25,6 +25,7 @@ COPY ui/ssw-search/package.json ./ui/ssw-search/package.json
 COPY ui/ssw-classify/package.json ./ui/ssw-classify/package.json
 COPY ui/ssw-timeline/package.json ./ui/ssw-timeline/package.json
 COPY ui/ssw-checklist/package.json ./ui/ssw-checklist/package.json
+COPY ui/ssw-validate/package.json ./ui/ssw-validate/package.json
 
 # Install everything needed for server + 4 UI builds.
 # `...` includes transitive workspace deps (shared-types, ui-bridge).
@@ -33,11 +34,13 @@ RUN pnpm install --frozen-lockfile \
   --filter=@ssw/ui-ssw-search... \
   --filter=@ssw/ui-ssw-classify... \
   --filter=@ssw/ui-ssw-timeline... \
-  --filter=@ssw/ui-ssw-checklist...
+  --filter=@ssw/ui-ssw-checklist... \
+  --filter=@ssw/ui-ssw-validate...
 
 COPY packages/shared-types ./packages/shared-types
 COPY packages/ui-bridge ./packages/ui-bridge
 COPY apps/server ./apps/server
+COPY data ./data
 COPY ui ./ui
 # CSP postbuild hook runs scripts/compute-csp-hashes.mjs per UI.
 COPY scripts ./scripts
@@ -52,7 +55,8 @@ RUN pnpm exec turbo run build \
   --filter=@ssw/ui-ssw-search \
   --filter=@ssw/ui-ssw-classify \
   --filter=@ssw/ui-ssw-timeline \
-  --filter=@ssw/ui-ssw-checklist
+  --filter=@ssw/ui-ssw-checklist \
+  --filter=@ssw/ui-ssw-validate
 
 # pnpm 10 default requires inject-workspace-packages=true. We use
 # workspace:* without injection, so pass --legacy (equivalent to pnpm
@@ -72,6 +76,7 @@ WORKDIR /app
 COPY --from=builder --chown=nonroot:nonroot /app/node_modules ./node_modules
 COPY --from=builder --chown=nonroot:nonroot /app/package.json ./package.json
 COPY --from=builder --chown=nonroot:nonroot /app/dist ./dist
+COPY --from=builder --chown=nonroot:nonroot /workspace/data ./data
 # Ship the hardened single-file UI bundles so the server can serve
 # ui://ssw-<name>/mcp-app.html resources at runtime. UI_DIST_ROOT is
 # read by [apps/server/src/ui-assets.ts](apps/server/src/ui-assets.ts).
@@ -79,6 +84,7 @@ COPY --from=builder --chown=nonroot:nonroot /workspace/ui/ssw-search/dist ./ui/s
 COPY --from=builder --chown=nonroot:nonroot /workspace/ui/ssw-classify/dist ./ui/ssw-classify/dist
 COPY --from=builder --chown=nonroot:nonroot /workspace/ui/ssw-timeline/dist ./ui/ssw-timeline/dist
 COPY --from=builder --chown=nonroot:nonroot /workspace/ui/ssw-checklist/dist ./ui/ssw-checklist/dist
+COPY --from=builder --chown=nonroot:nonroot /workspace/ui/ssw-validate/dist ./ui/ssw-validate/dist
 
 USER nonroot
 EXPOSE 8080

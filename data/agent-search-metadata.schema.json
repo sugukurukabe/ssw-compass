@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "Agent Search GCS unstructured metadata row",
+  "type": "object",
+  "required": ["id", "structData", "content"],
+  "additionalProperties": false,
+  "properties": {
+    "id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 100,
+      "pattern": "^[a-z0-9][a-z0-9-]*$"
+    },
+    "structData": {
+      "type": "object",
+      "required": ["title", "canonicalUrl", "ministry", "trustLevel", "sourceType", "tags"],
+      "additionalProperties": true,
+      "properties": {
+        "title": { "type": "string", "minLength": 1 },
+        "canonicalUrl": { "type": "string", "format": "uri" },
+        "url": { "type": "string", "format": "uri" },
+        "ministry": { "type": "string" },
+        "trustLevel": { "type": "string", "const": "primary_source" },
+        "sourceType": { "type": "string" },
+        "dataStoreGroup": { "type": "string" },
+        "lang": { "type": "string" },
+        "publishedAt": { "type": "string" },
+        "contentSha256": { "type": "string" },
+        "tags": { "type": "array", "items": { "type": "string" } }
+      }
+    },
+    "content": {
+      "type": "object",
+      "required": ["mimeType", "uri"],
+      "additionalProperties": false,
+      "properties": {
+        "mimeType": {
+          "type": "string",
+          "enum": [
+            "text/html",
+            "text/plain",
+            "text/markdown",
+            "application/pdf",
+            "application/xhtml+xml",
+            "application/json",
+            "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+            "application/msword",
+            "application/vnd.ms-excel"
+          ]
+        },
+        "uri": {
+          "type": "string",
+          "pattern": "^gs://[^/]+/.+"
+        }
+      }
+    }
+  }
+}

@@ -27,6 +27,34 @@ export {
 export { DISCLAIMER_BY_LANG } from "./disclaimers.js";
 export { assertDispatchAllowed, DispatchNotAllowedError } from "./dispatch/validate.js";
 export { TierLimitError } from "./errors/tier-limit.js";
+export type {
+  ApplicantProfile as ApplicantProfileType,
+  ApplicantProfileCatalogEntry as ApplicantProfileCatalogEntryType,
+  FormBundle as FormBundleType,
+  FormBundleCatalogEntry as FormBundleCatalogEntryType,
+  FormProcedure as FormProcedureType,
+  FormSection as FormSectionType,
+  FormsCatalogEntry as FormsCatalogEntryType,
+  FormsCatalogEntryKind as FormsCatalogEntryKindType,
+  ReceivingOrganizationProfile as ReceivingOrganizationProfileType,
+  ReceivingOrganizationProfileCatalogEntry as ReceivingOrganizationProfileCatalogEntryType,
+  ReferenceFormCatalogEntry as ReferenceFormCatalogEntryType,
+  SswLevel as SswLevelType,
+} from "./forms-catalog.js";
+export {
+  ApplicantProfile,
+  ApplicantProfileCatalogEntry,
+  FormBundle,
+  FormBundleCatalogEntry,
+  FormProcedure,
+  FormSection,
+  FormsCatalogEntry,
+  FormsCatalogEntryKind,
+  ReceivingOrganizationProfile,
+  ReceivingOrganizationProfileCatalogEntry,
+  ReferenceFormCatalogEntry,
+  SswLevel,
+} from "./forms-catalog.js";
 export {
   DEADLINE_KIND,
   DeadlineEntry,
@@ -73,6 +101,7 @@ export {
 } from "./law-updates.js";
 export {
   DOCUMENT_CATEGORY,
+  DOCUMENT_STATUS,
   DOCUMENTS_INDUSTRY,
   DOCUMENTS_VISA_CATEGORY,
   type DocumentCategory,

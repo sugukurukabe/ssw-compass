@@ -14,6 +14,12 @@ import { z } from "zod";
  */
 
 export const DOCUMENT_CATEGORY = ["required", "conditional", "supporting"] as const;
+export const DOCUMENT_STATUS = [
+  "required",
+  "omitted_due_to_category",
+  "applicant_specific",
+  "sector_specific",
+] as const;
 
 export const DOCUMENTS_VISA_CATEGORY = [
   "tokutei_ginou_1",
@@ -58,11 +64,13 @@ export const DocumentEntry = z.object({
   label: z.object({ ja: z.string(), en: z.string(), id: z.string() }),
   description: z.string(),
   category: z.enum(DOCUMENT_CATEGORY),
+  status: z.enum(DOCUMENT_STATUS).default("required"),
+  group: z.enum(["table1", "table2", "table3", "reference_form", "omission"]).default("table1"),
   ministry: z.string().optional(),
   trustLevel: z.enum(["primary_source", "secondary", "community"]),
   sourceUrl: z.string().url().optional(),
 });
-export type DocumentEntry = z.infer<typeof DocumentEntry>;
+export type DocumentEntry = z.input<typeof DocumentEntry>;
 
 export const ListVisaDocumentsOutput = z.object({
   documents: z.array(DocumentEntry),

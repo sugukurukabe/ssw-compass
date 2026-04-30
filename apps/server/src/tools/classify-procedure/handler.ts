@@ -1,5 +1,6 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { DISCLAIMER_BY_LANG } from "@ssw/shared-types";
+import { DISCLAIMER_BY_LANG, type FormBundle as FormBundleType } from "@ssw/shared-types";
+import { buildFormBundle } from "../../forms-catalog.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";
@@ -12,6 +13,12 @@ import {
   PROCEDURE_RATIONALE,
 } from "./decision-tree.js";
 import { buildClassifyQuery, ClassifyProcedureInput, ClassifyProcedureOutput } from "./schema.js";
+
+function procedureForBundle(procedureType: string): FormBundleType["procedure"] {
+  if (procedureType === "ninte_shoumeisho_koufu") return "coe";
+  if (procedureType === "zairyu_kikan_koshin") return "renewal";
+  return "change";
+}
 
 export const classifyProcedureHandler = instrumentTool(
   "classify_procedure",
@@ -74,6 +81,19 @@ export const classifyProcedureHandler = instrumentTool(
       procedureLabel: PROCEDURE_LABEL[decision.type],
       rationale: PROCEDURE_RATIONALE[decision.type][args.language],
       nextSteps: [...PROCEDURE_NEXT_STEPS[decision.type][args.language]],
+      formBundle:
+        args.targetStatus === "tokutei_ginou_1"
+          ? buildFormBundle({
+              procedure: procedureForBundle(decision.type),
+              sswLevel: "i",
+              receivingOrganizationProfile:
+                decision.type === "zairyu_kikan_koshin" ? "not_applicable" : "corporation",
+              applicantProfile: "no_exemption",
+              industry: args.industry ?? "other",
+              officialReferencePage:
+                "https://www.moj.go.jp/isa/applications/status/specifiedskilledworker.html",
+            })
+          : undefined,
       references: sanitizedReferences,
       disclaimer: DISCLAIMER_BY_LANG[args.language],
       asOf: new Date().toISOString().slice(0, 10),

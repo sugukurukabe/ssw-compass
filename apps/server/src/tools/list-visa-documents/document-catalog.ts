@@ -27,6 +27,8 @@ const DOC_EMPLOYMENT_CONTRACT: DocumentEntry = {
   description:
     "受入機関と本人との間で締結された雇用契約書。賃金、労働時間、業務内容等の記載が必要とされています。",
   category: "required",
+  status: "required",
+  group: "table1",
   ministry: "法務省",
   trustLevel: "primary_source",
   sourceUrl: "https://www.moj.go.jp/isa/policies/policies/ssw/index.html",
@@ -42,6 +44,8 @@ const DOC_APPLICATION_FORM: DocumentEntry = {
   description:
     "出入国在留管理庁の公式様式に従って記入する申請書。手続き種別 (認定/変更/更新) によって様式が異なります。",
   category: "required",
+  status: "required",
+  group: "table1",
   ministry: "法務省",
   trustLevel: "primary_source",
   sourceUrl: "https://www.moj.go.jp/isa/applications/procedures/nyuukokukanri07_00201.html",
@@ -52,6 +56,8 @@ const DOC_RESUME: DocumentEntry = {
   label: label("履歴書", "Résumé", "Daftar riwayat hidup"),
   description: "学歴・職歴を時系列で記載した書類。様式は出入国在留管理庁の参考様式に準じます。",
   category: "required",
+  status: "required",
+  group: "table1",
   ministry: "法務省",
   trustLevel: "primary_source",
 };
@@ -66,6 +72,8 @@ const DOC_SUPPORT_PLAN: DocumentEntry = {
   description:
     "特定技能1号の受入機関が作成する支援計画書。生活支援・日本語学習機会の提供等の項目を含みます。",
   category: "required",
+  status: "required",
+  group: "reference_form",
   ministry: "法務省",
   trustLevel: "primary_source",
 };
@@ -80,6 +88,8 @@ const DOC_PLEDGE: DocumentEntry = {
   description:
     "受入機関が出入国在留管理庁に提出する誓約書。法令遵守や支援体制の確保について誓約する書類です。",
   category: "required",
+  status: "required",
+  group: "table2",
   ministry: "法務省",
   trustLevel: "primary_source",
 };
@@ -94,6 +104,8 @@ const DOC_SKILL_TEST: DocumentEntry = {
   description:
     "特定技能1号取得のため、所管省庁が指定する技能試験に合格した旨の証明書。分野ごとに試験主体と証明書様式が異なります。",
   category: "conditional",
+  status: "applicant_specific",
+  group: "table1",
   ministry: "所管省庁 (分野により異なる)",
   trustLevel: "primary_source",
 };
@@ -108,6 +120,8 @@ const DOC_JLPT_CERT: DocumentEntry = {
   description:
     "特定技能1号に必要とされる日本語能力を証明する書類。JFT-Basic または日本語能力試験 N4 以上が一般的な目安です。",
   category: "conditional",
+  status: "applicant_specific",
+  group: "table1",
   ministry: "所管省庁 (国際交流基金等)",
   trustLevel: "primary_source",
 };
@@ -122,6 +136,8 @@ const DOC_MAFF_AGRI_PLAN: DocumentEntry = {
   description:
     "農業分野の特定技能1号では、農林水産省所管の運用要領で指定される書類が追加で必要となります。具体的な様式は農林水産省公式案内を参照してください。",
   category: "conditional",
+  status: "sector_specific",
+  group: "table3",
   ministry: "農林水産省",
   trustLevel: "primary_source",
   sourceUrl: "https://www.maff.go.jp/j/new_farmer/n_syurou/t_ginou.html",

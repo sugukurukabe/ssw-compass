@@ -1,0 +1,75 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "version": "2026-04-30",
+  "description": "Tool to Agent Search data store routing for SSW Compass. dev_context is reserved for a future private developer MCP and must not be exposed through the public SSW connector.",
+  "groups": {
+    "visa_legal_core": {
+      "dataStoreId": "visa_legal_core_v2",
+      "oldDataStoreId": "visa_legal",
+      "tools": ["search_visa", "classify_procedure", "get_deadline_timeline"],
+      "preferredTags": ["ssw_1", "ssw_2", "procedure", "law", "deadline"],
+      "description": "Primary legal/procedure pages from MOJ and sector ministries."
+    },
+    "visa_forms": {
+      "dataStoreId": "visa_forms_v2",
+      "oldDataStoreId": "visa_legal",
+      "tools": ["list_visa_documents"],
+      "preferredTags": ["forms", "table1", "table2", "table3", "reference_form"],
+      "description": "Official SSW forms, checklists, and stable reference forms."
+    },
+    "visa_faq": {
+      "dataStoreId": "visa_faq_v2",
+      "oldDataStoreId": "visa_faq",
+      "tools": ["search_visa", "list_law_updates"],
+      "preferredTags": ["faq", "q_and_a"],
+      "description": "Official FAQ and Q&A pages."
+    },
+    "visa_law_updates": {
+      "dataStoreId": "visa_law_updates_v2",
+      "oldDataStoreId": "visa_legal",
+      "tools": ["list_law_updates"],
+      "preferredTags": ["law_update", "fee", "immigration_act", "gyoseishoshi_law"],
+      "description": "Law updates, announcements, fee changes, and calendar items."
+    },
+    "dev_context": {
+      "dataStoreId": "dev_context_v2",
+      "oldDataStoreId": null,
+      "tools": [],
+      "preferredTags": ["github", "issue", "release_note", "roadmap"],
+      "publicConnector": false,
+      "description": "Reserved for a future private developer MCP, not for public SSW Compass."
+    }
+  },
+  "industryRoutes": {
+    "agriculture": {
+      "dataStoreGroup": "visa_legal_core",
+      "preferredMinistries": ["maff", "moj"],
+      "preferredTags": ["agriculture", "ssw_1", "forms"]
+    },
+    "fishery": {
+      "dataStoreGroup": "visa_legal_core",
+      "preferredMinistries": ["maff", "moj"],
+      "preferredTags": ["fishery", "ssw_1", "forms"]
+    },
+    "construction": {
+      "dataStoreGroup": "visa_legal_core",
+      "preferredMinistries": ["mlit", "moj"],
+      "preferredTags": ["construction", "ssw_1", "forms"]
+    },
+    "nursing_care": {
+      "dataStoreGroup": "visa_legal_core",
+      "preferredMinistries": ["mhlw", "moj"],
+      "preferredTags": ["nursing_care", "ssw_1", "forms"]
+    },
+    "food_service": {
+      "dataStoreGroup": "visa_legal_core",
+      "preferredMinistries": ["maff", "moj"],
+      "preferredTags": ["food_service", "ssw_1", "forms"]
+    },
+    "default": {
+      "dataStoreGroup": "visa_legal_core",
+      "preferredMinistries": ["moj"],
+      "preferredTags": ["ssw_1", "procedure"]
+    }
+  }
+}

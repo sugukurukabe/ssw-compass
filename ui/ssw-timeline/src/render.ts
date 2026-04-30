@@ -17,9 +17,7 @@ const L1_NOTICE_BY_LANG = {
 const I18N = {
   ja: {
     timelineHeading: "期限タイムライン",
-    referencesHeading: "関連する公式情報源",
     asOf: "情報基準日",
-    openSource: "原典を開く",
     dueByPrefix: "期限 (目安)",
     trustLevel: {
       primary_source: "一次情報",
@@ -29,9 +27,7 @@ const I18N = {
   },
   en: {
     timelineHeading: "Deadline timeline",
-    referencesHeading: "Related official sources",
     asOf: "As of",
-    openSource: "Open source",
     dueByPrefix: "Due (approx.)",
     trustLevel: {
       primary_source: "Primary source",
@@ -41,9 +37,7 @@ const I18N = {
   },
   id: {
     timelineHeading: "Linimasa tenggat waktu",
-    referencesHeading: "Sumber resmi terkait",
     asOf: "Per tanggal",
-    openSource: "Buka sumber",
     dueByPrefix: "Tenggat (kira-kira)",
     trustLevel: {
       primary_source: "Sumber utama",
@@ -52,8 +46,6 @@ const I18N = {
     },
   },
 } as const;
-
-const ALLOWED_HREF = /^https:\/\/(www\.)?(moj|mhlw|soumu|cao|maff|mlit)\.go\.jp\//;
 
 function escapeAttr(s: string): string {
   const map: Record<string, string> = {
@@ -100,34 +92,17 @@ export function render(
     })
     .join("");
 
-  const referencesHtml = result.references
-    .map((r) => {
-      const safeHref = ALLOWED_HREF.test(r.sourceUrl) ? r.sourceUrl : "#";
-      return `<article class="card" tabindex="0" aria-label="${escapeAttr(r.title)}">
-        <h5>${escapeAttr(r.title)}</h5>
-        <a href="${escapeAttr(safeHref)}" rel="noopener noreferrer" target="_blank">${t.openSource}</a>
-        <small>${escapeAttr(t.asOf)}: ${escapeAttr(r.sourceDate)}</small>
-      </article>`;
-    })
-    .join("");
-
   const fullHtml = `
     <small class="notice-l1" role="note" aria-label="service scope notice">${escapeAttr(l1)}</small>
     <section aria-labelledby="ssw-timeline-heading">
       <h2 id="ssw-timeline-heading" class="sr-only">${escapeAttr(t.timelineHeading)}</h2>
       <ul class="timeline">${deadlineHtml}</ul>
     </section>
-    <section class="refs" aria-labelledby="ssw-refs-heading">
-      <h4 id="ssw-refs-heading">${escapeAttr(t.referencesHeading)}</h4>
-      ${referencesHtml}
-    </section>
     <p role="note" class="disclaimer">${escapeAttr(result.disclaimer)}</p>
     <p class="meta">${escapeAttr(t.asOf)}: ${escapeAttr(result.asOf)}</p>
   `;
 
-  const sanitized = DOMPurify.sanitize(fullHtml, {
-    ALLOWED_URI_REGEXP: ALLOWED_HREF,
-  });
+  const sanitized = DOMPurify.sanitize(fullHtml);
 
   setInnerHTML(rootEl, sanitized);
 
