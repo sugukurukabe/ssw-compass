@@ -216,7 +216,7 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -H "mcp-session-id: $SESSION_ID" \
-            -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_visa","arguments":{"query":"特定技能1号 建設分野","lang":"ja","category":"tokutei_ginou_1"}}}' \
+            -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_visa","arguments":{"category":"tokutei_ginou_1","industry":"construction","language":"ja"}}}' \
             > /tmp/search-raw.txt
 
           # Streamable HTTP SSE response — extract the JSON from the "data: " line.
