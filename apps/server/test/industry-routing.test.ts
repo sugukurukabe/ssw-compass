@@ -14,6 +14,10 @@ describe("sourceAllowlistForIndustry", () => {
     expect(sourceAllowlistForIndustry("nursing_care")).toEqual(["www.mhlw.go.jp", "www.moj.go.jp"]);
   });
 
+  it("routes legacy electronics alias to METI + MOJ", () => {
+    expect(sourceAllowlistForIndustry("electronics")).toEqual(["www.meti.go.jp", "www.moj.go.jp"]);
+  });
+
   it("falls back to all go.jp for unknown or omitted industries", () => {
     expect(sourceAllowlistForIndustry(undefined)).toEqual(["*.go.jp"]);
     expect(sourceAllowlistForIndustry("other")).toEqual(["*.go.jp"]);

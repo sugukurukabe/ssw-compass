@@ -30,6 +30,11 @@ const ROUTES: Record<string, IndustryRoute> = {
     ["meti", "moj"],
     ["industrial_products_manufacturing", "manufacturing", "ssw_1"],
   ),
+  electronics: route(
+    ["www.meti.go.jp", MOJ_HOST],
+    ["meti", "moj"],
+    ["industrial_products_manufacturing", "manufacturing", "electronics", "ssw_1"],
+  ),
   construction: route(["www.mlit.go.jp", MOJ_HOST], ["mlit", "moj"], ["construction", "ssw_1"]),
   nursing_care: route(["www.mhlw.go.jp", MOJ_HOST], ["mhlw", "moj"], ["nursing_care", "ssw_1"]),
   building_cleaning: route(

@@ -62,6 +62,32 @@ export interface VertexSearchResult {
 
 type VertexMode = "fixture" | "real";
 
+const INDUSTRY_TITLE_TERMS_BY_TAG: Readonly<Record<string, readonly string[]>> = {
+  agriculture: ["農業"],
+  fishery: ["漁業"],
+  food_manufacturing: ["飲食料品製造業"],
+  food_service: ["外食業"],
+  manufacturing: ["工業製品製造業", "素形材", "産業機械", "電気・電子情報関連"],
+  industrial_products_manufacturing: ["工業製品製造業", "素形材", "産業機械", "電気・電子情報関連"],
+  electronics: ["工業製品製造業", "電気・電子情報関連", "電子電気"],
+  construction: ["建設"],
+  nursing_care: ["介護"],
+  building_cleaning: ["ビルクリーニング"],
+  automobile_repair: ["自動車整備"],
+  automobile_maintenance: ["自動車整備"],
+  aviation: ["航空"],
+  lodging: ["宿泊"],
+  accommodation: ["宿泊"],
+  shipbuilding: ["造船", "舶用工業"],
+  automobile_transportation: ["自動車運送業"],
+  railway: ["鉄道"],
+  forestry: ["林業"],
+  wood_products: ["木材産業"],
+};
+
+const BROAD_ROUTING_TAGS = new Set(["ssw_1", "procedure"]);
+const FIELD_SPECIFIC_SOURCE_TYPES = new Set(["operation_guide", "operation_policy"]);
+
 const FIXTURE_CHUNKS: readonly GroundedChunk[] = [
   {
     title: "特定技能1号 — 在留資格変更許可申請の手引き",
@@ -184,11 +210,14 @@ function getStringListField(
   const list = (value as { listValue?: { values?: unknown[] } }).listValue?.values;
   if (!Array.isArray(list)) return [];
   return list
-    .map((item) =>
-      item !== null && typeof item === "object"
-        ? (item as { stringValue?: unknown }).stringValue
-        : undefined,
-    )
+    .map((item) => {
+      if (typeof item === "string") return item;
+      if (item === null || typeof item !== "object") return undefined;
+      const stringValue = (item as { stringValue?: unknown }).stringValue;
+      if (typeof stringValue === "string") return stringValue;
+      const snakeStringValue = (item as { string_value?: unknown }).string_value;
+      return typeof snakeStringValue === "string" ? snakeStringValue : undefined;
+    })
     .filter((item): item is string => typeof item === "string");
 }
 
@@ -271,15 +300,27 @@ function resultToChunk(result: SearchResult): GroundedChunk | null {
 
 function routingScore(chunk: GroundedChunk, args: VertexSearchArgs): number {
   let score = 0;
-  if (args.preferredMinistries?.includes(chunk.ministry ?? "") === true) score += 20;
+  if (hasPreferredTitleTerm(chunk.title, args.preferredTags ?? [])) score += 100;
+  if (args.preferredMinistries?.includes(chunk.ministry ?? "") === true) score += 50;
   if (args.dataStoreGroup !== undefined && chunk.dataStoreGroup === args.dataStoreGroup)
-    score += 10;
+    score += 15;
   const tags = chunk.tags ?? [];
   for (const tag of args.preferredTags ?? []) {
-    if (tags.includes(tag)) score += 5;
+    if (!tags.includes(tag)) continue;
+    score += BROAD_ROUTING_TAGS.has(tag) ? 10 : 50;
   }
+  if (FIELD_SPECIFIC_SOURCE_TYPES.has(chunk.sourceType ?? "")) score += 30;
   if (chunk.confidence >= args.confidenceThreshold) score += chunk.confidence;
   return score;
+}
+
+function hasPreferredTitleTerm(title: string, preferredTags: readonly string[]): boolean {
+  for (const tag of preferredTags) {
+    if (BROAD_ROUTING_TAGS.has(tag)) continue;
+    const terms = INDUSTRY_TITLE_TERMS_BY_TAG[tag];
+    if (terms?.some((term) => title.includes(term)) === true) return true;
+  }
+  return false;
 }
 
 /**

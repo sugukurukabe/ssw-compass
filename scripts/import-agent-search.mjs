@@ -35,7 +35,7 @@ if (args.dryRun) {
 const accessToken = process.env["GOOGLE_OAUTH_ACCESS_TOKEN"];
 if (accessToken === undefined || accessToken.length === 0) {
   throw new Error(
-    "GOOGLE_OAUTH_ACCESS_TOKEN is required for import:rag. Run: export GOOGLE_OAUTH_ACCESS_TOKEN=\"$(gcloud auth print-access-token)\"",
+    'GOOGLE_OAUTH_ACCESS_TOKEN is required for import:rag. Run: export GOOGLE_OAUTH_ACCESS_TOKEN="$(gcloud auth print-access-token)"',
   );
 }
 

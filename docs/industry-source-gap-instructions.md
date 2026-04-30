@@ -49,6 +49,12 @@
 
 ## 現在のカバレッジ
 
+2026-04-30 更新:
+
+- `data/source-index.jsonl` は canonical URL 重複を整理済み。36 entries / 36 canonical URLs。
+- 手動収集 ZIP 由来の分野別「運用要領 / 運用方針」は Vertex AI Search に import 済みだが、安定 URL がないものは `source-index.jsonl` にはまだ直接追加していない。
+- `pnpm smoke:search -- --all --strict` で16分野の実検索を確認できる。ただし Discovery Engine の regional search quota に当たりやすいため、必要に応じて `--industries=railway,wood_products --delay-ms=3000` のように分割して実行する。
+
 | 分野 key | 日本語 | source-index OK | failed source | forms-catalog 第3表 | 優先度 | 収集指示 |
 |---|---|---:|---:|---:|---|---|
 | `nursing_care` | 介護 | 2 | 0 | 0 | 中 | 第3表・介護分野参考様式・介護技能評価/日本語評価の公式ページを追加 |
@@ -60,7 +66,7 @@
 | `aviation` | 航空 | 2 | 0 | 0 | 中 | 第3表・航空分野運用要領・評価試験ページを追加 |
 | `accommodation` | 宿泊 | 2 | 0 | 0 | 中 | 第3表・宿泊分野運用要領・宿泊技能測定試験ページを追加 |
 | `agriculture` | 農業 | 2 | 1 | 1 | 高 | MAFF SSW agriculture direct page が 403。安定 landing / 協議会 / 派遣関連様式を補完 |
-| `fishery` | 漁業 | 0 | 0 | 1 | 高 | 水産庁/MAFF の漁業分野トップ・運用要領・派遣関連様式・試験ページを追加 |
+| `fishery` | 漁業 | 0 | 0 | 1 | 高 | 水産庁/MAFF の漁業分野トップ・派遣関連様式・試験ページを追加 |
 | `food_manufacturing` | 飲食料品製造業 | 0 | 0 | 0 | 高 | MAFF の飲食料品製造業ページ・第3表・試験ページを追加 |
 | `food_service` | 外食業 | 0 | 0 | 0 | 高 | MAFF の外食業ページ・第3表・外食業技能測定試験ページを追加 |
 | `automobile_transportation` | 自動車運送業 | 0 | 0 | 0 | 高 | 2024追加分野。MLIT の分野ページ・免許/研修要件・第3表を追加 |
