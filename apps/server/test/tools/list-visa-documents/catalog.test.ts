@@ -50,6 +50,16 @@ describe("lookupDocuments — catalog", () => {
     expect(docs.every((d) => d.trustLevel === "primary_source")).toBe(true);
   });
 
+  it("flags applicant-understanding forms that have multilingual templates", () => {
+    const docs = lookupDocuments(mk({ visaCategory: "tokutei_ginou_1", industry: "agriculture" }));
+    const employmentContract = docs.find((doc) => doc.id === "employment_contract");
+    const supportPlan = docs.find((doc) => doc.id === "support_plan");
+    expect(employmentContract?.applicantUnderstandingRequired).toBe(true);
+    expect(employmentContract?.multilingualTemplateAvailable).toBe(true);
+    expect(supportPlan?.applicantUnderstandingRequired).toBe(true);
+    expect(supportPlan?.multilingualTemplateAvailable).toBe(true);
+  });
+
   it("kazokutaizai returns at least one document", () => {
     const docs = lookupDocuments(mk({ visaCategory: "kazokutaizai" }));
     expect(docs.length).toBeGreaterThanOrEqual(1);

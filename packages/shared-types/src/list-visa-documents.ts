@@ -77,6 +77,9 @@ export const DocumentEntry = z.object({
   ministry: z.string().optional(),
   trustLevel: z.enum(["primary_source", "secondary", "community"]),
   sourceUrl: z.string().url().optional(),
+  applicantUnderstandingRequired: z.boolean().optional(),
+  multilingualTemplateAvailable: z.boolean().optional(),
+  multilingualSourceUrl: z.string().url().optional(),
 });
 export type DocumentEntry = z.input<typeof DocumentEntry>;
 
