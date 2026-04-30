@@ -39,6 +39,8 @@ const I18N = {
       applicant_specific: "申請人次第",
       sector_specific: "分野別",
     },
+    multilingualBadge: "母国語確認",
+    translatedTemplateBadge: "多言語様式あり",
     asOf: "情報基準日",
     ministryPrefix: "所管",
   },
@@ -64,6 +66,8 @@ const I18N = {
       applicant_specific: "Applicant-specific",
       sector_specific: "Sector-specific",
     },
+    multilingualBadge: "Native-language check",
+    translatedTemplateBadge: "Translations available",
     asOf: "As of",
     ministryPrefix: "Ministry",
   },
@@ -89,6 +93,8 @@ const I18N = {
       applicant_specific: "Tergantung pemohon",
       sector_specific: "Khusus sektor",
     },
+    multilingualBadge: "Cek bahasa ibu",
+    translatedTemplateBadge: "Terjemahan tersedia",
     asOf: "Per tanggal",
     ministryPrefix: "Kementerian",
   },
@@ -152,6 +158,18 @@ export function render(ctx: RenderContext, rootEl: HTMLElement, cb: RenderCallba
             d.ministry !== undefined && d.ministry.length > 0
               ? `<small class="ministry">${escapeAttr(t.ministryPrefix)}: ${escapeAttr(d.ministry)}</small>`
               : "";
+          const multilingualBadges = [
+            d.applicantUnderstandingRequired === true
+              ? `<span class="language-badge language-badge--required">${escapeAttr(t.multilingualBadge)}</span>`
+              : "",
+            d.multilingualTemplateAvailable === true
+              ? `<span class="language-badge language-badge--available">${escapeAttr(t.translatedTemplateBadge)}</span>`
+              : "",
+          ].join("");
+          const multilingualSourceHtml =
+            d.multilingualSourceUrl !== undefined && d.multilingualSourceUrl.length > 0
+              ? `<small class="language-source">${escapeAttr(d.multilingualSourceUrl)}</small>`
+              : "";
           return `<li class="doc-row">
             <input type="checkbox" id="doc-${escapeAttr(d.id)}"${checked ? " checked" : ""} data-doc-id="${escapeAttr(d.id)}" />
             <div class="doc-meta">
@@ -159,7 +177,9 @@ export function render(ctx: RenderContext, rootEl: HTMLElement, cb: RenderCallba
                 <h3>${escapeAttr(labelText)} <span class="status-badge status-${escapeAttr(d.status)}">${escapeAttr(t.statuses[d.status])}</span> <span class="${trustClass(d.trustLevel)}" aria-label="${escapeAttr(trustText)}">${escapeAttr(trustText)}</span></h3>
               </label>
               <p class="desc">${escapeAttr(d.description)}</p>
+              <div class="language-badges">${multilingualBadges}</div>
               ${ministryHtml}
+              ${multilingualSourceHtml}
             </div>
           </li>`;
         })

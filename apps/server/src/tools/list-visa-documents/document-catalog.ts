@@ -25,13 +25,16 @@ const DOC_EMPLOYMENT_CONTRACT: DocumentEntry = {
   id: "employment_contract",
   label: label("雇用契約書", "Employment contract", "Kontrak kerja"),
   description:
-    "受入機関と本人との間で締結された雇用契約書。賃金、労働時間、業務内容等の記載が必要とされています。",
+    "受入機関と本人との間で締結された雇用契約書。本人が理解できる言語で内容を確認した上で署名する必要があります。",
   category: "required",
   status: "required",
   group: "table1",
   ministry: "法務省",
   trustLevel: "primary_source",
   sourceUrl: "https://www.moj.go.jp/isa/policies/policies/ssw/index.html",
+  applicantUnderstandingRequired: true,
+  multilingualTemplateAvailable: true,
+  multilingualSourceUrl: "https://www.moj.go.jp/isa/applications/ssw/10_00020.html",
 };
 
 const DOC_APPLICATION_FORM: DocumentEntry = {
@@ -70,12 +73,16 @@ const DOC_SUPPORT_PLAN: DocumentEntry = {
     "Rencana dukungan untuk pekerja asing SSW (i)",
   ),
   description:
-    "特定技能1号の受入機関が作成する支援計画書。生活支援・日本語学習機会の提供等の項目を含みます。",
+    "特定技能1号の受入機関が作成する支援計画書。本人が理解できる言語で支援内容を確認できるよう、多言語様式の確認が必要です。",
   category: "required",
   status: "required",
   group: "reference_form",
   ministry: "法務省",
   trustLevel: "primary_source",
+  sourceUrl: "https://www.moj.go.jp/isa/content/001459168.xlsx",
+  applicantUnderstandingRequired: true,
+  multilingualTemplateAvailable: true,
+  multilingualSourceUrl: "https://www.moj.go.jp/isa/applications/ssw/10_00020.html",
 };
 
 const DOC_PLEDGE: DocumentEntry = {
