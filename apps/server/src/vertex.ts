@@ -151,8 +151,11 @@ function getStringField(
   if (fields === undefined || fields === null) return undefined;
   const value = fields[key];
   if (value === undefined || value === null || typeof value !== "object") return undefined;
+  if (typeof value === "string") return value;
   const maybeString = (value as { stringValue?: unknown }).stringValue;
-  return typeof maybeString === "string" ? maybeString : undefined;
+  if (typeof maybeString === "string") return maybeString;
+  const maybeSnakeString = (value as { string_value?: unknown }).string_value;
+  return typeof maybeSnakeString === "string" ? maybeSnakeString : undefined;
 }
 
 function getStringListField(
@@ -166,6 +169,9 @@ function getStringListField(
   const fields = struct?.fields;
   if (fields === undefined || fields === null) return [];
   const value = fields[key];
+  if (Array.isArray(value)) {
+    return value.filter((item): item is string => typeof item === "string");
+  }
   if (value === undefined || value === null || typeof value !== "object") return [];
   const list = (value as { listValue?: { values?: unknown[] } }).listValue?.values;
   if (!Array.isArray(list)) return [];
