@@ -32,6 +32,10 @@ export const TIMELINE_VISA_CATEGORY = [
 export const TIMELINE_EVENT_CONTEXT = [
   "contract_start",
   "contract_end",
+  "employment_contract_change",
+  "support_plan_change",
+  "organization_change",
+  "regular_report",
   "status_renewal",
   "first_entry",
   "bridge_transition",
@@ -73,6 +77,15 @@ export const DeadlineEntry = z.object({
     .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
     .optional()
     .describe("計算可能な場合の期限年月 (YYYY-MM)"),
+  relatedForms: z
+    .array(
+      z.object({
+        id: z.string(),
+        title: z.string(),
+        sourceUrl: z.string().url(),
+      }),
+    )
+    .optional(),
   trustLevel: z.enum(TRUST_LEVEL),
 });
 export type DeadlineEntry = z.infer<typeof DeadlineEntry>;
