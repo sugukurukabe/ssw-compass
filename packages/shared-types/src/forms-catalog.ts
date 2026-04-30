@@ -133,6 +133,10 @@ export const ApplicantProfileCatalogEntry = z
       "skills_and_japanese_required",
       "sector_specific",
     ]),
+    goodCompletionRequired: z.boolean().optional(),
+    fieldMappingConfirmationRequired: z.boolean().optional(),
+    exemptedTests: z.array(z.enum(["skills", "japanese"])).optional(),
+    requiredTests: z.array(z.enum(["skills", "japanese"])).optional(),
     requiredEvidence: z.array(z.string().min(1)).min(1),
     notes: z.string().min(1),
   })

@@ -30,6 +30,9 @@ const I18N = {
     result: "必要になる表",
     followUp: "この内容で必要書類チェックリストへ進む",
     sources: "出典を確認",
+    internCheck: "技能実習の職種・作業と特定技能分野の対応を公式資料で確認してください。",
+    internSameField: "同一分野として扱える場合のみ技能試験・日本語試験の両方が免除候補になります。",
+    internDifferentField: "異なる分野の場合、日本語試験のみ免除候補で、分野別技能試験は必要です。",
     asOf: "情報基準日",
   },
   en: {
@@ -41,6 +44,12 @@ const I18N = {
     result: "Required tables",
     followUp: "Continue to document checklist",
     sources: "Show sources",
+    internCheck:
+      "Confirm the official mapping between the technical-intern occupation/work type and the SSW industry.",
+    internSameField:
+      "Both skills and Japanese tests may be exempt only when the field is officially treated as the same.",
+    internDifferentField:
+      "For a different field, only the Japanese test may be exempt; the sector skills test is still required.",
     asOf: "As of",
   },
   id: {
@@ -52,6 +61,11 @@ const I18N = {
     result: "Tabel yang diperlukan",
     followUp: "Lanjut ke daftar dokumen",
     sources: "Tampilkan sumber",
+    internCheck: "Pastikan pemetaan resmi antara jenis pekerjaan pemagangan teknis dan bidang SSW.",
+    internSameField:
+      "Ujian keterampilan dan bahasa Jepang hanya dapat dikecualikan jika bidangnya resmi dianggap sama.",
+    internDifferentField:
+      "Jika bidang berbeda, hanya ujian bahasa Jepang yang mungkin dikecualikan; ujian keterampilan bidang tetap diperlukan.",
     asOf: "Per tanggal",
   },
 } as const;
@@ -149,6 +163,7 @@ export function render(
   const orgDisabled = state.procedure === "renewal";
   const requiredSections = requiredSectionsForState(state);
   const omittedSections = omittedSectionsForState(state);
+  const internWarningHtml = internWarningForState(state, t);
 
   const referencesHtml = result.references
     .map((r) => {
@@ -207,6 +222,7 @@ export function render(
         ],
         state.applicantProfile,
       )}
+      ${internWarningHtml}
       ${stepHtml(
         t.industry,
         "industry",
@@ -331,6 +347,16 @@ function omittedSectionsForState(state: ClassifierState): string[] {
   if (state.receivingOrganizationProfile === "corporation") return ["table2_1", "table2_3"];
   if (state.receivingOrganizationProfile === "sole_proprietor") return ["table2_1", "table2_2"];
   return [];
+}
+
+function internWarningForState(state: ClassifierState, t: (typeof I18N)[UILanguage]): string {
+  if (state.applicantProfile === "technical_intern_2_same_field") {
+    return `<p class="profile-warning">${escapeAttr(t.internCheck)} ${escapeAttr(t.internSameField)}</p>`;
+  }
+  if (state.applicantProfile === "technical_intern_2_different_field") {
+    return `<p class="profile-warning">${escapeAttr(t.internCheck)} ${escapeAttr(t.internDifferentField)}</p>`;
+  }
+  return "";
 }
 
 function isTable21EligibleProfile(profile: ReceivingOrganizationProfile): boolean {
