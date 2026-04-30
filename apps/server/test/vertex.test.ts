@@ -285,4 +285,74 @@ describe("vertexSearch — real mode", () => {
 
     expect(result.chunks.map((chunk) => chunk.docId)).toEqual(["railway-guide", "generic-ssw"]);
   });
+
+  it("demotes operation guides for a different industry", async () => {
+    process.env["SSW_VERTEX_MODE"] = "real";
+    process.env["SSW_VERTEX_PROJECT"] = "ssw-test-proj";
+    process.env["SSW_VERTEX_LOCATION"] = "asia-northeast1";
+    process.env["SSW_VERTEX_COLLECTION"] = "default_collection";
+    process.env["SSW_VERTEX_DATA_STORE_ID"] = "visa_legal";
+    process.env["SSW_VERTEX_SERVING_CONFIG_ID"] = "default_serving_config";
+
+    const mockClient: SearchClientLike = {
+      projectLocationCollectionDataStoreServingConfigPath: vi.fn(() => "dummy-path"),
+      search: vi.fn().mockResolvedValue([
+        [
+          {
+            document: {
+              id: "construction-guide",
+              derivedStructData: {
+                fields: {
+                  title: { stringValue: "建設分野 特定技能1号 運用要領" },
+                  snippet: { stringValue: "建設分野の基準。" },
+                },
+              },
+              structData: {
+                canonicalUrl: "https://www.moj.go.jp/isa/construction-guide.pdf",
+                publishedAt: "2026-01-01",
+                ministry: "moj",
+                tags: ["construction", "ssw_1"],
+                dataStoreGroup: "visa_legal_core",
+                sourceType: "operation_guide",
+              },
+            },
+          },
+          {
+            document: {
+              id: "railway-overview",
+              derivedStructData: {
+                fields: {
+                  title: { stringValue: "鉄道分野 特定技能制度の概要" },
+                  snippet: { stringValue: "鉄道分野の概要。" },
+                },
+              },
+              structData: {
+                canonicalUrl: "https://www.mlit.go.jp/railway/ssw.html",
+                publishedAt: "2026-01-02",
+                ministry: "mlit",
+                tags: ["railway", "ssw_1"],
+                dataStoreGroup: "visa_legal_core",
+                sourceType: "official_page",
+              },
+            },
+          },
+        ],
+        {},
+        {},
+      ]),
+    };
+    __setSearchClientForTesting(mockClient);
+
+    const result = await vertexSearch({
+      ...BASE_ARGS,
+      preferredMinistries: ["mlit", "moj"],
+      preferredTags: ["railway", "ssw_1"],
+      dataStoreGroup: "visa_legal_core",
+    });
+
+    expect(result.chunks.map((chunk) => chunk.docId)).toEqual([
+      "railway-overview",
+      "construction-guide",
+    ]);
+  });
 });
