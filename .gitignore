@@ -19,3 +19,6 @@ coverage/
 !infra/terraform/envs/*/terraform.tfvars
 *-key.json
 service-account*.json
+data/manual=sources/
+data/manual-sources/
+data/agent-search-*.ndjson

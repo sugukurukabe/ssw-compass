@@ -95,16 +95,24 @@ const APPLICANT_LABEL: Record<ApplicantProfile, string> = {
 const INDUSTRY_LABEL: Record<FormBundle["industry"], string> = {
   agriculture: "農業",
   fishery: "漁業",
+  food_manufacturing: "飲食料品製造",
   food_service: "外食",
   manufacturing: "工業製品製造",
+  industrial_products_manufacturing: "工業製品製造",
   construction: "建設",
   nursing_care: "介護",
   building_cleaning: "ビルクリーニング",
   automobile_repair: "自動車整備",
+  automobile_maintenance: "自動車整備",
   aviation: "航空",
   lodging: "宿泊",
+  accommodation: "宿泊",
   shipbuilding: "造船・舶用工業",
   electronics: "電子電気",
+  automobile_transportation: "自動車運送",
+  railway: "鉄道",
+  forestry: "林業",
+  wood_products: "木材産業",
   other: "その他",
 };
 
@@ -197,7 +205,18 @@ export function render(
           ["fishery", INDUSTRY_LABEL.fishery],
           ["construction", INDUSTRY_LABEL.construction],
           ["nursing_care", INDUSTRY_LABEL.nursing_care],
+          ["industrial_products_manufacturing", INDUSTRY_LABEL.industrial_products_manufacturing],
+          ["building_cleaning", INDUSTRY_LABEL.building_cleaning],
+          ["automobile_maintenance", INDUSTRY_LABEL.automobile_maintenance],
+          ["aviation", INDUSTRY_LABEL.aviation],
+          ["accommodation", INDUSTRY_LABEL.accommodation],
           ["food_service", INDUSTRY_LABEL.food_service],
+          ["food_manufacturing", INDUSTRY_LABEL.food_manufacturing],
+          ["shipbuilding", INDUSTRY_LABEL.shipbuilding],
+          ["automobile_transportation", INDUSTRY_LABEL.automobile_transportation],
+          ["railway", INDUSTRY_LABEL.railway],
+          ["forestry", INDUSTRY_LABEL.forestry],
+          ["wood_products", INDUSTRY_LABEL.wood_products],
           ["other", INDUSTRY_LABEL.other],
         ],
         state.industry,
@@ -330,16 +349,24 @@ function isIndustry(value: string | null): value is FormBundle["industry"] {
   return (
     value === "agriculture" ||
     value === "fishery" ||
+    value === "food_manufacturing" ||
     value === "food_service" ||
     value === "manufacturing" ||
+    value === "industrial_products_manufacturing" ||
     value === "construction" ||
     value === "nursing_care" ||
     value === "building_cleaning" ||
     value === "automobile_repair" ||
+    value === "automobile_maintenance" ||
     value === "aviation" ||
     value === "lodging" ||
+    value === "accommodation" ||
     value === "shipbuilding" ||
     value === "electronics" ||
+    value === "automobile_transportation" ||
+    value === "railway" ||
+    value === "forestry" ||
+    value === "wood_products" ||
     value === "other"
   );
 }
