@@ -1,8 +1,7 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { SswCompassToolAnnotation } from "@ssw/shared-types";
+import { GetDeadlineTimelineInputV4, type SswCompassToolAnnotation } from "@ssw/shared-types";
 import { getDeadlineTimelineHandler } from "./handler.js";
-import { GetDeadlineTimelineInput } from "./schema.js";
 
 const UI_RESOURCE_URI = "ui://ssw-timeline/mcp-app.html";
 
@@ -33,7 +32,7 @@ export function registerGetDeadlineTimelineTool(server: McpServer): void {
         "Use when the user asks when to file a notification, when to file a renewal, or how " +
         "the overall visa timeline looks. Information only — does not constitute legal advice. " +
         "Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers).",
-      inputSchema: GetDeadlineTimelineInput.shape,
+      inputSchema: GetDeadlineTimelineInputV4.shape,
       annotations: GET_DEADLINE_TIMELINE_ANNOTATION,
       _meta: {
         ui: {

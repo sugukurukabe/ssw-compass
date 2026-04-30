@@ -151,11 +151,27 @@ module "audit_log" {
   depends_on = [google_project_service.enabled]
 }
 
+module "rag_buckets" {
+  source               = "../../modules/rag-buckets"
+  project_id           = var.project_id
+  location             = var.region
+  env                  = "staging"
+  raw_bucket_name      = "ssw-compass-rag-raw-staging"
+  metadata_bucket_name = "ssw-compass-rag-metadata-staging"
+  writer_members = [
+    module.service_account.runtime_member,
+    "serviceAccount:${module.service_account.deploy_email}",
+  ]
+
+  depends_on = [google_project_service.enabled, module.service_account]
+}
+
 module "vertex_ai_search" {
-  source     = "../../modules/vertex-ai-search"
-  project_id = var.project_id
-  location   = var.region
-  enabled    = true # Batch 4: create 3 data stores (visa_legal / visa_faq / visa_secondary)
+  source               = "../../modules/vertex-ai-search"
+  project_id           = var.project_id
+  location             = var.region
+  enabled              = true # Batch 4: create 3 data stores (visa_legal / visa_faq / visa_secondary)
+  enable_rag_v2_stores = true
 
   depends_on = [google_project_service.enabled]
 }

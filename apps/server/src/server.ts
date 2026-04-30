@@ -11,7 +11,10 @@ import {
   registerGetDeadlineTimelineTool,
 } from "./tools/get-deadline-timeline/index.js";
 import { registerGetDeadlineTimelineUiResource } from "./tools/get-deadline-timeline/ui.js";
-import { listLawUpdatesHandler } from "./tools/list-law-updates/handler.js";
+import {
+  LIST_LAW_UPDATES_ANNOTATION,
+  registerListLawUpdatesTool,
+} from "./tools/list-law-updates/index.js";
 import {
   LIST_VISA_DOCUMENTS_ANNOTATION,
   registerListVisaDocumentsTool,
@@ -20,24 +23,16 @@ import { registerListVisaDocumentsUiResource } from "./tools/list-visa-documents
 import { registerSearchVisaTool, SEARCH_VISA_ANNOTATION } from "./tools/search-visa/index.js";
 import { registerSearchVisaUiResource } from "./tools/search-visa/ui.js";
 import { submitGyoseishoshiApprovalHandler } from "./tools/submit-gyoseishoshi-approval/handler.js";
-import { validateZairyuCompatibilityHandler } from "./tools/validate-zairyu-compatibility/handler.js";
+import {
+  registerValidateZairyuCompatibilityTool,
+  VALIDATE_ZAIRYU_COMPATIBILITY_ANNOTATION,
+} from "./tools/validate-zairyu-compatibility/index.js";
+import { registerValidateZairyuCompatibilityUiResource } from "./tools/validate-zairyu-compatibility/ui.js";
 
 const SERVER_INFO = {
   name: "ssw-mcp",
   version: "1.0.0",
 } as const;
-
-const LIST_LAW_UPDATES_ANNOTATION: SswCompassToolAnnotation = {
-  readOnlyHint: true,
-  idempotentHint: true,
-  openWorldHint: false,
-  destructiveHint: false,
-  title: "List Japanese visa law updates",
-  legalLevel: "L0",
-  requiresGyoseishoshiAuth: false,
-  hitlControls: ["H07_PII_AUTO_MASKING", "H10_LAW_AUTO_UPDATE"],
-  tier: "free",
-};
 
 const SUBMIT_GYOSEISHOSHI_APPROVAL_ANNOTATION: SswCompassToolAnnotation = {
   readOnlyHint: false,
@@ -49,18 +44,6 @@ const SUBMIT_GYOSEISHOSHI_APPROVAL_ANNOTATION: SswCompassToolAnnotation = {
   requiresGyoseishoshiAuth: true,
   hitlControls: ["H01_DRAFT_LOCKGATE", "H03_GYOSEISHOSHI_APPROVAL", "H04_AUDIT_LOG_7Y"],
   tier: "pro",
-};
-
-const VALIDATE_ZAIRYU_COMPATIBILITY_ANNOTATION: SswCompassToolAnnotation = {
-  readOnlyHint: true,
-  idempotentHint: true,
-  openWorldHint: false,
-  destructiveHint: false,
-  title: "Validate zairyu status compatibility",
-  legalLevel: "L1",
-  requiresGyoseishoshiAuth: false,
-  hitlControls: ["H06_ILLEGAL_WORK_ALERT", "H07_PII_AUTO_MASKING"],
-  tier: "free",
 };
 
 export function createMcpServer(): McpServer {
@@ -78,22 +61,10 @@ export function createMcpServer(): McpServer {
   registerGetDeadlineTimelineUiResource(server);
   registerListVisaDocumentsTool(server);
   registerListVisaDocumentsUiResource(server);
+  registerValidateZairyuCompatibilityTool(server);
+  registerValidateZairyuCompatibilityUiResource(server);
 
-  // Batch 9: list_law_updates (L0, Free)
-  server.tool(
-    "list_law_updates",
-    "制度変動フィードを返す。行政書士法改正・入管法改正・手数料改定などの最新情報を提供する。" +
-      "Return law updates feed: gyoseishoshi law revisions, immigration act changes, fee revisions, etc.",
-    {},
-    {
-      title: LIST_LAW_UPDATES_ANNOTATION.title,
-      readOnlyHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-      destructiveHint: false,
-    },
-    listLawUpdatesHandler,
-  );
+  registerListLawUpdatesTool(server);
 
   // Batch 10: submit_gyoseishoshi_approval (L2, Pro + gyoseishoshi)
   server.tool(
@@ -109,22 +80,6 @@ export function createMcpServer(): McpServer {
       destructiveHint: false,
     },
     submitGyoseishoshiApprovalHandler,
-  );
-
-  // Batch 10: validate_zairyu_compatibility (L1, Free — 情報提供)
-  server.tool(
-    "validate_zairyu_compatibility",
-    "在留資格と想定就労の適合性を判定する (H06 不法就労判定アラート)。" +
-      "Validate compatibility between residence status and intended employment (H06 illegal work alert).",
-    {},
-    {
-      title: VALIDATE_ZAIRYU_COMPATIBILITY_ANNOTATION.title,
-      readOnlyHint: true,
-      idempotentHint: true,
-      openWorldHint: false,
-      destructiveHint: false,
-    },
-    validateZairyuCompatibilityHandler,
   );
 
   // ADR-014 §5: validate all registered tool annotations at startup.

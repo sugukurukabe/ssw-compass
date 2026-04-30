@@ -1,8 +1,7 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { SswCompassToolAnnotation } from "@ssw/shared-types";
+import { ListVisaDocumentsInputV4, type SswCompassToolAnnotation } from "@ssw/shared-types";
 import { listVisaDocumentsHandler } from "./handler.js";
-import { ListVisaDocumentsInput } from "./schema.js";
 
 const UI_RESOURCE_URI = "ui://ssw-checklist/mcp-app.html";
 
@@ -31,7 +30,7 @@ export function registerListVisaDocumentsTool(server: McpServer): void {
         "visa category (and optionally industry). Information only — does not " +
         "constitute legal advice. " +
         "Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers).",
-      inputSchema: ListVisaDocumentsInput.shape,
+      inputSchema: ListVisaDocumentsInputV4.shape,
       // Static legalLevel=L1; escalates to L2 for pdf_draft|csv (see ADR-014 §Per-call escalation)
       annotations: LIST_VISA_DOCUMENTS_ANNOTATION,
       _meta: {

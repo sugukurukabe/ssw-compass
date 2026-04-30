@@ -17,6 +17,8 @@ function pickLanguage(locale: string | undefined): UILanguage {
 }
 
 let currentLang: UILanguage = "ja";
+let currentResult: SearchVisaOutput | null = null;
+let showSources = false;
 
 const root = getElement("root", HTMLDivElement);
 
@@ -47,7 +49,17 @@ app.ontoolresult = (params) => {
   if (structured === undefined) {
     return;
   }
-  render(structured as SearchVisaOutput, currentLang, root);
+  currentResult = structured as SearchVisaOutput;
+  showSources = false;
+  rerender();
 };
+
+function rerender(): void {
+  if (currentResult === null) return;
+  render(currentResult, currentLang, root, showSources, () => {
+    showSources = !showSources;
+    rerender();
+  });
+}
 
 await app.connect(new PostMessageTransport(window.parent, window.parent));

@@ -21,12 +21,30 @@ const L1_NOTICE_BY_LANG = {
 } as const;
 
 const I18N = {
-  ja: { sources: "公式情報源", asOf: "情報基準日", openSource: "原典を開く" },
-  en: { sources: "Official sources", asOf: "As of", openSource: "Open source" },
-  id: { sources: "Sumber resmi", asOf: "Per tanggal", openSource: "Buka sumber" },
+  ja: {
+    summary: "公式情報源にもとづく要点",
+    sources: "出典を確認",
+    asOf: "情報基準日",
+    openSource: "原典を開く",
+    followups: ["申請種別を判定する", "必要書類を確認する", "期限を確認する"],
+  },
+  en: {
+    summary: "Key points from official sources",
+    sources: "Show sources",
+    asOf: "As of",
+    openSource: "Open source",
+    followups: ["Classify procedure", "Check documents", "Check deadlines"],
+  },
+  id: {
+    summary: "Poin utama dari sumber resmi",
+    sources: "Tampilkan sumber",
+    asOf: "Per tanggal",
+    openSource: "Buka sumber",
+    followups: ["Klasifikasi prosedur", "Periksa dokumen", "Periksa tenggat"],
+  },
 } as const;
 
-const ALLOWED_HREF = /^https:\/\/(www\.)?(moj|mhlw|soumu|cao)\.go\.jp\//;
+const ALLOWED_HREF = /^https:\/\/(www\.)?(moj|mhlw|soumu|cao|maff|mlit)\.go\.jp\//;
 
 function escapeAttr(s: string): string {
   const map: Record<string, string> = {
@@ -42,7 +60,13 @@ function escapeAttr(s: string): string {
   });
 }
 
-export function render(result: SearchVisaOutput, lang: UILanguage, rootEl: HTMLElement): void {
+export function render(
+  result: SearchVisaOutput,
+  lang: UILanguage,
+  rootEl: HTMLElement,
+  showSources: boolean,
+  onToggleSources: () => void,
+): void {
   const t = I18N[lang];
   const l1 = L1_NOTICE_BY_LANG[lang];
 
@@ -60,10 +84,22 @@ export function render(result: SearchVisaOutput, lang: UILanguage, rootEl: HTMLE
 
   const fullHtml = `
     <small class="notice-l1" role="note" aria-label="service scope notice">${escapeAttr(l1)}</small>
-    <section aria-labelledby="ssw-sources-heading">
-      <h2 id="ssw-sources-heading" class="sr-only">${escapeAttr(t.sources)}</h2>
-      ${cardsHtml}
-    </section>
+    <article class="summary-card">
+      <h2>${escapeAttr(t.summary)}</h2>
+      <p>${escapeAttr(summaryText(result))}</p>
+      <div class="followup-row">
+        ${t.followups.map((f) => `<span class="followup-chip">${escapeAttr(f)}</span>`).join("")}
+      </div>
+      <button type="button" id="ssw-toggle-sources" class="sources-chip">${escapeAttr(t.sources)} (${result.results.length})</button>
+    </article>
+    ${
+      showSources
+        ? `<section aria-labelledby="ssw-sources-heading">
+            <h2 id="ssw-sources-heading" class="sr-only">${escapeAttr(t.sources)}</h2>
+            ${cardsHtml}
+          </section>`
+        : ""
+    }
     <p role="note" class="disclaimer">${escapeAttr(result.disclaimer)}</p>
     <p class="meta">${escapeAttr(t.asOf)}: ${escapeAttr(result.asOf)}</p>
   `;
@@ -73,6 +109,7 @@ export function render(result: SearchVisaOutput, lang: UILanguage, rootEl: HTMLE
   });
 
   setInnerHTML(rootEl, sanitized);
+  rootEl.querySelector("#ssw-toggle-sources")?.addEventListener("click", onToggleSources);
 
   requestAnimationFrame(() => {
     const cards = rootEl.querySelectorAll<HTMLElement>(".card");
@@ -81,4 +118,16 @@ export function render(result: SearchVisaOutput, lang: UILanguage, rootEl: HTMLE
       setTimeout(() => el.classList.replace("entering", "entered"), i * 60);
     });
   });
+}
+
+function summaryText(result: SearchVisaOutput): string {
+  const first = result.results[0];
+  if (first === undefined) {
+    return "公式情報源で該当する内容が見つかりませんでした。";
+  }
+  const titles = result.results
+    .slice(0, 3)
+    .map((r) => r.title)
+    .join(" / ");
+  return `${result.results.length}件の一次情報を確認しました。まずは申請種別、必要書類、期限の順に確認してください。主な根拠: ${titles}`;
 }

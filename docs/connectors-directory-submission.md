@@ -39,6 +39,7 @@ GET https://mcp.ssw-compass.jp/.well-known/mcp.json
 | **Privacy Policy URL** | https://mcp.ssw-compass.jp/privacy |
 | **Terms of Service URL** | https://mcp.ssw-compass.jp/privacy |
 | **License** | Apache-2.0 |
+| **Allowed link URIs** | https://www.moj.go.jp |
 
 ### ターゲットユーザー
 
@@ -67,6 +68,7 @@ GET https://mcp.ssw-compass.jp/.well-known/mcp.json
 - 7年 WORM 監査ログ (行政書士法§9 業務帳簿義務準拠)
 - Cloud Armor WAF + Global LB
 - 越境移転なし (asia-northeast1 のみ)
+- MCP Apps の外部リンクは `https://www.moj.go.jp` の公式 URL のみに限定
 
 ---
 
@@ -107,7 +109,7 @@ Sprint 5 後半で追加予定。基本情報は Anthropic と同一。
 
 - [ ] プライバシーポリシー監修済み (A4 完了後)
 - [ ] ロゴ PNG ≥ 512×512 (A1 ✅: icon-512.png)
-- [ ] スクリーンショット × 3 (A2: Vertex real flip 後)
+- [ ] スクリーンショット × 3-5 (A2: UX redesign 後)
 - [ ] デモ動画 ≤ 120 秒 (A3)
 - [x] ライセンス明示 (A5 ✅: Apache-2.0)
 
@@ -118,10 +120,11 @@ Use these paired prompt texts:
 
 | Screenshot | Prompt | Tool / UI |
 |---|---|---|
-| 1 | `特定技能1号 建設分野の在留期間更新手続を教えて` | `search_visa` / search UI |
-| 2 | `直近の法改正情報を教えて。入管法と行政書士法を中心に` | `list_law_updates` / law updates UI |
-| 3 | `特定技能1号 農業分野の必要書類チェックリストを見せて` | `list_visa_documents` / checklist UI |
-| 4 | `留学ビザの人を農業で雇用してよいか確認して` | `validate_zairyu_compatibility` / warning response |
+| 1 | `技能実習2号から特定技能1号・農業へ変更したい。どの申請で、どの表が必要？` | `classify_procedure` / 4-step classifier UI |
+| 2 | `特定技能1号・農業で必要書類チェックリストを見せて。省略できる書類も分けて` | `list_visa_documents` / grouped checklist UI |
+| 3 | `特定技能1号・農業の手続きで、まず何から確認すべき？` | `search_visa` / summary-first source-collapsed UI |
+| 4 | `特定技能1号の更新期限を2026年7月基準で確認して` | `get_deadline_timeline` / compact deadline UI |
+| 5 | `留学ビザの人を農業でフルタイム雇用してよいか確認して` | `validate_zairyu_compatibility` / H06 warning UI |
 
 ### 法令要件 (行政書士監修後)
 
@@ -135,9 +138,9 @@ Use these paired prompt texts:
 
 | マイルストーン | 依存 | 期日目安 |
 |---|---|---|
-| 行政書士監修完了 | 今日持参 | ~1-2 週間 |
-| Vertex real flip | 監修 + URL cleanup | 監修後 |
-| Screenshots 撮影 | Vertex real + 6-host | Vertex flip 後 |
-| 提出パケット完成 | 上記すべて | ~3-4 週間 |
-| **Anthropic 提出** | パケット完成 | ~4-5 週間 |
-| **OpenAI 提出** | 同上 (parallel) | ~4-5 週間 |
+| 行政書士監修完了 | 金曜レビュー + 指摘反映 | ~1-2 週間 |
+| UX redesign deploy | 本 PR merge + prod deploy | 直近 |
+| Screenshots 撮影 | UX redesign deploy + Claude Web verification | deploy 後 |
+| 提出パケット完成 | privacy review + screenshots + demo video | 2026-06 第1週 |
+| **Anthropic 提出** | パケット完成 | 2026-06 第2週 |
+| **OpenAI 提出** | 同上 (parallel) | 2026-06 第2週 |

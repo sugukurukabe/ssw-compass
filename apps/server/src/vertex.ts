@@ -36,6 +36,10 @@ export interface VertexSearchArgs {
   datastore: string;
   confidenceThreshold: number;
   sourceAllowlist: readonly string[];
+  preferredMinistries?: readonly string[];
+  preferredTags?: readonly string[];
+  dataStoreGroup?: string;
+  maxChunks?: number;
 }
 
 export interface GroundedChunk {
@@ -45,6 +49,11 @@ export interface GroundedChunk {
   confidence: number;
   publishedAt: string;
   docId: string;
+  canonicalUrl?: string;
+  ministry?: string;
+  tags?: readonly string[];
+  dataStoreGroup?: string;
+  sourceType?: string;
 }
 
 export interface VertexSearchResult {
@@ -144,6 +153,25 @@ function getStringField(
   return typeof maybeString === "string" ? maybeString : undefined;
 }
 
+function getStringListField(
+  struct: { fields?: { [k: string]: unknown } | null | undefined } | null | undefined,
+  key: string,
+): string[] {
+  const fields = struct?.fields;
+  if (fields === undefined || fields === null) return [];
+  const value = fields[key];
+  if (value === undefined || value === null || typeof value !== "object") return [];
+  const list = (value as { listValue?: { values?: unknown[] } }).listValue?.values;
+  if (!Array.isArray(list)) return [];
+  return list
+    .map((item) =>
+      item !== null && typeof item === "object"
+        ? (item as { stringValue?: unknown }).stringValue
+        : undefined,
+    )
+    .filter((item): item is string => typeof item === "string");
+}
+
 function isAllowedUri(uri: string, sourceAllowlist: readonly string[]): boolean {
   if (sourceAllowlist.length === 0) return true;
   let host: string;
@@ -194,6 +222,11 @@ function resultToChunk(result: SearchResult): GroundedChunk | null {
   const snippet = getStringField(derived, "snippet") ?? getStringField(struct, "snippet") ?? "";
   const publishedAt = getStringField(struct, "publishedAt") ?? "unknown";
   const docId = doc.id ?? "unknown";
+  const canonicalUrl = getStringField(struct, "canonicalUrl");
+  const ministry = getStringField(struct, "ministry");
+  const tags = getStringListField(struct, "tags");
+  const dataStoreGroup = getStringField(struct, "dataStoreGroup");
+  const sourceType = getStringField(struct, "sourceType");
 
   return {
     title,
@@ -206,7 +239,25 @@ function resultToChunk(result: SearchResult): GroundedChunk | null {
     confidence: 0.9,
     publishedAt,
     docId,
+    ...(canonicalUrl !== undefined ? { canonicalUrl } : {}),
+    ...(ministry !== undefined ? { ministry } : {}),
+    ...(tags.length > 0 ? { tags } : {}),
+    ...(dataStoreGroup !== undefined ? { dataStoreGroup } : {}),
+    ...(sourceType !== undefined ? { sourceType } : {}),
   };
+}
+
+function routingScore(chunk: GroundedChunk, args: VertexSearchArgs): number {
+  let score = 0;
+  if (args.preferredMinistries?.includes(chunk.ministry ?? "") === true) score += 20;
+  if (args.dataStoreGroup !== undefined && chunk.dataStoreGroup === args.dataStoreGroup)
+    score += 10;
+  const tags = chunk.tags ?? [];
+  for (const tag of args.preferredTags ?? []) {
+    if (tags.includes(tag)) score += 5;
+  }
+  if (chunk.confidence >= args.confidenceThreshold) score += chunk.confidence;
+  return score;
 }
 
 /**
@@ -272,7 +323,8 @@ async function realSearch(
     if (!isAllowedUri(chunk.uri, args.sourceAllowlist)) continue;
     chunks.push(chunk);
   }
-  return { chunks };
+  chunks.sort((a, b) => routingScore(b, args) - routingScore(a, args));
+  return { chunks: chunks.slice(0, args.maxChunks ?? 10) };
 }
 
 export async function vertexSearch(args: VertexSearchArgs): Promise<VertexSearchResult> {

@@ -1,8 +1,7 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { SswCompassToolAnnotation } from "@ssw/shared-types";
+import { SearchVisaInputV4, type SswCompassToolAnnotation } from "@ssw/shared-types";
 import { searchVisa } from "./handler.js";
-import { SearchVisaInput } from "./schema.js";
 
 const UI_RESOURCE_URI = "ui://ssw-search/mcp-app.html";
 
@@ -30,7 +29,7 @@ export function registerSearchVisaTool(server: McpServer): void {
         "Use when the user asks about visa categories, document checklists, or " +
         "deadlines. Information only — does not constitute legal advice. " +
         "Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers).",
-      inputSchema: SearchVisaInput.shape,
+      inputSchema: SearchVisaInputV4.shape,
       annotations: SEARCH_VISA_ANNOTATION,
       _meta: {
         ui: {

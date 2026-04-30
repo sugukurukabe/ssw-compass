@@ -36,7 +36,17 @@
       .notice-l1 {
         display: block; color: var(--ssw-fg-muted); font-size: 12px; padding: 4px 0 12px;
       }
-      .doc-list { list-style: none; margin: 0; padding: 0; }
+      .doc-list { margin: 0; padding: 0; }
+      .doc-group {
+        margin: 0 0 14px;
+      }
+      .doc-group h2 {
+        margin: 10px 0 6px;
+        color: var(--ssw-fg-muted);
+        font-size: 13px;
+        font-weight: 700;
+      }
+      .doc-group ul { list-style: none; margin: 0; padding: 0; }
       .doc-row {
         display: flex; gap: 10px; align-items: flex-start;
         padding: 10px 12px; margin: 6px 0;
@@ -71,6 +81,24 @@
       .trust-badge--secondary::before { content: "\25B3"; }
       .trust-badge--community { background: #e5e7eb; color: #374151; }
       .trust-badge--community::before { content: "\25CB"; }
+      .status-badge {
+        display: inline-flex;
+        padding: 1px 8px;
+        border-radius: 999px;
+        background: var(--ssw-bg-muted);
+        color: var(--ssw-fg-muted);
+        font-size: 10px;
+        font-weight: 700;
+      }
+      .status-omitted_due_to_category {
+        background: var(--ssw-disclaimer-bg);
+        color: var(--ssw-disclaimer-fg);
+      }
+      .status-applicant_specific,
+      .status-sector_specific {
+        background: #dbeafe;
+        color: #1d4ed8;
+      }
       @media (prefers-color-scheme: dark) {
         .trust-badge--primary {
           background: var(--color-success-bg, #064e3b);
@@ -83,6 +111,11 @@
         .trust-badge--community {
           background: var(--color-muted-bg, #374151);
           color: var(--color-muted-text, #d1d5db);
+        }
+        .status-applicant_specific,
+        .status-sector_specific {
+          background: #1e3a8a;
+          color: #bfdbfe;
         }
       }
 

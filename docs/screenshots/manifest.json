@@ -1,0 +1,47 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "description": "SSW Compass MCP Apps carousel screenshots for Anthropic Connectors Directory submission.",
+  "requirements": {
+    "format": "PNG",
+    "minWidthPx": 1000,
+    "count": 5,
+    "crop": "app response only; prompt, Claude chrome, browser chrome, and composer must be excluded"
+  },
+  "screenshots": [
+    {
+      "id": "01-classifier",
+      "file": "docs/screenshots/01-classifier.png",
+      "prompt": "技能実習2号から特定技能1号・農業へ変更したい。どの申請で、どの表が必要？",
+      "tool": "classify_procedure",
+      "expectedUi": "4-step classifier UI: procedure, receiving organization, applicant profile, industry"
+    },
+    {
+      "id": "02-documents-checklist",
+      "file": "docs/screenshots/02-documents-checklist.png",
+      "prompt": "特定技能1号・農業で必要書類チェックリストを見せて。省略できる書類も分けて",
+      "tool": "list_visa_documents",
+      "expectedUi": "Grouped checklist UI with Table 1, Table 2, Table 3, reference forms, and omission candidates"
+    },
+    {
+      "id": "03-search-summary",
+      "file": "docs/screenshots/03-search-summary.png",
+      "prompt": "特定技能1号・農業の手続きで、まず何から確認すべき？",
+      "tool": "search_visa",
+      "expectedUi": "Summary-first UI with sources collapsed by default"
+    },
+    {
+      "id": "04-deadline-timeline",
+      "file": "docs/screenshots/04-deadline-timeline.png",
+      "prompt": "特定技能1号の更新期限を2026年7月基準で確認して",
+      "tool": "get_deadline_timeline",
+      "expectedUi": "Compact deadline timeline UI without default source-card stack"
+    },
+    {
+      "id": "05-zairyu-warning",
+      "file": "docs/screenshots/05-zairyu-warning.png",
+      "prompt": "留学ビザの人を農業でフルタイム雇用してよいか確認して",
+      "tool": "validate_zairyu_compatibility",
+      "expectedUi": "H06 warning UI for illegal-work risk"
+    }
+  ]
+}

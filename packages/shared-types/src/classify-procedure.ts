@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { FormBundle } from "./forms-catalog.js";
 
 /**
  * classify_procedure — determines which Japanese visa procedure type applies
@@ -89,6 +90,7 @@ export const ClassifyProcedureOutput = z.object({
   procedureLabel: ProcedureLabelByLang,
   rationale: z.string(),
   nextSteps: z.array(z.string()),
+  formBundle: FormBundle.optional(),
   references: z.array(
     z.object({
       title: z.string(),

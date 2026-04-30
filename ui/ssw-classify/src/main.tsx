@@ -1,7 +1,7 @@
 import { App, applyDocumentTheme, PostMessageTransport } from "@modelcontextprotocol/ext-apps";
 import type { ClassifyProcedureOutput, UILanguage } from "@ssw/shared-types";
 import { getElement, setInnerHTML } from "@ssw/ui-bridge";
-import { render } from "./render.js";
+import { type ClassifierState, render } from "./render.js";
 import { renderSkeleton } from "./skeleton.js";
 
 type HostContextChangedParams = {
@@ -17,6 +17,14 @@ function pickLanguage(locale: string | undefined): UILanguage {
 }
 
 let currentLang: UILanguage = "ja";
+let currentResult: ClassifyProcedureOutput | null = null;
+let currentState: ClassifierState = {
+  procedure: "change",
+  receivingOrganizationProfile: "corporation",
+  applicantProfile: "no_exemption",
+  industry: "agriculture",
+  showSources: false,
+};
 
 const root = getElement("root", HTMLDivElement);
 
@@ -35,12 +43,71 @@ app.ontoolinput = () => {
   setInnerHTML(root, renderSkeleton(currentLang));
 };
 
+function rerender(): void {
+  if (currentResult === null) return;
+  render(currentResult, currentLang, root, currentState, {
+    onProcedureChange: (procedure) => {
+      currentState = {
+        ...currentState,
+        procedure,
+        receivingOrganizationProfile:
+          procedure === "renewal" ? "not_applicable" : currentState.receivingOrganizationProfile,
+      };
+      rerender();
+    },
+    onOrganizationChange: (receivingOrganizationProfile) => {
+      currentState = { ...currentState, receivingOrganizationProfile };
+      rerender();
+    },
+    onApplicantChange: (applicantProfile) => {
+      currentState = { ...currentState, applicantProfile };
+      rerender();
+    },
+    onIndustryChange: (industry) => {
+      currentState = { ...currentState, industry };
+      rerender();
+    },
+    onToggleSources: () => {
+      currentState = { ...currentState, showSources: !currentState.showSources };
+      rerender();
+    },
+    onCommit: () => {
+      void app.updateModelContext({
+        content: [
+          {
+            type: "text",
+            text:
+              "SSW Compass classifier selection: " +
+              JSON.stringify({
+                procedure: currentState.procedure,
+                receivingOrganizationProfile: currentState.receivingOrganizationProfile,
+                applicantProfile: currentState.applicantProfile,
+                industry: currentState.industry,
+              }),
+          },
+        ],
+      });
+    },
+  });
+}
+
 app.ontoolresult = (params) => {
   const structured = params.structuredContent;
   if (structured === undefined) {
     return;
   }
-  render(structured as ClassifyProcedureOutput, currentLang, root);
+  currentResult = structured as ClassifyProcedureOutput;
+  const formBundle = currentResult.formBundle;
+  if (formBundle !== undefined) {
+    currentState = {
+      procedure: formBundle.procedure,
+      receivingOrganizationProfile: formBundle.receivingOrganizationProfile,
+      applicantProfile: formBundle.applicantProfile,
+      industry: formBundle.industry,
+      showSources: false,
+    };
+  }
+  rerender();
 };
 
 await app.connect(new PostMessageTransport(window.parent, window.parent));
