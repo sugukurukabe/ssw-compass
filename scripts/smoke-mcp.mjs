@@ -25,6 +25,18 @@ const REQUIRED_CATALOG_RESOURCES = [
   "ssw://catalog/industry-resource-candidates",
 ];
 
+const REQUIRED_RESOURCE_TEMPLATES = [
+  "ssw://catalog/forms/{industry}",
+  "ssw://catalog/sources/{industry}",
+  "ssw://catalog/notifications/{eventContext}",
+];
+
+const REQUIRED_DYNAMIC_RESOURCES = [
+  "ssw://catalog/forms/agriculture",
+  "ssw://catalog/sources/agriculture",
+  "ssw://catalog/notifications/regular_report",
+];
+
 const REQUIRED_PROMPTS = ["ssw_route_and_documents", "ssw_notification_deadlines"];
 
 const mcpUrl = process.env["MCP_URL"];
@@ -66,6 +78,12 @@ async function rpc(method, params, id, sessionId) {
 function expect(condition, message) {
   if (!condition) throw new Error(message);
   console.log(`PASS ${message}`);
+}
+
+function parseJsonResource(payload, uri) {
+  const text = payload.result?.contents?.[0]?.text ?? "";
+  expect(typeof text === "string" && text.length > 0, `${uri} returns text content`);
+  return JSON.parse(text);
 }
 
 const init = await rpc(
@@ -123,6 +141,19 @@ for (const resourceUri of REQUIRED_UI_RESOURCES) {
 for (const resourceUri of REQUIRED_CATALOG_RESOURCES) {
   expect(resourceUris.includes(resourceUri), `resources/list includes ${resourceUri}`);
 }
+for (const resourceUri of REQUIRED_DYNAMIC_RESOURCES) {
+  expect(resourceUris.includes(resourceUri), `resources/list includes ${resourceUri}`);
+}
+
+const resourceTemplates = await rpc("resources/templates/list", {}, 4, sessionId);
+const resourceTemplateList = resourceTemplates.payload.result?.resourceTemplates ?? [];
+const resourceTemplateUris = resourceTemplateList.map((template) => template.uriTemplate);
+for (const templateUri of REQUIRED_RESOURCE_TEMPLATES) {
+  expect(
+    resourceTemplateUris.includes(templateUri),
+    `resources/templates/list includes ${templateUri}`,
+  );
+}
 
 for (let i = 0; i < REQUIRED_UI_RESOURCES.length; i += 1) {
   const uri = REQUIRED_UI_RESOURCES[i];
@@ -144,6 +175,57 @@ const manifestText = manifest.payload.result?.contents?.[0]?.text ?? "";
 expect(
   typeof manifestText === "string" && manifestText.includes("sourceIndexByGroup"),
   "catalog manifest includes sourceIndexByGroup",
+);
+
+const dynamicForms = await rpc(
+  "resources/read",
+  { uri: "ssw://catalog/forms/agriculture" },
+  21,
+  sessionId,
+);
+const dynamicFormsJson = parseJsonResource(dynamicForms.payload, "ssw://catalog/forms/agriculture");
+expect(dynamicFormsJson.industry === "agriculture", "industry forms resource echoes agriculture");
+expect(
+  Array.isArray(dynamicFormsJson.entries) && dynamicFormsJson.entries.length > 0,
+  "industry forms resource includes entries",
+);
+
+const dynamicSources = await rpc(
+  "resources/read",
+  { uri: "ssw://catalog/sources/agriculture" },
+  22,
+  sessionId,
+);
+const dynamicSourcesJson = parseJsonResource(
+  dynamicSources.payload,
+  "ssw://catalog/sources/agriculture",
+);
+expect(
+  dynamicSourcesJson.industry === "agriculture",
+  "industry sources resource echoes agriculture",
+);
+expect(
+  Array.isArray(dynamicSourcesJson.entries) && dynamicSourcesJson.entries.length > 0,
+  "industry sources resource includes entries",
+);
+
+const dynamicNotifications = await rpc(
+  "resources/read",
+  { uri: "ssw://catalog/notifications/regular_report" },
+  23,
+  sessionId,
+);
+const dynamicNotificationsJson = parseJsonResource(
+  dynamicNotifications.payload,
+  "ssw://catalog/notifications/regular_report",
+);
+expect(
+  dynamicNotificationsJson.eventContext === "regular_report",
+  "notification forms resource echoes regular_report",
+);
+expect(
+  Array.isArray(dynamicNotificationsJson.entries) && dynamicNotificationsJson.entries.length > 0,
+  "notification forms resource includes entries",
 );
 
 const prompts = await rpc("prompts/list", {}, 30, sessionId);
