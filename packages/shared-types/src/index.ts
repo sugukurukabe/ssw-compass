@@ -133,7 +133,6 @@ export type {
 } from "./tools/list-visa-documents-v4.js";
 export {
   DocumentOutputFormat,
-  effectiveLegalLevel,
   HTML_PREVIEW_WATERMARK,
   ListVisaDocumentsInputV4,
 } from "./tools/list-visa-documents-v4.js";

@@ -32,7 +32,7 @@ function render(result: ValidateZairyuCompatibilityOutput): void {
       <p>${escapeHtml(result.recommended_action)}</p>
       ${issues.length > 0 ? `<ul class="issues">${issues}</ul>` : ""}
       ${
-        result.escalate_to_gyoseishoshi
+        result.escalate_to_professional
           ? `<div class="cta">行政書士または弁護士による確認を推奨します。</div>`
           : `<div class="cta">在留期限の定期確認を続けてください。</div>`
       }

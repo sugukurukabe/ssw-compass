@@ -20,7 +20,7 @@ function makeEntry(overrides: Partial<LawUpdateType>): LawUpdateType {
     title_ja: "テスト",
     summary_ja: "テスト概要",
     category: "operational_guidance",
-    affecting_roles: ["gyoseishoshi"],
+    affecting_roles: ["host_company_hr"],
     impact_severity: "info",
     source_urls: ["https://www.moj.go.jp/isa/"],
     status: "pending",
@@ -98,19 +98,9 @@ describe("KNOWN_LAW_UPDATES_FIXTURE — contents (sprint-4-plan §4 B.3)", () =>
     }
   });
 
-  it("critical entries include immigration_act and gyoseishoshi_law", () => {
+  it("critical entries include immigration_act", () => {
     const criticals = KNOWN_LAW_UPDATES_FIXTURE.filter((e) => e.impact_severity === "critical");
     const categories = criticals.map((e) => e.category);
     expect(categories).toContain("immigration_act");
-    expect(categories).toContain("gyoseishoshi_law");
-  });
-
-  it("gyoseishoshi_law §19 entry has correct effective date 2026-01-01", () => {
-    const entry = KNOWN_LAW_UPDATES_FIXTURE.find(
-      (e) => e.id === "FY2026-gyoseishoshi-law-revision",
-    );
-    expect(entry).toBeDefined();
-    expect(entry?.effective_date).toBe("2026-01-01");
-    expect(entry?.impact_severity).toBe("critical");
   });
 });

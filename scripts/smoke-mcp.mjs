@@ -6,7 +6,6 @@ const REQUIRED_TOOLS = [
   "get_deadline_timeline",
   "list_visa_documents",
   "list_law_updates",
-  "submit_gyoseishoshi_approval",
   "validate_zairyu_compatibility",
 ];
 

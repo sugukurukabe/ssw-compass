@@ -17,8 +17,8 @@ export const LIST_LAW_UPDATES_ANNOTATION: SswCompassToolAnnotation = {
 export function registerListLawUpdatesTool(server: McpServer): void {
   server.tool(
     "list_law_updates",
-    "制度変動フィードを返す。行政書士法改正・入管法改正・手数料改定などの最新情報を提供する。" +
-      "Return law updates feed: gyoseishoshi law revisions, immigration act changes, fee revisions, etc.",
+    "制度変動フィードを返す。入管法改正・手数料改定・様式改正・運用要領変更などの公式情報を提供する。" +
+      "Return official-source updates such as immigration act changes, fee revisions, form revisions, and operational guidance.",
     ListLawUpdatesInput.shape,
     {
       title: LIST_LAW_UPDATES_ANNOTATION.title,

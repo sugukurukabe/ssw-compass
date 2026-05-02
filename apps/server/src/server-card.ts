@@ -51,11 +51,11 @@ export interface ServerCard {
 
 const SERVER_CARD: ServerCard = {
   name: "SSW Compass",
-  version: "4.0.0", // Sprint 4 — 7 tools, Free/Pro/Business tiers, 10-language
+  version: "4.0.0",
   description:
     "Official-source-grounded informational app for Japanese specified-skilled-worker (SSW / 特定技能) and related visa procedures. " +
-    "Freemium: search, deadline tracking, law updates (Free); document generation, approval workflow (Pro). " +
-    "Information only — does not constitute legal advice.",
+    "Read-only tools cover search, procedure classification, deadlines, document checklists, law updates, and zairyu compatibility. " +
+    "Information only — not legal advice.",
   publisher: {
     name: "スグクル株式会社",
     url: "https://mcp.ssw-compass.jp", // ADR-012: prod URL (Batch 11)
@@ -67,8 +67,7 @@ const SERVER_CARD: ServerCard = {
     tasks: false,
     prompts: false,
   },
-  // Free connector submission path: anonymous access is available.
-  // Pro-only tools enforce JWT/HITL at call time (ADR-013/014).
+  // Public connector submission path: anonymous read-only access is available.
   auth: { type: "none" },
   compliance: {
     dataResidency: "JP",
@@ -78,11 +77,10 @@ const SERVER_CARD: ServerCard = {
   categories: ["regulated-industry", "immigration", "japan", "informational"],
   limitations: [
     "Provides general information only.",
-    "Does not perform legal representation under Japanese 行政書士法 §19-1.",
+    "Grounds answers in official or delegated official sources.",
     "Does not accept personal identifiers as input.",
     "Does not generate or file government documents.",
-    "Pro-only document approval workflows require gyoseishoshi authentication and are not available to anonymous Free users.",
-    "Vertex AI Search currently in fixture mode — real content requires Batch 5 flip.",
+    "For individual procedures, consult a certified professional or the responsible authority.",
   ],
   license: "Apache-2.0",
   privacyPolicy: "https://mcp.ssw-compass.jp/privacy",

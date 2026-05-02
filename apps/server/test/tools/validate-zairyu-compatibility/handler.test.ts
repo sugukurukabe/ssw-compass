@@ -23,10 +23,10 @@ describe("validate_zairyu_compatibility", () => {
     });
     const sc = result.structuredContent as {
       compatibility: string;
-      escalate_to_gyoseishoshi: boolean;
+      escalate_to_professional: boolean;
     };
     expect(sc.compatibility).toBe("OK");
-    expect(sc.escalate_to_gyoseishoshi).toBe(false);
+    expect(sc.escalate_to_professional).toBe(false);
   });
 
   it("ryugaku + agriculture → ILLEGAL (就労不可)", async () => {
@@ -38,11 +38,11 @@ describe("validate_zairyu_compatibility", () => {
     });
     const sc = result.structuredContent as {
       compatibility: string;
-      escalate_to_gyoseishoshi: boolean;
+      escalate_to_professional: boolean;
       legal_basis: string[];
     };
     expect(sc.compatibility).toBe("ILLEGAL");
-    expect(sc.escalate_to_gyoseishoshi).toBe(true);
+    expect(sc.escalate_to_professional).toBe(true);
     expect(sc.legal_basis).toContain("入管法 §73-2");
   });
 
@@ -68,15 +68,15 @@ describe("validate_zairyu_compatibility", () => {
     expect(sc.compatibility).toBe("ILLEGAL");
   });
 
-  it("ILLEGAL output includes escalate_to_gyoseishoshi=true", async () => {
+  it("ILLEGAL output includes escalate_to_professional=true", async () => {
     const result = await validateZairyuCompatibilityHandler({
       zairyu_status: "ryugaku",
       intended_industry: "agriculture",
       intended_task: "農業",
       expiry_date: FUTURE,
     });
-    const sc = result.structuredContent as { escalate_to_gyoseishoshi: boolean };
-    expect(sc.escalate_to_gyoseishoshi).toBe(true);
+    const sc = result.structuredContent as { escalate_to_professional: boolean };
+    expect(sc.escalate_to_professional).toBe(true);
   });
 
   it("result includes disclaimer", async () => {

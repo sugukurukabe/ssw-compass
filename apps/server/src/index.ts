@@ -42,10 +42,10 @@ export function createApp(): Express {
           "Official-source visa information for Japanese Specified Skilled Worker (特定技能) procedures.",
         description_for_model:
           "Query Japanese SSW (特定技能) visa procedures grounded in 出入国在留管理庁 official documents. " +
-          "7 tools: search_visa, classify_procedure, get_deadline_timeline, list_visa_documents, " +
-          "list_law_updates, submit_gyoseishoshi_approval, validate_zairyu_compatibility. " +
-          "Free for general information (anonymous); Pro for document drafts (JWT required). " +
-          "Information only — not legal advice. Always include disclaimer in responses.",
+          "6 read-only tools: search_visa, classify_procedure, get_deadline_timeline, " +
+          "list_visa_documents, list_law_updates, validate_zairyu_compatibility. " +
+          "Anonymous access for general information. Information only — not legal advice. " +
+          "Always include the disclaimer in responses.",
         auth: { type: "none" },
         api: {
           type: "openapi",
@@ -144,7 +144,6 @@ export function createApp(): Express {
           "Inputs containing residence card numbers, passport numbers, or My Number are automatically blocked.\n\n" +
           "Operational logs may include access timestamps and security metadata for abuse prevention. " +
           "SSW Compass does not use logs for behavioral profiling.\n\n" +
-          "Audit events store hashes only and are retained for 7 years per Gyoseishoshi Act §9. " +
           "Visa application content and personal identifiers are not stored.\n\n" +
           "Full trilingual policy:\n" +
           "https://github.com/sugukurukabe/ssw-compass/tree/main/docs/privacy/\n\n" +
