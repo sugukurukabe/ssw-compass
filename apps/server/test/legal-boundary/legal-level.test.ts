@@ -29,7 +29,7 @@ describe("public tools — annotation correctness", () => {
     expect(GET_DEADLINE_TIMELINE_ANNOTATION.tier).toBe("free");
   });
 
-  it("list_visa_documents: static floor L1 (escalates to L2 for pdf_draft/csv)", () => {
+  it("list_visa_documents: L1, read-only", () => {
     expect(LIST_VISA_DOCUMENTS_ANNOTATION.legalLevel).toBe("L1");
     expect(LIST_VISA_DOCUMENTS_ANNOTATION.requiresGyoseishoshiAuth).toBe(false);
   });

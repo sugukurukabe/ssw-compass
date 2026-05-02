@@ -31,7 +31,6 @@ export function registerListVisaDocumentsTool(server: McpServer): void {
         "constitute legal advice. " +
         "Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers).",
       inputSchema: ListVisaDocumentsInputV4.shape,
-      // Static legalLevel=L1; escalates to L2 for pdf_draft|csv (see ADR-014 §Per-call escalation)
       annotations: LIST_VISA_DOCUMENTS_ANNOTATION,
       _meta: {
         ui: {

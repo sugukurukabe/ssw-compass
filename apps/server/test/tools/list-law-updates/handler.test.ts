@@ -28,15 +28,6 @@ describe("list_law_updates handler — basic", () => {
     }
   });
 
-  it("filters by category gyoseishoshi_law", async () => {
-    const result = await listLawUpdatesHandler({ category: "gyoseishoshi_law" });
-    const content = result.structuredContent as { updates: { category: string }[] };
-    expect(content.updates.length).toBeGreaterThan(0);
-    for (const u of content.updates) {
-      expect(u.category).toBe("gyoseishoshi_law");
-    }
-  });
-
   it("respects limit=1", async () => {
     const result = await listLawUpdatesHandler({ limit: 1 });
     const content = result.structuredContent as { updates: unknown[] };
@@ -50,16 +41,16 @@ describe("list_law_updates handler — basic", () => {
   });
 
   it("result text includes entry titles", async () => {
-    const result = await listLawUpdatesHandler({ category: "gyoseishoshi_law" });
+    const result = await listLawUpdatesHandler({ category: "immigration_act" });
     expect(typeof result.content[0]?.text).toBe("string");
-    expect((result.content[0] as { text: string }).text).toContain("行政書士");
+    expect((result.content[0] as { text: string }).text).toContain("入管法");
   });
 
   it("severity=critical entries found in all-category query", async () => {
     const result = await listLawUpdatesHandler({});
     const content = result.structuredContent as { updates: { impact_severity: string }[] };
     const criticals = content.updates.filter((u) => u.impact_severity === "critical");
-    expect(criticals.length).toBeGreaterThanOrEqual(2);
+    expect(criticals.length).toBeGreaterThanOrEqual(1);
   });
 
   it("output shape matches ListLawUpdatesOutput structure", async () => {

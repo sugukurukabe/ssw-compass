@@ -1,8 +1,8 @@
 # Anthropic Connectors Directory 提出パケット
 
 > **提出アカウント**: a_kabe@sugu-kuru.co.jp
-> **提出予定**: Demo video / privacy review / host verification 完了後
-> **前提条件**: A1(logo)✅ A2(screenshots)✅ A3(video)🔜 A4(privacy)🔜監修待 A5(license)✅
+> **提出予定**: Demo video / privacy check / host verification 完了後
+> **前提条件**: A1(logo)✅ A2(screenshots)✅ A3(video)🔜 A4(privacy)🔜 A5(license)✅
 
 ---
 
@@ -15,10 +15,10 @@ GET https://mcp.ssw-compass.jp/.well-known/mcp.json
 現在の値:
 - `name`: SSW Compass
 - `version`: 4.0.0
-- `description`: Official-source-grounded informational app for Japanese specified-skilled-worker (SSW / 特定技能) and related visa procedures. Freemium: search, deadline tracking, law updates (Free); document generation, approval workflow (Pro). Information only — does not constitute legal advice.
+- `description`: Official-source-grounded informational app for Japanese specified-skilled-worker (SSW / 特定技能) and related visa procedures. Read-only tools cover search, procedure classification, deadlines, document checklists, law updates, and zairyu compatibility. Information only — not legal advice.
 - `publisher.name`: スグクル株式会社
 - `publisher.url`: https://mcp.ssw-compass.jp
-- `auth.type`: none (Free anonymous connector; Pro-only tools enforce JWT/HITL at call time)
+- `auth.type`: none (anonymous read-only connector)
 - `license`: Apache-2.0
 - `privacyPolicy`: https://mcp.ssw-compass.jp/privacy
 - `categories`: ["regulated-industry", "immigration", "japan", "informational"]
@@ -33,7 +33,7 @@ GET https://mcp.ssw-compass.jp/.well-known/mcp.json
 |---|---|
 | **Connector name** | SSW Compass Japan |
 | **Tagline (≤ 80 chars)** | The compass for Japanese visa procedures. Official sources, 10 languages. |
-| **Description (≤ 400 chars)** | SSW Compass grounds Japanese Specified Skilled Worker (特定技能) visa questions in 出入国在留管理庁 official documents. 7 tools across search, deadline tracking, law updates, and document checklists. Free for general info; Pro for document generation. Read-only — no legal advice. |
+| **Description (≤ 400 chars)** | SSW Compass grounds Japanese Specified Skilled Worker (特定技能) visa questions in 出入国在留管理庁 official documents. 6 read-only tools cover search, procedure classification, deadlines, document checklists, law updates, and zairyu compatibility. Information only — no legal advice. |
 | **Categories** | Legal & Compliance, Language & Communication, Productivity |
 | **Homepage URL** | https://mcp.ssw-compass.jp |
 | **Privacy Policy URL** | https://mcp.ssw-compass.jp/privacy |
@@ -43,21 +43,19 @@ GET https://mcp.ssw-compass.jp/.well-known/mcp.json
 
 ### ターゲットユーザー
 
-- 行政書士 (Gyoseishoshi / Immigration attorneys)
 - 特定技能外国人受入企業の HR 担当者
 - 登録支援機関のスタッフ
 - 特定技能外国人本人 (10言語対応)
 
-### 提供ツール (7 tools)
+### 提供ツール (6 read-only tools)
 
 | Tool | Level | 説明 |
 |---|---|---|
 | `search_visa` | Free | 特定技能・関連ビザの情報検索 (10言語) |
 | `classify_procedure` | Free | 申請種別の自動判定 |
 | `get_deadline_timeline` | Free | 在留期限タイムライン (Free 3名制限) |
-| `list_visa_documents` | Free/Pro | 必要書類チェックリスト (PDF/CSVは Pro) |
-| `list_law_updates` | Free | 制度変動フィード (行政書士法改正・入管法厳罰化等) |
-| `submit_gyoseishoshi_approval` | Pro + 行政書士 | 書類最終承認 (H01 ロックゲート) |
+| `list_visa_documents` | Free | 必要書類チェックリスト |
+| `list_law_updates` | Free | 制度変動フィード |
 | `validate_zairyu_compatibility` | Free | 在留資格×業務適合性判定 (H06 不法就労アラート) |
 
 ### セキュリティ・コンプライアンス
@@ -65,7 +63,6 @@ GET https://mcp.ssw-compass.jp/.well-known/mcp.json
 - PII 自動ブロック: 在留カード番号・パスポート番号・マイナンバー
 - Cloud DLP 2nd stage (LIKELY threshold)
 - 出力サニタイザー (indirect prompt injection 対策)
-- 7年 WORM 監査ログ (行政書士法§9 業務帳簿義務準拠)
 - Cloud Armor WAF + Global LB
 - 越境移転なし (asia-northeast1 のみ)
 - MCP Apps の外部リンクは原則 `go.jp` 公式 URL に限定。試験実施団体は省庁リンク済みの delegated official source として catalog metadata で区別。
@@ -83,7 +80,7 @@ Sprint 5 後半で追加予定。基本情報は Anthropic と同一。
 | `name_for_human` | SSW Compass Japan |
 | `name_for_model` | ssw_compass_japan |
 | `description_for_human` | Official-source visa information for Japanese Specified Skilled Worker (特定技能) procedures |
-| `description_for_model` | Tool for querying Japanese SSW visa procedures grounded in 出入国在留管理庁 official documents. Returns 7-tool suite for search, classify, deadline, documents, law_updates, approval, zairyu. Information only, not legal advice. |
+| `description_for_model` | Tool for querying Japanese SSW visa procedures grounded in 出入国在留管理庁 official documents. Returns 6 read-only tools for search, classify, deadline, documents, law_updates, and zairyu compatibility. Information only, not legal advice. |
 | `auth.type` | none |
 | `api.type` | openapi |
 | `contact_email` | a_kabe@sugu-kuru.co.jp |
@@ -106,9 +103,9 @@ Sprint 5 後半で追加予定。基本情報は Anthropic と同一。
 - [x] Internal helper `_ssw_checklist_schema` removed from public tools/list
 - [x] MCP tools/resources/prompts smoke passes, including catalog resources
 
-### コンテンツ要件 (行政書士監修後)
+### コンテンツ要件
 
-- [ ] プライバシーポリシー監修済み (A4 完了後)
+- [ ] プライバシーポリシー最終確認済み (A4 完了後)
 - [ ] ロゴ PNG ≥ 512×512 (A1 ✅: icon-512.png)
 - [x] スクリーンショット × 5 (A2 ✅: `docs/screenshots/*.png`, 1200px width)
 - [ ] デモ動画 ≤ 120 秒 (A3)
@@ -127,21 +124,12 @@ Use these paired prompt texts:
 | 4 | `支援計画を変更したときの届出期限と様式を確認して` | `get_deadline_timeline` / compact deadline UI with related form links |
 | 5 | `留学ビザの人を農業でフルタイム雇用してよいか確認して` | `validate_zairyu_compatibility` / H06 warning UI |
 
-### 法令要件 (行政書士監修後)
-
-- [ ] 「情報提供のみ」免責文の適切性 確認済み
-- [ ] 行政書士法 §19 対応の記載 確認済み
-- [ ] APPI 越境移転回避 記載 確認済み
-
----
-
 ## タイムライン
 
 | マイルストーン | 依存 | 期日目安 |
 |---|---|---|
-| 行政書士監修完了 | 金曜レビュー + 指摘反映 | ~1-2 週間 |
 | UX redesign deploy | 完了 | 完了 |
 | Screenshots 撮影 | UX redesign deploy + capture automation | 完了 |
-| 提出パケット完成 | privacy review + screenshots + demo video | 2026-06 第1週 |
+| 提出パケット完成 | privacy check + screenshots + demo video | 2026-06 第1週 |
 | **Anthropic 提出** | パケット完成 | 2026-06 第2週 |
 | **OpenAI 提出** | 同上 (parallel) | 2026-06 第2週 |

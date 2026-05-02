@@ -5,7 +5,7 @@
  *
  * Interface Freeze (sprint-4-plan §3.8): Sprint 4 全期間で不変。
  * legalLevel: L1 (Free OK)
- * H06_ILLEGAL_WORK_ALERT: ILLEGAL 判定時は escalate_to_gyoseishoshi=true を返す。
+ * H06_ILLEGAL_WORK_ALERT: ILLEGAL 判定時は escalate_to_professional=true を返す。
  */
 
 import { z } from "zod";
@@ -47,8 +47,8 @@ export const ValidateZairyuCompatibilityOutput = z
     legal_basis: z.array(z.string()),
     /** 推奨アクション */
     recommended_action: z.string(),
-    /** 行政書士相談が必要か */
-    escalate_to_gyoseishoshi: z.boolean(),
+    /** 専門家確認が必要か */
+    escalate_to_professional: z.boolean(),
     /** 免責事項 */
     disclaimer: z.string(),
   })

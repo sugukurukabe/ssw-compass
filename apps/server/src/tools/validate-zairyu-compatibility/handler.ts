@@ -143,7 +143,7 @@ export const validateZairyuCompatibilityHandler = instrumentTool(
         compatibility,
         legal_basis: legalBasis,
         recommended_action: recommendedAction,
-        escalate_to_gyoseishoshi: escalate,
+        escalate_to_professional: escalate,
         disclaimer,
       },
     };

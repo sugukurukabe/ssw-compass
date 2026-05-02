@@ -508,7 +508,7 @@ const FIXTURES = {
     legal_basis: ["入管法 §19-1", "入管法 §73-2"],
     recommended_action:
       "就労を即時停止し、資格認定を受けた行政書士または弁護士に相談してください。入管法 §73-2 により受入企業にも過失処罰が適用されます。",
-    escalate_to_gyoseishoshi: true,
+    escalate_to_professional: true,
     disclaimer: DISCLAIMER_FALLBACK,
   },
 };

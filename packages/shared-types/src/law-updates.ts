@@ -23,7 +23,6 @@ import { z } from "zod";
  */
 export const LawUpdateCategory = z.enum([
   "fee_revision", // 手数料改定
-  "gyoseishoshi_law", // 行政書士法改正
   "immigration_act", // 入管法改正
   "industry_pause", // 分野停止 (例: 外食業1号)
   "form_revision", // 様式改正
@@ -38,7 +37,6 @@ export type LawUpdateCategory = z.infer<typeof LawUpdateCategory>;
  * Jenis peran yang terdampak
  */
 export const AffectingRole = z.enum([
-  "gyoseishoshi", // 行政書士
   "host_company_hr", // 受入企業 HR
   "dispatch_company", // 派遣会社
   "support_org", // 登録支援機関
@@ -110,7 +108,7 @@ export const KNOWN_LAW_UPDATES_FIXTURE: readonly LawUpdate[] = [
       "在留申請に係る手数料が改定された。特定技能関連の申請手数料が引き上げられ、" +
       "受入企業・登録支援機関は申請ごとのコスト計画を更新する必要がある。",
     category: "fee_revision",
-    affecting_roles: ["gyoseishoshi", "host_company_hr", "dispatch_company", "support_org"],
+    affecting_roles: ["host_company_hr", "dispatch_company", "support_org"],
     impact_severity: "major",
     source_urls: ["https://www.moj.go.jp/isa/content/001454527.pdf"],
     status: "active",
@@ -132,31 +130,6 @@ export const KNOWN_LAW_UPDATES_FIXTURE: readonly LawUpdate[] = [
     status: "active",
   },
   {
-    id: "FY2026-gyoseishoshi-law-revision",
-    // Batch 1 D1 confirmed: 2026-01-01 (行政書士法改正 施行)
-    effective_date: "2026-01-01",
-    announced_date: "2025-06-13",
-    title_ja: "改正行政書士法施行 — §19「いかなる名目」明文化・両罰規定強化",
-    title_en:
-      "Amended Gyoseishoshi Act: §19 clarification prohibiting document preparation under any fee name",
-    summary_ja:
-      "行政書士法第19条第1項に「いかなる名目によるかを問わず」の文言が追加された" +
-      "(令和七年法律第65号、2025年6月13日公布)。コンサルタント料・手数料等の名目による" +
-      "無資格者の書類作成が明文で禁止。両罰規定により法人にも100万円以下の罰金。" +
-      "登録支援機関は業務範囲を即時見直す必要がある。",
-    summary_en:
-      "Article 19(1) now explicitly prohibits non-gyoseishoshi entities from preparing official documents " +
-      "regardless of how the compensation is named. Dual liability: individuals and legal entities.",
-    category: "gyoseishoshi_law",
-    affecting_roles: ["gyoseishoshi", "support_org"],
-    impact_severity: "critical",
-    source_urls: [
-      "https://elaws.e-gov.go.jp/document?lawid=326AC1000000004",
-      "https://www.hyotokyo.or.jp/news/proper/20138.html",
-    ],
-    status: "active",
-  },
-  {
     id: "FY2026-immigration-act-73-2-stricter",
     // Batch 1 D2 confirmed: 施行は 2025 年 6 月 (成立 2024-06-14, 公布 2024-06-21, 施行 2025-06)
     // 正確な政令施行日は "2025-06-01" で記録 (複数ソースが「2025年6月から」と一致)
@@ -174,7 +147,7 @@ export const KNOWN_LAW_UPDATES_FIXTURE: readonly LawUpdate[] = [
       "Penalties for facilitating illegal employment raised to 5yr detention / ¥5M fine (concurrent). " +
       "Negligence (failure to check residence card) is now punishable. Corporate liability up to ¥100M.",
     category: "immigration_act",
-    affecting_roles: ["gyoseishoshi", "host_company_hr", "dispatch_company"],
+    affecting_roles: ["host_company_hr", "dispatch_company"],
     impact_severity: "critical",
     source_urls: [
       "https://www.moj.go.jp/isa/nyuukokukanri01_00260.html",
@@ -195,7 +168,7 @@ export const KNOWN_LAW_UPDATES_FIXTURE: readonly LawUpdate[] = [
       "が公表された。詳細な運用制限の内容および完全停止の有無は一次ソース確認中。" +
       "現時点では新規受入が制限される方向性のみ確認済み。",
     category: "operational_guidance",
-    affecting_roles: ["gyoseishoshi", "host_company_hr", "support_org"],
+    affecting_roles: ["host_company_hr", "support_org"],
     impact_severity: "major",
     source_urls: ["https://www.moj.go.jp/isa/applications/ssw/index.html"],
     status: "pending_verification",
@@ -214,7 +187,7 @@ export const KNOWN_LAW_UPDATES_FIXTURE: readonly LawUpdate[] = [
       "本人意向による転籍 (同一業務・1〜2年超) が可能になる。" +
       "特定技能の分野・業務区分と原則同一。",
     category: "immigration_act",
-    affecting_roles: ["gyoseishoshi", "host_company_hr", "dispatch_company", "support_org"],
+    affecting_roles: ["host_company_hr", "dispatch_company", "support_org"],
     impact_severity: "critical",
     source_urls: ["https://www.moj.go.jp/isa/nyuukokukanri01_00260.html"],
     status: "pending",
