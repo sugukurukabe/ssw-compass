@@ -1,8 +1,8 @@
 # Anthropic Connectors Directory 提出パケット
 
 > **提出アカウント**: a_kabe@sugu-kuru.co.jp
-> **提出予定**: Screenshot / video / privacy review 完了後
-> **前提条件**: A1(logo)✅ A2(screenshots)🔜 A3(video)🔜 A4(privacy)🔜監修待 A5(license)✅
+> **提出予定**: Demo video / privacy review / host verification 完了後
+> **前提条件**: A1(logo)✅ A2(screenshots)✅ A3(video)🔜 A4(privacy)🔜監修待 A5(license)✅
 
 ---
 
@@ -110,7 +110,7 @@ Sprint 5 後半で追加予定。基本情報は Anthropic と同一。
 
 - [ ] プライバシーポリシー監修済み (A4 完了後)
 - [ ] ロゴ PNG ≥ 512×512 (A1 ✅: icon-512.png)
-- [ ] スクリーンショット × 3-5 (A2: UX redesign 後)
+- [x] スクリーンショット × 5 (A2 ✅: `docs/screenshots/*.png`, 1200px width)
 - [ ] デモ動画 ≤ 120 秒 (A3)
 - [x] ライセンス明示 (A5 ✅: Apache-2.0)
 
@@ -141,7 +141,7 @@ Use these paired prompt texts:
 |---|---|---|
 | 行政書士監修完了 | 金曜レビュー + 指摘反映 | ~1-2 週間 |
 | UX redesign deploy | 完了 | 完了 |
-| Screenshots 撮影 | UX redesign deploy + Claude Web verification | deploy 後 |
+| Screenshots 撮影 | UX redesign deploy + capture automation | 完了 |
 | 提出パケット完成 | privacy review + screenshots + demo video | 2026-06 第1週 |
 | **Anthropic 提出** | パケット完成 | 2026-06 第2週 |
 | **OpenAI 提出** | 同上 (parallel) | 2026-06 第2週 |
