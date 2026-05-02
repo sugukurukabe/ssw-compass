@@ -56,3 +56,16 @@ pnpm check:submission:strict
 
 Strict mode must pass before submitting to Anthropic or OpenAI.
 
+## Reproducible local capture
+
+To regenerate app-card-only screenshots from the production MCP endpoint and
+local UI styles, run:
+
+```bash
+pnpm capture:screenshots
+pnpm check:submission:strict
+```
+
+Set `MCP_URL` to use another endpoint, or `CHROME_PATH` if Google Chrome is not
+installed at the default macOS path.
+
