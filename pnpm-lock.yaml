@@ -14,6 +14,9 @@ importers:
       '@types/yauzl':
         specifier: ^2.10.3
         version: 2.10.3
+      tsx:
+        specifier: ^4.21.0
+        version: 4.21.0
       turbo:
         specifier: ^2.9.0
         version: 2.9.6

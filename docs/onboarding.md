@@ -111,6 +111,32 @@ Subsequent developers who clone the repo do not need to re-register
 these — they are repository-scoped and already set by the Batch 3
 operator.
 
+## Pro JWT issuance (Sprint 4 / ADR-013)
+
+SSW Compass uses HS256 application-layer JWTs for Pro tier access
+until the Sprint 5 OAuth authorization server replaces manual issuance.
+
+Prerequisites:
+
+- `gcloud auth login` as an operator who can access Secret Manager in
+  `ssw-compass-prod-494613`.
+- Secret Manager secret `ssw-jwt-secret` exists and contains the HS256
+  signing secret.
+
+Issue a 90-day Pro token for J-VAG:
+
+```bash
+pnpm tsx scripts/issue-jwt.ts \
+  --sub jvag-gateway \
+  --tier pro \
+  --gyoseishoshi-verified \
+  --gyoseishoshi-number "東京都 12345" \
+  --expires 90d
+```
+
+The script prints only the JWT to stdout. Store that value in 1Password
+as `ssw-compass-prod-jwt-token`; do not commit it or paste it into logs.
+
 ## Claude Desktop / Cursor / other MCP host setup
 
 See `.claude/desktop_config.example.json` and the `README.md`
