@@ -13,6 +13,7 @@
     "test": "turbo run test",
     "check": "biome check .",
     "ingest": "tsx scripts/ingest-sources.ts",
+    "issue:jwt": "tsx scripts/issue-jwt.ts",
     "normalize:source-index": "node scripts/normalize-source-index.mjs",
     "validate:source-index": "node scripts/validate-source-index.mjs",
     "validate:industry-candidates": "node scripts/validate-industry-resource-candidates.mjs",
@@ -44,6 +45,7 @@
   "devDependencies": {
     "@biomejs/biome": "^2.4.0",
     "@types/yauzl": "^2.10.3",
+    "tsx": "^4.21.0",
     "turbo": "^2.9.0",
     "typescript": "^5.7.0",
     "yauzl": "^3.3.0"

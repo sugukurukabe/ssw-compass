@@ -6,6 +6,7 @@
 import { createHmac } from "node:crypto";
 import { ANONYMOUS_AUTH_CONTEXT } from "@ssw/shared-types";
 import { describe, expect, it } from "vitest";
+import { buildJwtClaims, parseIssueJwtArgs, signHs256Jwt } from "../../../../scripts/issue-jwt.js";
 import { extractBearerToken, JwtTokenVerifier } from "../../src/auth/token-verifier.js";
 
 const TEST_SECRET = "test-secret-32-bytes-or-more-for-hs256";
@@ -167,5 +168,34 @@ describe("extractBearerToken", () => {
 
   it("non-Bearer auth scheme → null", () => {
     expect(extractBearerToken("Basic dXNlcjpwYXNz")).toBeNull();
+  });
+});
+
+describe("scripts/issue-jwt integration", () => {
+  it("issued Pro JWT verifies through JwtTokenVerifier", async () => {
+    const options = parseIssueJwtArgs([
+      "--sub",
+      "jvag-gateway",
+      "--tier",
+      "pro",
+      "--gyoseishoshi-verified",
+      "--gyoseishoshi-number",
+      "東京都 12345",
+      "--expires",
+      "90d",
+    ]);
+    const claims = buildJwtClaims(options, nowSeconds());
+    const token = signHs256Jwt(claims, TEST_SECRET);
+
+    const ctx = await new JwtTokenVerifier(TEST_SECRET).verify(token);
+
+    expect(ctx).toEqual({
+      user_id: "jvag-gateway",
+      tier: "pro",
+      gyoseishoshi_verified: true,
+      gyoseishoshi_number: "東京都 12345",
+      auth_source: "jwt",
+      issued_at: claims.iat,
+    });
   });
 });
