@@ -6,6 +6,28 @@ resource "google_compute_security_policy" "this" {
   description = "SSW Compass ${var.env} multi-layer WAF — rate limit + geo-block + RFC1918 egress block. Standard edition (ADR-012)."
   type        = "CLOUD_ARMOR"
 
+  # Priority 300 — allowlist trusted MCP client egress (Anthropic Claude).
+  # Claude connects to remote MCP servers server-to-server from a shared NAT
+  # in Anthropic's outbound range; an IP-keyed rate limit on /mcp would 429 that
+  # shared IP across all connector users ("couldn't connect" in Claude). This
+  # high-priority allow lets Anthropic bypass geo-block + rate limiting.
+  # Ref: https://platform.claude.com/docs/en/api/ip-addresses (allowlist behind a WAF).
+  dynamic "rule" {
+    for_each = length(var.trusted_allowlist_ranges) > 0 ? [1] : []
+    content {
+      action      = "allow"
+      priority    = 300
+      description = "Allow trusted MCP client egress (Anthropic) — bypass geo-block + rate limit"
+
+      match {
+        versioned_expr = "SRC_IPS_V1"
+        config {
+          src_ip_ranges = var.trusted_allowlist_ranges
+        }
+      }
+    }
+  }
+
   # Priority 500 — geo-block high-risk countries. Cloud Armor CEL
   # does not support the `in [...]` operator; use chained `==`.
   rule {

@@ -31,3 +31,15 @@ variable "env" {
   description = "Environment label"
   type        = string
 }
+
+variable "trusted_allowlist_ranges" {
+  description = <<-EOT
+    Source IP ranges that are always allowed and bypass geo-block + rate limiting.
+    Default is Anthropic's outbound MCP egress range so Claude (web/desktop/mobile),
+    which connects server-to-server from a shared NAT, is never throttled (429) or
+    geo-blocked. See https://platform.claude.com/docs/en/api/ip-addresses.
+    Set to [] to disable the allowlist rule.
+  EOT
+  type        = list(string)
+  default     = ["160.79.104.0/21"]
+}
