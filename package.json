@@ -20,6 +20,7 @@
     "merge:industry-candidates": "node scripts/merge-industry-candidates.mjs",
     "merge:multilingual-forms": "node scripts/merge-multilingual-forms.mjs",
     "check:industry-routing": "node scripts/check-industry-routing-coverage.mjs",
+    "check:url-health": "node scripts/check-url-health.mjs",
     "prepare:manual-sources": "node scripts/prepare-manual-sources.mjs",
     "prepare:rag": "node scripts/prepare-sources.mjs",
     "import:rag": "node scripts/import-agent-search.mjs",
