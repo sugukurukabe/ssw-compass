@@ -8,6 +8,7 @@ import type { AuthedRequest } from "./auth/resolve-auth.js";
 import { resolveAuth } from "./auth/resolve-auth.js";
 import { isLawUpdatesDatasetStale, lawUpdatesDatasetAgeDays } from "./law-updates/active-filter.js";
 import { logger } from "./logger.js";
+import { initOtelSdk } from "./otel-sdk.js";
 import { createMcpServer } from "./server.js";
 import { buildServerCard } from "./server-card.js";
 
@@ -274,6 +275,8 @@ function warnIfLawUpdatesStale(): void {
 }
 
 export async function startServer(port?: number): Promise<void> {
+  // 可観測性: 有効時のみ OTel NodeSDK を起動 (span を実際にエクスポート)。
+  await initOtelSdk();
   const app = createApp();
   warnIfLawUpdatesStale();
   const resolvedPort = port ?? Number(process.env["PORT"] ?? DEFAULT_PORT);
