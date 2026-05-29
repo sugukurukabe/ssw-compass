@@ -157,7 +157,7 @@ need a stable URL, switch to a named tunnel (see the table above).
 
 ## License
 
-TBD — to be decided before Sprint 4 Directory submission.
+[Apache-2.0](LICENSE). See `LICENSE` and `NOTICE`.
 
 ## Disclaimer
 

@@ -8,6 +8,15 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 ## [Unreleased] — Sprint 5
 
 ### Added
+- `toToolErrorResult` 共通ヘルパ: Vertex 障害 / `TierLimitError` / `HitlGateError` を `isError` + 利用者向けメッセージ + 免責に変換
+- Vertex 実モードの信頼度スコア導出 (`relevanceScore` → `modelScores`、欠落時は中立既定値) と `confidenceThreshold (>=0.7)` 実フィルタ
+- 制度変動データセットの鮮度メタデータ (`LAW_UPDATES_DATASET_REVIEWED_DATE`)、起動時の陳腐化 warning、`list_law_updates` 応答への「データ最終確認日」表示
+- `docs/law-updates-maintenance-runbook.md` — 制度変動 fixture の更新手順
+- `scripts/check-url-health.mjs` (`pnpm check:url-health`) — 公式 URL の死活確認 (403/401 と 404/410 を区別)
+- `docs/internal-onboarding.md` — スグクル社内向け接続・利用ガイド
+- `ui-bridge`: `renderNotice` / `extractToolResultText` (widget の空/エラー状態表示)
+- OpenTelemetry NodeSDK の opt-in 起動 (`OTEL_SDK_ENABLED` / `OTEL_EXPORTER_OTLP_ENDPOINT`)
+- `cd-prod.yml`: 公開エンドポイントへのデプロイ後スモークテスト
 - Apache-2.0 license (`LICENSE`, `NOTICE` files)
 - `CONTRIBUTING.md`, `SECURITY.md`, `CHANGELOG.md`
 - `/privacy` endpoint (trilingual privacy policy, pending gyoseishoshi review)
@@ -25,6 +34,11 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 - README: CI/CD/license badges
 
 ### Fixed
+- 全ツールハンドラ: 空結果・PII ブロック・例外の全パスで免責事項 (`DISCLAIMER_BY_LANG`) を必ず付与
+- ツールハンドラの外部呼び出しを `try/catch` で保護 (Vertex API 障害の未処理 rejection を防止)
+- widget が空結果・エラー時に skeleton のまま固まる UX バグ (全 5 widget)
+- prod Cloud Run を VPC connector に接続 (ADR-012 egress NAT pinning, staging と parity)
+- README: License 節を Apache-2.0 に更新 (badge/LICENSE と不整合だった "TBD" を解消)
 - Cloud DLP: `ZAIRYU_CARD_NUMBER` removed from `blockingInfoTypes` (custom type clash)
 - Cloud DLP: `infoType` camelCase in `customInfoTypes` (snake_case not recognized by SDK)
 - `AuthedRequest` type alias replaces `declare module` augmentation (Docker build fix)
