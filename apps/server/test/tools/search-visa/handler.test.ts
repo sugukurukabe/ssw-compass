@@ -60,3 +60,21 @@ describe("searchVisa — empty result disclaimer", () => {
     expect(text).toContain(DISCLAIMER_BY_LANG.en);
   });
 });
+
+describe("searchVisa — Vertex failure handling", () => {
+  it("returns a safe isError result with disclaimer when Vertex search throws", async () => {
+    const failingClient: SearchClientLike = {
+      projectLocationCollectionDataStoreServingConfigPath: vi.fn(() => "dummy-path"),
+      search: vi.fn().mockRejectedValue(new Error("UNAVAILABLE: backend error")),
+    };
+    __setSearchClientForTesting(failingClient);
+
+    const result = await searchVisa({ category: "tokutei_ginou_1", language: "ja" });
+    expect(result.isError).toBe(true);
+    const text = firstText(result);
+    // 内部詳細は秘匿し、一般メッセージ + 免責を返す。
+    expect(text).not.toContain("UNAVAILABLE");
+    expect(text).toContain("システムエラー");
+    expect(text).toContain(DISCLAIMER_BY_LANG.ja);
+  });
+});

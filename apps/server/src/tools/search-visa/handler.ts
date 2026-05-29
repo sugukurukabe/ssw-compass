@@ -6,6 +6,7 @@ import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";
 import { sanitizeRetrievedSnippet } from "../../safety/output-sanitizer.js";
 import { vertexSearch } from "../../vertex.js";
+import { toToolErrorResult } from "../tool-error.js";
 import { buildQuery, SearchVisaOutput } from "./schema.js";
 
 export const searchVisa = instrumentTool(
@@ -50,17 +51,23 @@ export const searchVisa = instrumentTool(
 
     const t0 = performance.now();
     const route = routeForIndustry(args.industry);
-    const grounded = await vertexSearch({
-      // buildQuery uses category/industry/yearMonth only — language field is irrelevant
-      query: buildQuery({ ...args, language: "ja" as const }),
-      datastore: "visa_legal",
-      confidenceThreshold: 0.7,
-      sourceAllowlist: route.sourceAllowlist,
-      preferredMinistries: route.preferredMinistries,
-      preferredTags: route.preferredTags,
-      dataStoreGroup: route.dataStoreGroup,
-      maxChunks: 5,
-    });
+    let grounded: Awaited<ReturnType<typeof vertexSearch>>;
+    try {
+      grounded = await vertexSearch({
+        // buildQuery uses category/industry/yearMonth only — language field is irrelevant
+        query: buildQuery({ ...args, language: "ja" as const }),
+        datastore: "visa_legal",
+        confidenceThreshold: 0.7,
+        sourceAllowlist: route.sourceAllowlist,
+        preferredMinistries: route.preferredMinistries,
+        preferredTags: route.preferredTags,
+        dataStoreGroup: route.dataStoreGroup,
+        maxChunks: 5,
+      });
+    } catch (error) {
+      // Vertex API 障害等を安全なエラー結果に変換 (未処理 rejection を防止)。
+      return toToolErrorResult(error, "search_visa", args.language);
+    }
 
     if (grounded.chunks.length === 0) {
       logger.info(

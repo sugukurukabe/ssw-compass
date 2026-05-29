@@ -25,6 +25,7 @@ import { assertHitlGate } from "../../hitl/lockgate.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";
+import { toToolErrorResult } from "../tool-error.js";
 
 /**
  * テスト可能な内部実装 (instrumentTool の外)
@@ -123,6 +124,18 @@ export const submitGyoseishoshiApprovalHandler = instrumentTool(
   "submit_gyoseishoshi_approval",
   async (rawArgs: unknown): Promise<CallToolResult> => {
     const authContext = getRequestAuthContext();
-    return _submitGyoseishoshiApprovalInner(rawArgs, authContext);
+    try {
+      return await _submitGyoseishoshiApprovalInner(rawArgs, authContext);
+    } catch (error) {
+      // HitlGateError (L2 ロックゲート) 等を利用者向けメッセージ + 免責に変換する。
+      // 言語は raw 入力から best-effort で取得 (失敗時は ja)。inner は throw 契約を維持。
+      const lang =
+        typeof rawArgs === "object" &&
+        rawArgs !== null &&
+        typeof (rawArgs as { language?: unknown }).language === "string"
+          ? ((rawArgs as { language: string }).language as SupportedLanguage)
+          : "ja";
+      return toToolErrorResult(error, "submit_gyoseishoshi_approval", lang);
+    }
   },
 );

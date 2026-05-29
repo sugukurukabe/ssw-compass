@@ -2,11 +2,14 @@
  * submit_gyoseishoshi_approval tests (ADR-014 L2 / ADR-015 H04 / sprint-4-plan §4 B.5)
  */
 
-import type { AuthContextType } from "@ssw/shared-types";
+import { type AuthContextType, DISCLAIMER_BY_LANG } from "@ssw/shared-types";
 import { describe, expect, it, vi } from "vitest";
 import * as writer from "../../../src/audit/writer.js";
 import { HitlGateError } from "../../../src/hitl/lockgate.js";
-import { _submitGyoseishoshiApprovalInner } from "../../../src/tools/submit-gyoseishoshi-approval/handler.js";
+import {
+  _submitGyoseishoshiApprovalInner,
+  submitGyoseishoshiApprovalHandler,
+} from "../../../src/tools/submit-gyoseishoshi-approval/handler.js";
 
 const PRO_GYO: AuthContextType = {
   user_id: "pro-gyo",
@@ -48,6 +51,18 @@ describe("submit_gyoseishoshi_approval — auth", () => {
   it("Pro + gyoseishoshi → success", async () => {
     const result = await _submitGyoseishoshiApprovalInner(BASE_INPUT, PRO_GYO);
     expect(result.isError).toBeFalsy();
+  });
+});
+
+describe("submit_gyoseishoshi_approval — outer wrapper error conversion", () => {
+  it("converts HitlGateError to a safe isError result with the lockgate message + disclaimer", async () => {
+    // 認証コンテキスト未設定 (匿名) → inner が HitlGateError を throw → outer が変換。
+    const result = await submitGyoseishoshiApprovalHandler(BASE_INPUT);
+    expect(result.isError).toBe(true);
+    const block = result.content[0];
+    const text = block !== undefined && block.type === "text" ? block.text : "";
+    expect(text).toContain("Pro 以上の行政書士アカウント");
+    expect(text).toContain(DISCLAIMER_BY_LANG.ja);
   });
 });
 
