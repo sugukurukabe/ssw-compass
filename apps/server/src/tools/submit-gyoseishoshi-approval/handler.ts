@@ -19,8 +19,8 @@ import {
   SubmitGyoseishoshiApprovalInput,
   type SupportedLanguage,
 } from "@ssw/shared-types";
-import type { Request } from "express";
 import { emitAuditEvent, sha256Hex } from "../../audit/writer.js";
+import { getRequestAuthContext } from "../../auth/auth-store.js";
 import { assertHitlGate } from "../../hitl/lockgate.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
@@ -120,10 +120,8 @@ export async function _submitGyoseishoshiApprovalInner(
 
 export const submitGyoseishoshiApprovalHandler = instrumentTool(
   "submit_gyoseishoshi_approval",
-  async (rawArgs: unknown, _extra?: { req?: Request }): Promise<CallToolResult> => {
-    const authContext = (
-      _extra?.req as { authContext?: import("@ssw/shared-types").AuthContextType } | undefined
-    )?.authContext;
+  async (rawArgs: unknown): Promise<CallToolResult> => {
+    const authContext = getRequestAuthContext();
     return _submitGyoseishoshiApprovalInner(rawArgs, authContext);
   },
 );

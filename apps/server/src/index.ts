@@ -1,7 +1,10 @@
 import { randomUUID } from "node:crypto";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
+import { ANONYMOUS_AUTH_CONTEXT } from "@ssw/shared-types";
 import type { Express, Request, Response } from "express";
 import express from "express";
+import { runWithAuthContext } from "./auth/auth-store.js";
+import type { AuthedRequest } from "./auth/resolve-auth.js";
 import { resolveAuth } from "./auth/resolve-auth.js";
 import { logger } from "./logger.js";
 import { createMcpServer } from "./server.js";
@@ -208,7 +211,8 @@ export function createApp(): Express {
         return;
       }
 
-      await transport.handleRequest(req, res, req.body);
+      const authCtx = (req as AuthedRequest).authContext ?? ANONYMOUS_AUTH_CONTEXT;
+      await runWithAuthContext(authCtx, () => transport.handleRequest(req, res, req.body));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "unknown";
       logger.error({ err: message, path: "/mcp" }, "mcp_request_failed");
