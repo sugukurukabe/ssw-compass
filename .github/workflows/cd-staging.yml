@@ -173,7 +173,6 @@ jobs:
             -H "Accept: application/json, text/event-stream" \
             -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-smoke","version":"1.0"},"capabilities":{}}}')
           # Stateless MCP: no mcp-session-id is issued; follow-up requests are self-contained.
-          SESSION_ID=$(echo "$INIT_RESP" | grep -i '^mcp-session-id:' | awk '{print $2}' | tr -d '\r\n')
           curl -sS -X POST "$URL/mcp" \
             -H "X-Serverless-Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
