@@ -24,6 +24,10 @@ import { registerListVisaDocumentsUiResource } from "./tools/list-visa-documents
 import { registerSearchVisaTool, SEARCH_VISA_ANNOTATION } from "./tools/search-visa/index.js";
 import { registerSearchVisaUiResource } from "./tools/search-visa/ui.js";
 import {
+  registerSubmitGyoseishoshiApprovalTool,
+  SUBMIT_GYOSEISHOSHI_APPROVAL_ANNOTATION,
+} from "./tools/submit-gyoseishoshi-approval/index.js";
+import {
   registerValidateZairyuCompatibilityTool,
   VALIDATE_ZAIRYU_COMPATIBILITY_ANNOTATION,
 } from "./tools/validate-zairyu-compatibility/index.js";
@@ -54,6 +58,7 @@ export function createMcpServer(): McpServer {
   registerValidateZairyuCompatibilityUiResource(server);
 
   registerListLawUpdatesTool(server);
+  registerSubmitGyoseishoshiApprovalTool(server);
   registerWorkflowPrompts(server);
   registerCatalogResources(server);
 
@@ -71,6 +76,10 @@ export function createMcpServer(): McpServer {
     {
       name: "validate_zairyu_compatibility",
       annotations: VALIDATE_ZAIRYU_COMPATIBILITY_ANNOTATION,
+    },
+    {
+      name: "submit_gyoseishoshi_approval",
+      annotations: SUBMIT_GYOSEISHOSHI_APPROVAL_ANNOTATION,
     },
   ]);
 
