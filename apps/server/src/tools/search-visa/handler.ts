@@ -15,6 +15,8 @@ export const searchVisa = instrumentTool(
     // extends v3 — backward compatible
     const args = SearchVisaInputV4.parse(rawArgs);
 
+    const disclaimer = DISCLAIMER_BY_LANG[args.language];
+
     const piiCheck = await scrubInputForPII(args);
     if (piiCheck.blocked) {
       logger.warn(
@@ -26,9 +28,12 @@ export const searchVisa = instrumentTool(
         content: [
           {
             type: "text",
+            // 全レスポンス (エラーパス含む) に免責を含める (.cursor/rules/tools.mdc)
+            // Include the disclaimer on every response path, errors included.
+            // Sertakan penafian pada setiap jalur respons, termasuk error.
             text:
               "個人情報 (在留番号・パスポート番号・マイナンバー等) は入力できません。" +
-              "一般的な質問のみ受け付けます。",
+              `一般的な質問のみ受け付けます。\n\n${disclaimer}`,
           },
         ],
       };
@@ -66,9 +71,13 @@ export const searchVisa = instrumentTool(
         content: [
           {
             type: "text",
+            // 空結果でも免責を必ず含める (.cursor/rules/tools.mdc)
+            // Always include the disclaimer even when there are no results.
+            // Selalu sertakan penafian meskipun tidak ada hasil.
             text:
               "公式情報源で該当する内容が見つかりませんでした。" +
-              "出入国在留管理庁公式サイト (https://www.moj.go.jp/isa/) をご確認ください。",
+              "出入国在留管理庁公式サイト (https://www.moj.go.jp/isa/) をご確認ください。" +
+              `\n\n${disclaimer}`,
           },
         ],
       };
@@ -99,7 +108,7 @@ export const searchVisa = instrumentTool(
         sourceDate: c.publishedAt,
         confidence: c.confidence,
       })),
-      disclaimer: DISCLAIMER_BY_LANG[args.language],
+      disclaimer,
       asOf: new Date().toISOString().slice(0, 10),
     });
 

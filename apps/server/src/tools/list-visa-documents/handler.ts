@@ -17,6 +17,8 @@ export const listVisaDocumentsHandler = instrumentTool(
   async (rawArgs: unknown): Promise<CallToolResult> => {
     // v4 schema: output_format + include_omission_conditions + 10言語 (extends v3)
     const args = ListVisaDocumentsInputV4.parse(rawArgs);
+    const lang = args.language as SupportedLanguage;
+    const disclaimer = DISCLAIMER_BY_LANG[lang];
 
     const piiCheck = await scrubInputForPII(args);
     if (piiCheck.blocked) {
@@ -29,9 +31,12 @@ export const listVisaDocumentsHandler = instrumentTool(
         content: [
           {
             type: "text",
+            // 全レスポンス (エラーパス含む) に免責を含める (.cursor/rules/tools.mdc)
+            // Include the disclaimer on every response path, errors included.
+            // Sertakan penafian pada setiap jalur respons, termasuk error.
             text:
               "個人情報 (在留番号・パスポート番号・マイナンバー等) は入力できません。" +
-              "一般的な質問のみ受け付けます。",
+              `一般的な質問のみ受け付けます。\n\n${disclaimer}`,
           },
         ],
       };
@@ -87,18 +92,21 @@ export const listVisaDocumentsHandler = instrumentTool(
         content: [
           {
             type: "text",
+            // 空結果でも免責を必ず含める (.cursor/rules/tools.mdc)
+            // Always include the disclaimer even when there are no results.
+            // Selalu sertakan penafian meskipun tidak ada hasil.
             text:
               "該当の在留資格についての書類一覧は本ツールでは提供していません。" +
-              "出入国在留管理庁公式サイト (https://www.moj.go.jp/isa/) をご確認ください。",
+              "出入国在留管理庁公式サイト (https://www.moj.go.jp/isa/) をご確認ください。" +
+              `\n\n${disclaimer}`,
           },
         ],
       };
     }
 
-    const lang = args.language as SupportedLanguage;
     const payload = ListVisaDocumentsOutput.parse({
       documents,
-      disclaimer: DISCLAIMER_BY_LANG[lang],
+      disclaimer,
       asOf: new Date().toISOString().slice(0, 10),
     });
 

@@ -31,6 +31,8 @@ export const validateZairyuCompatibilityHandler = instrumentTool(
   "validate_zairyu_compatibility",
   async (rawArgs: unknown): Promise<CallToolResult> => {
     const args = ValidateZairyuCompatibilityInput.parse(rawArgs);
+    const lang = args.language as SupportedLanguage;
+    const disclaimer = DISCLAIMER_BY_LANG[lang];
     const piiCheck = await scrubInputForPII(args);
     if (piiCheck.blocked) {
       logger.warn(
@@ -42,9 +44,10 @@ export const validateZairyuCompatibilityHandler = instrumentTool(
         content: [
           {
             type: "text",
+            // 全レスポンス (エラーパス含む) に免責を含める (.cursor/rules/tools.mdc)
             text:
               "個人情報 (在留番号・パスポート番号・マイナンバー等) は入力できません。" +
-              "一般的な質問のみ受け付けます。",
+              `一般的な質問のみ受け付けます。\n\n${disclaimer}`,
           },
         ],
       };
@@ -102,8 +105,6 @@ export const validateZairyuCompatibilityHandler = instrumentTool(
     }
 
     const escalate = compatibility !== "OK";
-    const lang = args.language as SupportedLanguage;
-    const disclaimer = DISCLAIMER_BY_LANG[lang];
 
     let recommendedAction: string;
     if (compatibility === "ILLEGAL") {

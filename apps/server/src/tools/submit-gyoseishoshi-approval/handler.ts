@@ -35,6 +35,8 @@ export async function _submitGyoseishoshiApprovalInner(
   authContext?: import("@ssw/shared-types").AuthContextType | null,
 ): Promise<CallToolResult> {
   const args = SubmitGyoseishoshiApprovalInput.parse(rawArgs);
+  const lang = args.language as SupportedLanguage;
+  const disclaimer = DISCLAIMER_BY_LANG[lang];
   const piiCheck = await scrubInputForPII(args);
   if (piiCheck.blocked) {
     logger.warn(
@@ -46,9 +48,10 @@ export async function _submitGyoseishoshiApprovalInner(
       content: [
         {
           type: "text",
+          // 全レスポンス (エラーパス含む) に免責を含める (.cursor/rules/tools.mdc)
           text:
             "個人情報 (在留番号・パスポート番号・マイナンバー等) は入力できません。" +
-            "一般的な識別子のみ受け付けます。",
+            `一般的な識別子のみ受け付けます。\n\n${disclaimer}`,
         },
       ],
     };
@@ -92,8 +95,6 @@ export async function _submitGyoseishoshiApprovalInner(
     },
     "draft_approved",
   );
-  const lang = args.language as SupportedLanguage;
-  const disclaimer = DISCLAIMER_BY_LANG[lang];
   return {
     content: [
       {
