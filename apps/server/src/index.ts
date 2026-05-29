@@ -1,11 +1,12 @@
 import { randomUUID } from "node:crypto";
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { ANONYMOUS_AUTH_CONTEXT } from "@ssw/shared-types";
+import { ANONYMOUS_AUTH_CONTEXT, LAW_UPDATES_DATASET_REVIEWED_DATE } from "@ssw/shared-types";
 import type { Express, Request, Response } from "express";
 import express from "express";
 import { runWithAuthContext } from "./auth/auth-store.js";
 import type { AuthedRequest } from "./auth/resolve-auth.js";
 import { resolveAuth } from "./auth/resolve-auth.js";
+import { isLawUpdatesDatasetStale, lawUpdatesDatasetAgeDays } from "./law-updates/active-filter.js";
 import { logger } from "./logger.js";
 import { createMcpServer } from "./server.js";
 import { buildServerCard } from "./server-card.js";
@@ -254,8 +255,27 @@ export function createApp(): Express {
   return app;
 }
 
+/**
+ * 制度変動データセットが陳腐化していれば起動時に warning を出す。
+ * Warns at startup when the curated law-updates dataset is stale.
+ * Memperingatkan saat startup bila dataset pembaruan peraturan sudah basi.
+ */
+function warnIfLawUpdatesStale(): void {
+  if (isLawUpdatesDatasetStale()) {
+    logger.warn(
+      {
+        event: "law_updates_dataset_stale",
+        reviewed_date: LAW_UPDATES_DATASET_REVIEWED_DATE,
+        age_days: lawUpdatesDatasetAgeDays(),
+      },
+      "law_updates_dataset_stale — docs/law-updates-maintenance-runbook.md を参照して更新してください",
+    );
+  }
+}
+
 export async function startServer(port?: number): Promise<void> {
   const app = createApp();
+  warnIfLawUpdatesStale();
   const resolvedPort = port ?? Number(process.env["PORT"] ?? DEFAULT_PORT);
   await new Promise<void>((resolve) => {
     app.listen(resolvedPort, () => {

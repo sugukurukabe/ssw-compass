@@ -12,6 +12,7 @@
  */
 
 import type { LawUpdate, LawUpdateStatus } from "@ssw/shared-types";
+import { LAW_UPDATES_DATASET_REVIEWED_DATE, LAW_UPDATES_STALE_AFTER_DAYS } from "@ssw/shared-types";
 
 /**
  * 今日 (JST 深夜0時) の Date を返す。
@@ -66,4 +67,31 @@ export function filterActiveLawUpdates(
 ): readonly LawUpdate[] {
   const recomputed = recomputeLawUpdateStatus(fixture, now);
   return recomputed.filter((e) => e.status === "active");
+}
+
+/**
+ * 制度変動データセットの最終レビューからの経過日数を返す。
+ * Returns the number of days since the law-updates dataset was last reviewed.
+ * Mengembalikan jumlah hari sejak dataset terakhir ditinjau.
+ */
+export function lawUpdatesDatasetAgeDays(
+  reviewedDate: string = LAW_UPDATES_DATASET_REVIEWED_DATE,
+  now: Date = new Date(),
+): number {
+  const reviewedMs = new Date(`${reviewedDate}T00:00:00Z`).getTime();
+  if (Number.isNaN(reviewedMs)) return Number.POSITIVE_INFINITY;
+  return Math.floor((now.getTime() - reviewedMs) / 86400000);
+}
+
+/**
+ * データセットが陳腐化しているか (最終レビューから staleAfterDays を超過) を返す。
+ * Returns whether the dataset is stale (older than staleAfterDays since review).
+ * Mengembalikan apakah dataset sudah basi (melebihi staleAfterDays sejak ditinjau).
+ */
+export function isLawUpdatesDatasetStale(
+  reviewedDate: string = LAW_UPDATES_DATASET_REVIEWED_DATE,
+  staleAfterDays: number = LAW_UPDATES_STALE_AFTER_DAYS,
+  now: Date = new Date(),
+): boolean {
+  return lawUpdatesDatasetAgeDays(reviewedDate, now) > staleAfterDays;
 }
