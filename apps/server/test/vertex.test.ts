@@ -286,6 +286,120 @@ describe("vertexSearch — real mode", () => {
     expect(result.chunks.map((chunk) => chunk.docId)).toEqual(["railway-guide", "generic-ssw"]);
   });
 
+  it("derives confidence from relevanceScore and enforces the 0.7 threshold", async () => {
+    process.env["SSW_VERTEX_MODE"] = "real";
+    process.env["SSW_VERTEX_PROJECT"] = "ssw-test-proj";
+    process.env["SSW_VERTEX_LOCATION"] = "asia-northeast1";
+    process.env["SSW_VERTEX_COLLECTION"] = "default_collection";
+    process.env["SSW_VERTEX_DATA_STORE_ID"] = "visa_legal";
+    process.env["SSW_VERTEX_SERVING_CONFIG_ID"] = "default_serving_config";
+
+    const makeResult = (id: string, score: number) => ({
+      relevanceScore: score,
+      document: {
+        id,
+        derivedStructData: {
+          fields: {
+            link: { stringValue: `https://www.moj.go.jp/isa/${id}.html` },
+            title: { stringValue: id },
+          },
+        },
+        structData: { fields: {} },
+      },
+    });
+
+    const mockClient: SearchClientLike = {
+      projectLocationCollectionDataStoreServingConfigPath: vi.fn(() => "dummy-path"),
+      search: vi
+        .fn()
+        .mockResolvedValue([
+          [makeResult("below", 0.69), makeResult("at", 0.7), makeResult("above", 0.71)],
+          {},
+          {},
+        ]),
+    };
+    __setSearchClientForTesting(mockClient);
+
+    const result = await vertexSearch(BASE_ARGS);
+    const docIds = result.chunks.map((c) => c.docId).sort();
+    expect(docIds).toEqual(["above", "at"]);
+    const at = result.chunks.find((c) => c.docId === "at");
+    expect(at?.confidence).toBe(0.7);
+  });
+
+  it("falls back to a neutral confidence when no score is present", async () => {
+    process.env["SSW_VERTEX_MODE"] = "real";
+    process.env["SSW_VERTEX_PROJECT"] = "ssw-test-proj";
+    process.env["SSW_VERTEX_LOCATION"] = "asia-northeast1";
+    process.env["SSW_VERTEX_COLLECTION"] = "default_collection";
+    process.env["SSW_VERTEX_DATA_STORE_ID"] = "visa_legal";
+    process.env["SSW_VERTEX_SERVING_CONFIG_ID"] = "default_serving_config";
+
+    const mockClient: SearchClientLike = {
+      projectLocationCollectionDataStoreServingConfigPath: vi.fn(() => "dummy-path"),
+      search: vi.fn().mockResolvedValue([
+        [
+          {
+            document: {
+              id: "no-score",
+              derivedStructData: {
+                fields: {
+                  link: { stringValue: "https://www.moj.go.jp/isa/no-score.html" },
+                  title: { stringValue: "no score" },
+                },
+              },
+              structData: { fields: {} },
+            },
+          },
+        ],
+        {},
+        {},
+      ]),
+    };
+    __setSearchClientForTesting(mockClient);
+
+    const result = await vertexSearch(BASE_ARGS);
+    expect(result.chunks.length).toBe(1);
+    expect(result.chunks[0]?.confidence).toBe(0.9);
+  });
+
+  it("derives confidence from modelScores when relevanceScore is absent", async () => {
+    process.env["SSW_VERTEX_MODE"] = "real";
+    process.env["SSW_VERTEX_PROJECT"] = "ssw-test-proj";
+    process.env["SSW_VERTEX_LOCATION"] = "asia-northeast1";
+    process.env["SSW_VERTEX_COLLECTION"] = "default_collection";
+    process.env["SSW_VERTEX_DATA_STORE_ID"] = "visa_legal";
+    process.env["SSW_VERTEX_SERVING_CONFIG_ID"] = "default_serving_config";
+
+    const mockClient: SearchClientLike = {
+      projectLocationCollectionDataStoreServingConfigPath: vi.fn(() => "dummy-path"),
+      search: vi.fn().mockResolvedValue([
+        [
+          {
+            modelScores: { relevance: { values: [0.42] } },
+            document: {
+              id: "low-model-score",
+              derivedStructData: {
+                fields: {
+                  link: { stringValue: "https://www.moj.go.jp/isa/low.html" },
+                  title: { stringValue: "low" },
+                },
+              },
+              structData: { fields: {} },
+            },
+          },
+        ],
+        {},
+        {},
+      ]),
+    };
+    __setSearchClientForTesting(mockClient);
+
+    const result = await vertexSearch(BASE_ARGS);
+    // 0.42 < 0.7 → dropped by the quality gate.
+    expect(result.chunks.length).toBe(0);
+  });
+
   it("demotes operation guides for a different industry", async () => {
     process.env["SSW_VERTEX_MODE"] = "real";
     process.env["SSW_VERTEX_PROJECT"] = "ssw-test-proj";
