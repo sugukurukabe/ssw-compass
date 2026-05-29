@@ -95,3 +95,14 @@ variable "env" {
   description = "Environment label (staging/prod) — attached to service for filtering in logs/billing."
   type        = string
 }
+
+variable "session_affinity" {
+  description = <<-EOT
+    Route requests from the same client to the same instance (best-effort).
+    Helps the Streamable HTTP MCP server, which keeps session state in memory,
+    so an `initialize` session survives the follow-up `tools/list` when the
+    service scales beyond one instance.
+  EOT
+  type        = bool
+  default     = false
+}

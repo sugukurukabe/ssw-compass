@@ -14,9 +14,13 @@ module "cloud_run" {
   image            = "gcr.io/cloudrun/hello"
   runtime_sa_email = var.runtime_sa_email
   max_instances    = 20
-  min_instances    = 0
-  concurrency      = 80
-  ingress          = "INGRESS_TRAFFIC_ALL"
+  # min_instances=1: 1 インスタンスを常時ウォームに保ち、コールドスタートで
+  # Claude のコネクタ接続/ツール読み込みがタイムアウトするのを防ぐ。
+  min_instances = 1
+  concurrency   = 80
+  ingress       = "INGRESS_TRAFFIC_ALL"
+  # MCP セッションはメモリ保持のため、スケール時のセッション喪失を防ぐ。
+  session_affinity = true
   # allow_unauthenticated=true: LB + Cloud Armor (ssw-waf-policy-prod) protect the service.
   # Application-layer auth (SSW_AUTH_MODE=jwt) distinguishes Free/Pro tiers.
   # See ADR-013 §Cloud Run ingress for the auth layering rationale.

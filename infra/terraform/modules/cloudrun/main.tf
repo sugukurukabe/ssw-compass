@@ -14,6 +14,10 @@ resource "google_cloud_run_v2_service" "this" {
   template {
     service_account                  = var.runtime_sa_email
     max_instance_request_concurrency = var.concurrency
+    # MCP Streamable HTTP のセッションはインスタンスのメモリ上に保持されるため、
+    # スケール時に initialize と tools/list が別インスタンスへ振られないよう
+    # session affinity を有効化する (best-effort)。
+    session_affinity = var.session_affinity
 
     scaling {
       min_instance_count = var.min_instances
