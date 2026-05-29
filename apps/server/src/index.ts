@@ -47,8 +47,10 @@ export function createApp(): Express {
           "Official-source visa information for Japanese Specified Skilled Worker (特定技能) procedures.",
         description_for_model:
           "Query Japanese SSW (特定技能) visa procedures grounded in 出入国在留管理庁 official documents. " +
-          "6 read-only tools: search_visa, classify_procedure, get_deadline_timeline, " +
-          "list_visa_documents, list_law_updates, validate_zairyu_compatibility. " +
+          "Six anonymous, read-only information tools: search_visa, classify_procedure, " +
+          "get_deadline_timeline, list_visa_documents, list_law_updates, validate_zairyu_compatibility. " +
+          "One additional Pro-tier tool, submit_gyoseishoshi_approval, records a certified " +
+          "gyoseishoshi's approval and requires authentication; anonymous callers are blocked. " +
           "Anonymous access for general information. Information only — not legal advice. " +
           "Always include the disclaimer in responses.",
         auth: { type: "none" },

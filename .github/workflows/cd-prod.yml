@@ -105,3 +105,30 @@ jobs:
         run: |
           set -euo pipefail
           MCP_URL="${{ github.event.inputs.prod_public_url }}/mcp" node scripts/smoke-mcp.mjs
+
+      - name: MCP tools/call search_visa (real Vertex — expect >= 1 result)
+        run: |
+          set -euo pipefail
+          URL="${{ github.event.inputs.prod_public_url }}"
+          # prod は allow_unauthenticated=true (LB + Cloud Armor) のため Bearer 不要。
+          INIT_RESP=$(curl -sS -i -X POST "$URL/mcp" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-prod-smoke","version":"1.0"},"capabilities":{}}}')
+          SESSION_ID=$(echo "$INIT_RESP" | grep -i '^mcp-session-id:' | awk '{print $2}' | tr -d '\r\n')
+          test -n "$SESSION_ID" || { echo "No mcp-session-id in initialize response"; exit 1; }
+          curl -sS -X POST "$URL/mcp" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -H "mcp-session-id: $SESSION_ID" \
+            -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_visa","arguments":{"category":"tokutei_ginou_1","industry":"construction","language":"ja"}}}' \
+            > /tmp/search-raw.txt
+          if grep -q '^data: ' /tmp/search-raw.txt; then
+            awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/search-raw.txt > /tmp/search.json
+          else
+            cp /tmp/search-raw.txt /tmp/search.json
+          fi
+          head -c 500 /tmp/search.json; echo
+          # 信頼度フィルタ (>= 0.7) が real モードで結果を空にしていないことを検知する。
+          jq -e '.result.isError != true' /tmp/search.json
+          jq -e '.result.structuredContent.results | length >= 1' /tmp/search.json
