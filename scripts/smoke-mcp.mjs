@@ -7,6 +7,7 @@ const REQUIRED_TOOLS = [
   "list_visa_documents",
   "list_law_updates",
   "validate_zairyu_compatibility",
+  "submit_gyoseishoshi_approval",
 ];
 
 const REQUIRED_UI_RESOURCES = [
@@ -117,7 +118,6 @@ await fetch(mcpUrl, {
   headers: {
     "Content-Type": "application/json",
     Accept: "application/json, text/event-stream",
-    "Mcp-Session-Id": sessionId,
   },
   body: JSON.stringify({ jsonrpc: "2.0", method: "notifications/initialized" }),
 });
