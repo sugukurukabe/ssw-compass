@@ -5,29 +5,21 @@
  */
 
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
+import { type SswCompassToolAnnotation, SubmitGyoseishoshiApprovalInput } from "@ssw/shared-types";
 import type { ZodRawShape } from "zod";
-import {
-  SubmitGyoseishoshiApprovalInput,
-  type SswCompassToolAnnotation,
-} from "@ssw/shared-types";
 import { submitGyoseishoshiApprovalHandler } from "./handler.js";
 
-export const SUBMIT_GYOSEISHOSHI_APPROVAL_ANNOTATION: SswCompassToolAnnotation =
-  {
-    readOnlyHint: false,
-    idempotentHint: false,
-    openWorldHint: false,
-    destructiveHint: false,
-    title: "Submit gyoseishoshi approval for drafted documents",
-    legalLevel: "L2",
-    requiresGyoseishoshiAuth: true,
-    hitlControls: [
-      "H01_DRAFT_LOCKGATE",
-      "H04_AUDIT_LOG_7Y",
-      "H07_PII_AUTO_MASKING",
-    ],
-    tier: "pro",
-  };
+export const SUBMIT_GYOSEISHOSHI_APPROVAL_ANNOTATION: SswCompassToolAnnotation = {
+  readOnlyHint: false,
+  idempotentHint: false,
+  openWorldHint: false,
+  destructiveHint: false,
+  title: "Submit gyoseishoshi approval for drafted documents",
+  legalLevel: "L2",
+  requiresGyoseishoshiAuth: true,
+  hitlControls: ["H01_DRAFT_LOCKGATE", "H04_AUDIT_LOG_7Y", "H07_PII_AUTO_MASKING"],
+  tier: "pro",
+};
 
 // ZodEffects (.refine) wraps ZodObject; extract the inner .shape for MCP registration.
 const INNER_SCHEMA = (
@@ -36,9 +28,7 @@ const INNER_SCHEMA = (
   }
 )._def.schema.shape;
 
-export function registerSubmitGyoseishoshiApprovalTool(
-  server: McpServer,
-): void {
+export function registerSubmitGyoseishoshiApprovalTool(server: McpServer): void {
   server.tool(
     "submit_gyoseishoshi_approval",
     "行政書士による書類承認を記録する。改正行政書士法§19 に基づき " +
