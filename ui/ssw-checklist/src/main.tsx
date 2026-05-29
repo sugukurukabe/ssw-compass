@@ -1,6 +1,6 @@
 import { App, applyDocumentTheme, PostMessageTransport } from "@modelcontextprotocol/ext-apps";
 import type { ListVisaDocumentsOutput, UILanguage } from "@ssw/shared-types";
-import { getElement, setInnerHTML } from "@ssw/ui-bridge";
+import { extractToolResultText, getElement, renderNotice, setInnerHTML } from "@ssw/ui-bridge";
 import { render } from "./render.js";
 import { renderSkeleton } from "./skeleton.js";
 import {
@@ -10,6 +10,13 @@ import {
   setNotes,
   toggleDocId,
 } from "./state.js";
+
+// structuredContent が無い (空結果・エラー) tool 結果向けのフォールバック文言。
+const NOTICE_FALLBACK: Record<UILanguage, string> = {
+  ja: "結果を表示できませんでした。もう一度お試しください。",
+  en: "Could not display a result. Please try again.",
+  id: "Tidak dapat menampilkan hasil. Silakan coba lagi.",
+};
 
 type HostContextChangedParams = {
   theme?: Parameters<typeof applyDocumentTheme>[0];
@@ -75,7 +82,11 @@ app.ontoolinput = () => {
 
 app.ontoolresult = (params) => {
   const structured = params.structuredContent;
-  if (structured === undefined) return;
+  if (structured === undefined) {
+    // 空結果・エラー時は skeleton のままにせず、返却テキストを通知として表示する。
+    renderNotice(root, extractToolResultText(params) ?? NOTICE_FALLBACK[currentLang]);
+    return;
+  }
   currentDocs = structured as ListVisaDocumentsOutput;
   current = EMPTY_STATE;
   lastCommitted = null;

@@ -6,6 +6,7 @@ import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";
 import { sanitizeRetrievedSnippet } from "../../safety/output-sanitizer.js";
 import { vertexSearch } from "../../vertex.js";
+import { toToolErrorResult } from "../tool-error.js";
 import {
   classifyProcedure,
   PROCEDURE_LABEL,
@@ -36,9 +37,10 @@ export const classifyProcedureHandler = instrumentTool(
         content: [
           {
             type: "text",
+            // 全レスポンス (エラーパス含む) に免責を含める (.cursor/rules/tools.mdc)
             text:
               "個人情報 (在留番号・パスポート番号・マイナンバー等) は入力できません。" +
-              "一般的な質問のみ受け付けます。",
+              `一般的な質問のみ受け付けます。\n\n${DISCLAIMER_BY_LANG[args.language]}`,
           },
         ],
       };
@@ -47,12 +49,18 @@ export const classifyProcedureHandler = instrumentTool(
     const t0 = performance.now();
     const decision = classifyProcedure(args);
 
-    const grounded = await vertexSearch({
-      query: buildClassifyQuery(args, decision),
-      datastore: "visa_legal",
-      confidenceThreshold: 0.7,
-      sourceAllowlist: ["*.go.jp"],
-    });
+    let grounded: Awaited<ReturnType<typeof vertexSearch>>;
+    try {
+      grounded = await vertexSearch({
+        query: buildClassifyQuery(args, decision),
+        datastore: "visa_legal",
+        confidenceThreshold: 0.7,
+        sourceAllowlist: ["*.go.jp"],
+      });
+    } catch (error) {
+      // Vertex API 障害等を安全なエラー結果に変換 (未処理 rejection を防止)。
+      return toToolErrorResult(error, "classify_procedure", args.language);
+    }
 
     const sanitizedReferences = grounded.chunks.map((c) => {
       const result = sanitizeRetrievedSnippet(c.snippet);

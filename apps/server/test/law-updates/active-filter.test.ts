@@ -8,6 +8,8 @@ import { KNOWN_LAW_UPDATES_FIXTURE } from "@ssw/shared-types";
 import { describe, expect, it } from "vitest";
 import {
   filterActiveLawUpdates,
+  isLawUpdatesDatasetStale,
+  lawUpdatesDatasetAgeDays,
   recomputeLawUpdateStatus,
 } from "../../src/law-updates/active-filter.js";
 
@@ -84,6 +86,27 @@ describe("recomputeLawUpdateStatus", () => {
     const fixture = [makeEntry({ effective_date: "2020-01-01", status: "withdrawn" })];
     const result = recomputeLawUpdateStatus(fixture, FUTURE_DATE);
     expect(result[0]?.status).toBe("withdrawn");
+  });
+});
+
+describe("law-updates dataset freshness", () => {
+  it("computes age in days from the reviewed date", () => {
+    const age = lawUpdatesDatasetAgeDays("2026-01-01", new Date("2026-01-11T00:00:00Z"));
+    expect(age).toBe(10);
+  });
+
+  it("is not stale within the threshold", () => {
+    expect(isLawUpdatesDatasetStale("2026-01-01", 90, new Date("2026-02-01T00:00:00Z"))).toBe(
+      false,
+    );
+  });
+
+  it("is stale past the threshold", () => {
+    expect(isLawUpdatesDatasetStale("2026-01-01", 90, new Date("2026-06-01T00:00:00Z"))).toBe(true);
+  });
+
+  it("treats an invalid reviewed date as stale", () => {
+    expect(isLawUpdatesDatasetStale("not-a-date", 90, new Date("2026-06-01T00:00:00Z"))).toBe(true);
   });
 });
 

@@ -25,6 +25,34 @@ This checks:
 - primary-source-only trust level
 - routing group validity
 
+### 1b. Check URL health (公式 URL の死活確認 / periodic)
+
+`data/source-index.jsonl` の全 URL の死活を確認し、`data/url-health-report.<date>.md` を生成する。
+ingest 前と、最低でも月1回の定期実行を推奨 (公式サイトの URL は予告なく変わる)。
+
+```bash
+# report のみ (source-index は変更しない)
+pnpm check:url-health
+
+# source-index の status/lastRunAt も更新する場合
+pnpm check:url-health -- --write
+```
+
+判定の読み方:
+
+- **HTTP 403 / 401 (bot ブロックの可能性)**: 多くは自動アクセス拒否で、人間がブラウザで開けば
+  有効な場合がある。即 withdrawn にせず、手動でブラウザ確認する。
+- **HTTP 404 / 410 (恒久的消失の可能性)**: リンク切れの可能性が高い。一次ソースを再確認し、
+  新しい canonical URL に差し替えるか `status: "withdrawn"` にする。
+- **timeout**: ネットワーク／レート制限の可能性。再実行し、継続する場合のみ対処する。
+
+失敗があると終了コード 1 を返すため、CI / 定期ジョブで検知できる
+(常に 0 にしたい場合は `-- --allow-failures`)。
+
+> 16 分野のカバレッジ拡充 (新規 URL 追加) と失敗 URL の差し替えは、
+> 行政書士監修を伴う人手作業。`feat/ssw-16-industries-manual-sources` 等のブランチで
+> 進め、監修サインオフ後に `main` へ取り込む (自動マージはしない)。
+
 ## 2. Prepare GCS documents and metadata
 
 Dry-run first:

@@ -1,12 +1,9 @@
 name: CD — prod (manual only)
 
-# Batch 3 delivers this workflow but explicitly does NOT run it.
-# Prod apply + first revision are gated to Batch 6 once Cloud Armor +
-# Cloudflare are in place. Until then, dispatching this workflow will
-# succeed the build/push stages but the deploy stage will place the
-# revision behind INGRESS_TRAFFIC_INTERNAL_LOAD_BALANCER — not
-# reachable from the internet, and the smoke-test step will fail.
-# That failure is by design during Batches 3–5.
+# Manual prod deploy. Production is live behind the Global HTTPS LB + Cloud
+# Armor at https://mcp.ssw-compass.jp. After deploy, the smoke-test job probes
+# the public endpoint (health, well-known, MCP tools, UI resources). If the
+# public URL differs, override PROD_PUBLIC_URL via workflow input.
 
 on:
   workflow_dispatch:
@@ -18,6 +15,10 @@ on:
         description: "Type 'yes' to confirm prod deploy intent"
         required: true
         default: "no"
+      prod_public_url:
+        description: "Public base URL for post-deploy smoke test"
+        required: false
+        default: "https://mcp.ssw-compass.jp"
 
 concurrency:
   group: cd-prod
@@ -72,8 +73,62 @@ jobs:
             --image=${{ env.AR_REPO_URL }}/${{ env.IMAGE_NAME }}:${TAG} \
             --quiet
 
-      - name: Describe (internal-LB, public URL not reachable until Batch 6)
+      - name: Describe deployed revision
         run: |
           gcloud run services describe ${{ env.SERVICE_NAME }} \
             --region=${{ env.REGION }} \
             --format='yaml(metadata.annotations."run.googleapis.com/ingress",spec.template.spec.serviceAccountName,status.latestReadyRevisionName)'
+
+  smoke-test:
+    name: Smoke test (prod public endpoint)
+    needs: deploy
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Public health + well-known probes
+        run: |
+          set -euo pipefail
+          BASE="${{ github.event.inputs.prod_public_url }}"
+          echo "Probing $BASE ..."
+          curl -fsS --max-time 15 "$BASE/health" | tee /tmp/health.json
+          jq -e '.status == "ok" and .service == "ssw-mcp"' /tmp/health.json
+          curl -fsS --max-time 15 "$BASE/.well-known/mcp.json" | jq -e '.name == "SSW Compass"'
+          curl -fsS --max-time 15 "$BASE/privacy" | grep -q 'SSW Compass Privacy Policy'
+          curl -fsS --max-time 15 "$BASE/.well-known/ai-plugin.json" | jq -e '.name_for_human == "SSW Compass Japan"'
+          curl -fsS --max-time 15 "$BASE/.well-known/openapi.json" | jq -e '.openapi == "3.1.0"'
+
+      - name: MCP protocol smoke (tools / UI resources / CSP)
+        run: |
+          set -euo pipefail
+          MCP_URL="${{ github.event.inputs.prod_public_url }}/mcp" node scripts/smoke-mcp.mjs
+
+      - name: MCP tools/call search_visa (real Vertex — expect >= 1 result)
+        run: |
+          set -euo pipefail
+          URL="${{ github.event.inputs.prod_public_url }}"
+          # prod は allow_unauthenticated=true (LB + Cloud Armor) のため Bearer 不要。
+          INIT_RESP=$(curl -sS -i -X POST "$URL/mcp" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-prod-smoke","version":"1.0"},"capabilities":{}}}')
+          SESSION_ID=$(echo "$INIT_RESP" | grep -i '^mcp-session-id:' | awk '{print $2}' | tr -d '\r\n')
+          test -n "$SESSION_ID" || { echo "No mcp-session-id in initialize response"; exit 1; }
+          curl -sS -X POST "$URL/mcp" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -H "mcp-session-id: $SESSION_ID" \
+            -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_visa","arguments":{"category":"tokutei_ginou_1","industry":"construction","language":"ja"}}}' \
+            > /tmp/search-raw.txt
+          if grep -q '^data: ' /tmp/search-raw.txt; then
+            awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/search-raw.txt > /tmp/search.json
+          else
+            cp /tmp/search-raw.txt /tmp/search.json
+          fi
+          head -c 500 /tmp/search.json; echo
+          # 信頼度フィルタ (>= 0.7) が real モードで結果を空にしていないことを検知する。
+          jq -e '.result.isError != true' /tmp/search.json
+          jq -e '.result.structuredContent.results | length >= 1' /tmp/search.json

@@ -6,6 +6,7 @@ import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";
 import { sanitizeRetrievedSnippet } from "../../safety/output-sanitizer.js";
 import { vertexSearch } from "../../vertex.js";
+import { toToolErrorResult } from "../tool-error.js";
 import { buildQuery, SearchVisaOutput } from "./schema.js";
 
 export const searchVisa = instrumentTool(
@@ -14,6 +15,8 @@ export const searchVisa = instrumentTool(
     // v4 schema (10言語 + response_style + enable_followup_suggestions)
     // extends v3 — backward compatible
     const args = SearchVisaInputV4.parse(rawArgs);
+
+    const disclaimer = DISCLAIMER_BY_LANG[args.language];
 
     const piiCheck = await scrubInputForPII(args);
     if (piiCheck.blocked) {
@@ -26,9 +29,12 @@ export const searchVisa = instrumentTool(
         content: [
           {
             type: "text",
+            // 全レスポンス (エラーパス含む) に免責を含める (.cursor/rules/tools.mdc)
+            // Include the disclaimer on every response path, errors included.
+            // Sertakan penafian pada setiap jalur respons, termasuk error.
             text:
               "個人情報 (在留番号・パスポート番号・マイナンバー等) は入力できません。" +
-              "一般的な質問のみ受け付けます。",
+              `一般的な質問のみ受け付けます。\n\n${disclaimer}`,
           },
         ],
       };
@@ -45,17 +51,23 @@ export const searchVisa = instrumentTool(
 
     const t0 = performance.now();
     const route = routeForIndustry(args.industry);
-    const grounded = await vertexSearch({
-      // buildQuery uses category/industry/yearMonth only — language field is irrelevant
-      query: buildQuery({ ...args, language: "ja" as const }),
-      datastore: "visa_legal",
-      confidenceThreshold: 0.7,
-      sourceAllowlist: route.sourceAllowlist,
-      preferredMinistries: route.preferredMinistries,
-      preferredTags: route.preferredTags,
-      dataStoreGroup: route.dataStoreGroup,
-      maxChunks: 5,
-    });
+    let grounded: Awaited<ReturnType<typeof vertexSearch>>;
+    try {
+      grounded = await vertexSearch({
+        // buildQuery uses category/industry/yearMonth only — language field is irrelevant
+        query: buildQuery({ ...args, language: "ja" as const }),
+        datastore: "visa_legal",
+        confidenceThreshold: 0.7,
+        sourceAllowlist: route.sourceAllowlist,
+        preferredMinistries: route.preferredMinistries,
+        preferredTags: route.preferredTags,
+        dataStoreGroup: route.dataStoreGroup,
+        maxChunks: 5,
+      });
+    } catch (error) {
+      // Vertex API 障害等を安全なエラー結果に変換 (未処理 rejection を防止)。
+      return toToolErrorResult(error, "search_visa", args.language);
+    }
 
     if (grounded.chunks.length === 0) {
       logger.info(
@@ -66,9 +78,13 @@ export const searchVisa = instrumentTool(
         content: [
           {
             type: "text",
+            // 空結果でも免責を必ず含める (.cursor/rules/tools.mdc)
+            // Always include the disclaimer even when there are no results.
+            // Selalu sertakan penafian meskipun tidak ada hasil.
             text:
               "公式情報源で該当する内容が見つかりませんでした。" +
-              "出入国在留管理庁公式サイト (https://www.moj.go.jp/isa/) をご確認ください。",
+              "出入国在留管理庁公式サイト (https://www.moj.go.jp/isa/) をご確認ください。" +
+              `\n\n${disclaimer}`,
           },
         ],
       };
@@ -99,7 +115,7 @@ export const searchVisa = instrumentTool(
         sourceDate: c.publishedAt,
         confidence: c.confidence,
       })),
-      disclaimer: DISCLAIMER_BY_LANG[args.language],
+      disclaimer,
       asOf: new Date().toISOString().slice(0, 10),
     });
 

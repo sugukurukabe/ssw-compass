@@ -1,7 +1,10 @@
 import { App, applyDocumentTheme, PostMessageTransport } from "@modelcontextprotocol/ext-apps";
 import type { ValidateZairyuCompatibilityOutput } from "@ssw/shared-types";
-import { getElement, setInnerHTML } from "@ssw/ui-bridge";
+import { extractToolResultText, getElement, renderNotice, setInnerHTML } from "@ssw/ui-bridge";
 import DOMPurify from "dompurify";
+
+// structuredContent が無い (空結果・エラー) tool 結果向けのフォールバック文言。
+const NOTICE_FALLBACK = "結果を表示できませんでした。もう一度お試しください。";
 
 type HostContextChangedParams = {
   theme?: Parameters<typeof applyDocumentTheme>[0];
@@ -19,7 +22,11 @@ app.onhostcontextchanged = (params: HostContextChangedParams) => {
 
 app.ontoolresult = (params) => {
   const structured = params.structuredContent;
-  if (structured === undefined) return;
+  if (structured === undefined) {
+    // 空結果・エラー時は「確認中」のままにせず、返却テキストを通知として表示する。
+    renderNotice(root, extractToolResultText(params) ?? NOTICE_FALLBACK);
+    return;
+  }
   render(structured as ValidateZairyuCompatibilityOutput);
 };
 

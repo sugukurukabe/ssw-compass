@@ -14,15 +14,17 @@ import { SearchServiceClient } from "@google-cloud/discoveryengine";
  *   any one throws immediately (silent fallback to fixture is rejected
  *   for auditability).
  *
- * Confidence scoring is **currently fixed at 0.9 for both modes** as a
- * Sprint 2 carry-over. This means `args.confidenceThreshold` (the
- * handler-site >= 0.7 guard) is satisfied trivially in real mode today,
- * and fine-grained ranking from Vertex is not yet honoured.
- * Sprint 4 Phase 1.4 replaces this with a real mapping from Vertex
- * `modelScores` (see docs/sprint-4-pending.md) and makes the threshold
- * meaningful end-to-end. Until that lands, do NOT rely on confidence
- * in real mode for filtering business logic beyond the handler-level
- * `>= 0.7` smoke check.
+ * Confidence scoring:
+ * - fixture mode keeps the curated 0.9 values (primary_source samples).
+ * - real mode derives confidence from the Vertex result via
+ *   `extractConfidence()` — preferring the normalized `relevanceScore`,
+ *   then `modelScores`, and only falling back to a neutral
+ *   DEFAULT_REAL_CONFIDENCE (0.9) when neither is present (so results
+ *   from a serving config without scoring do not silently disappear).
+ *   `realSearch` then enforces `args.confidenceThreshold` (>= 0.7 at the
+ *   handler sites), dropping low-relevance results before ranking. This
+ *   makes the "primary_source AND confidence >= 0.7" contract meaningful
+ *   end-to-end (see 00-global-context.mdc §4).
  *
  * The `VertexSearchArgs` / `VertexSearchResult` / `GroundedChunk` contract
  * is frozen — handler sites (search-visa, classify-procedure,
@@ -248,7 +250,65 @@ type SearchResultDoc = {
   derivedStructData?: { fields?: { [k: string]: unknown } | null } | null;
   structData?: { fields?: { [k: string]: unknown } | null } | null;
 };
-type SearchResult = { document?: SearchResultDoc | null };
+type SearchResult = {
+  document?: SearchResultDoc | null;
+  // Vertex AI Search が返す正規化済み関連度スコア (0..1)。serving config で
+  // relevance score が有効な場合に提供される。
+  // Normalized relevance score (0..1) returned when enabled on the serving config.
+  // Skor relevansi ternormalisasi (0..1) bila diaktifkan pada serving config.
+  relevanceScore?: number | null;
+  relevance_score?: number | null;
+  // Google が提供する追加スコア群: map<string, DoubleList>。
+  modelScores?: { [k: string]: unknown } | null;
+  model_scores?: { [k: string]: unknown } | null;
+};
+
+// スコアが一切取得できない実モード結果に与える中立値。
+// 0.7 ゲートを通過させ、従来 (固定 0.9) の挙動を回帰させないための既定値。
+// Neutral fallback for real-mode results that expose no score; preserves the
+// pre-existing pass-through behaviour and clears the 0.7 gate.
+// Nilai netral untuk hasil mode-real tanpa skor; menjaga perilaku lama.
+const DEFAULT_REAL_CONFIDENCE = 0.9;
+
+function clamp01(value: number): number {
+  if (value < 0) return 0;
+  if (value > 1) return 1;
+  return value;
+}
+
+function extractModelScore(modelScores: unknown): number | undefined {
+  if (modelScores === null || modelScores === undefined) return undefined;
+  const entries =
+    modelScores instanceof Map
+      ? Array.from(modelScores.values())
+      : typeof modelScores === "object"
+        ? Object.values(modelScores as Record<string, unknown>)
+        : [];
+  for (const entry of entries) {
+    if (typeof entry === "number" && Number.isFinite(entry)) return entry;
+    const values = (entry as { values?: unknown } | null | undefined)?.values;
+    if (Array.isArray(values)) {
+      const first = values.find((v) => typeof v === "number" && Number.isFinite(v));
+      if (typeof first === "number") return first;
+    }
+  }
+  return undefined;
+}
+
+/**
+ * Vertex AI Search 結果から信頼度 (0..1) を導出する。
+ * Derives a confidence score (0..1) from a Vertex AI Search result.
+ * Menurunkan skor kepercayaan (0..1) dari hasil Vertex AI Search.
+ *
+ * 優先順位: relevanceScore → modelScores → 中立既定値 (DEFAULT_REAL_CONFIDENCE)。
+ */
+function extractConfidence(result: SearchResult): number {
+  const direct = result.relevanceScore ?? result.relevance_score;
+  if (typeof direct === "number" && Number.isFinite(direct)) return clamp01(direct);
+  const fromModel = extractModelScore(result.modelScores ?? result.model_scores);
+  if (fromModel !== undefined) return clamp01(fromModel);
+  return DEFAULT_REAL_CONFIDENCE;
+}
 
 function discoveryEngineApiEndpoint(location: string): string {
   return location === "global"
@@ -286,11 +346,11 @@ function resultToChunk(result: SearchResult): GroundedChunk | null {
     title,
     snippet,
     uri: link,
-    // Placeholder — Sprint 4 Phase 1.4 will replace this with a
-    // mapping from Vertex `modelScores` so `confidenceThreshold`
-    // actually filters low-relevance results in real mode. See the
-    // top-of-file docstring for the migration plan.
-    confidence: 0.9,
+    // Vertex の relevanceScore / modelScores から信頼度を導出する。
+    // スコアが無い場合のみ中立既定値 (DEFAULT_REAL_CONFIDENCE) を使う。
+    // Derived from Vertex relevance/model scores; neutral default only when absent.
+    // Diturunkan dari skor relevansi/model Vertex; default netral hanya bila tidak ada.
+    confidence: extractConfidence(result),
     publishedAt,
     docId,
     ...(canonicalUrl !== undefined ? { canonicalUrl } : {}),
@@ -408,6 +468,10 @@ async function realSearch(
     const chunk = resultToChunk(r);
     if (chunk === null) continue;
     if (!isAllowedUri(chunk.uri, args.sourceAllowlist)) continue;
+    // 公式情報の品質ゲート: confidenceThreshold (>= 0.7) 未満の低関連結果を除外する。
+    // Quality gate: drop low-relevance results below confidenceThreshold (>= 0.7).
+    // Gerbang kualitas: buang hasil relevansi rendah di bawah confidenceThreshold.
+    if (chunk.confidence < args.confidenceThreshold) continue;
     chunks.push(chunk);
   }
   chunks.sort((a, b) => routingScore(b, args) - routingScore(a, args));

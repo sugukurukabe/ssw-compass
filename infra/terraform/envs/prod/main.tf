@@ -14,9 +14,13 @@ module "cloud_run" {
   image            = "gcr.io/cloudrun/hello"
   runtime_sa_email = var.runtime_sa_email
   max_instances    = 20
-  min_instances    = 0
-  concurrency      = 80
-  ingress          = "INGRESS_TRAFFIC_ALL"
+  # min_instances=1: 1 インスタンスを常時ウォームに保ち、コールドスタートで
+  # Claude のコネクタ接続/ツール読み込みがタイムアウトするのを防ぐ。
+  min_instances = 1
+  concurrency   = 80
+  ingress       = "INGRESS_TRAFFIC_ALL"
+  # MCP セッションはメモリ保持のため、スケール時のセッション喪失を防ぐ。
+  session_affinity = true
   # allow_unauthenticated=true: LB + Cloud Armor (ssw-waf-policy-prod) protect the service.
   # Application-layer auth (SSW_AUTH_MODE=jwt) distinguishes Free/Pro tiers.
   # See ADR-013 §Cloud Run ingress for the auth layering rationale.
@@ -38,6 +42,9 @@ module "cloud_run" {
     # Sprint 4 failure was likely DLP API cold-start on first prod request.
     DLP_ENABLED           = "true"
     CLOUDSDK_CORE_PROJECT = var.project_id
+    # ADR-013: 明示的に jwt モード (コード既定値と同じ)。token 無し → 匿名 Free、
+    # 不正 token → 401。staging との parity のため明示する。
+    SSW_AUTH_MODE = "jwt"
   }
   # ADR-013: SSW_JWT_SECRET from Secret Manager.
   # gcloud secrets create ssw-jwt-secret --project=PROJECT_ID
@@ -45,6 +52,14 @@ module "cloud_run" {
   secret_env_vars = {
     SSW_JWT_SECRET = "ssw-jwt-secret"
   }
+
+  # ADR-012: route all Cloud Run egress through the prod VPC connector so
+  # outbound traffic exits via the Cloud NAT static IP (parity with staging).
+  # Without this, prod egress used the default Cloud Run path and the pinned
+  # NAT IP did not apply.
+  vpc_connector_id = module.vpc_egress.connector_id
+
+  depends_on = [module.vpc_egress]
 }
 
 module "logging" {

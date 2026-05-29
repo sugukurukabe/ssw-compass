@@ -25,6 +25,7 @@ import { assertHitlGate } from "../../hitl/lockgate.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";
+import { toToolErrorResult } from "../tool-error.js";
 
 /**
  * テスト可能な内部実装 (instrumentTool の外)
@@ -35,6 +36,8 @@ export async function _submitGyoseishoshiApprovalInner(
   authContext?: import("@ssw/shared-types").AuthContextType | null,
 ): Promise<CallToolResult> {
   const args = SubmitGyoseishoshiApprovalInput.parse(rawArgs);
+  const lang = args.language as SupportedLanguage;
+  const disclaimer = DISCLAIMER_BY_LANG[lang];
   const piiCheck = await scrubInputForPII(args);
   if (piiCheck.blocked) {
     logger.warn(
@@ -46,9 +49,10 @@ export async function _submitGyoseishoshiApprovalInner(
       content: [
         {
           type: "text",
+          // 全レスポンス (エラーパス含む) に免責を含める (.cursor/rules/tools.mdc)
           text:
             "個人情報 (在留番号・パスポート番号・マイナンバー等) は入力できません。" +
-            "一般的な識別子のみ受け付けます。",
+            `一般的な識別子のみ受け付けます。\n\n${disclaimer}`,
         },
       ],
     };
@@ -92,8 +96,6 @@ export async function _submitGyoseishoshiApprovalInner(
     },
     "draft_approved",
   );
-  const lang = args.language as SupportedLanguage;
-  const disclaimer = DISCLAIMER_BY_LANG[lang];
   return {
     content: [
       {
@@ -122,6 +124,18 @@ export const submitGyoseishoshiApprovalHandler = instrumentTool(
   "submit_gyoseishoshi_approval",
   async (rawArgs: unknown): Promise<CallToolResult> => {
     const authContext = getRequestAuthContext();
-    return _submitGyoseishoshiApprovalInner(rawArgs, authContext);
+    try {
+      return await _submitGyoseishoshiApprovalInner(rawArgs, authContext);
+    } catch (error) {
+      // HitlGateError (L2 ロックゲート) 等を利用者向けメッセージ + 免責に変換する。
+      // 言語は raw 入力から best-effort で取得 (失敗時は ja)。inner は throw 契約を維持。
+      const lang =
+        typeof rawArgs === "object" &&
+        rawArgs !== null &&
+        typeof (rawArgs as { language?: unknown }).language === "string"
+          ? ((rawArgs as { language: string }).language as SupportedLanguage)
+          : "ja";
+      return toToolErrorResult(error, "submit_gyoseishoshi_approval", lang);
+    }
   },
 );

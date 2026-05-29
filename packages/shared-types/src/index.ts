@@ -95,6 +95,8 @@ export {
   AffectingRole,
   ImpactSeverity,
   KNOWN_LAW_UPDATES_FIXTURE,
+  LAW_UPDATES_DATASET_REVIEWED_DATE,
+  LAW_UPDATES_STALE_AFTER_DAYS,
   LawUpdate,
   LawUpdateCategory,
   LawUpdateStatus,

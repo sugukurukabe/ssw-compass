@@ -87,6 +87,26 @@ export const LawUpdate = z
   .strict();
 export type LawUpdate = z.infer<typeof LawUpdate>;
 
+// ─── Dataset freshness metadata ─────────────────────────────────────────────
+
+/**
+ * 制度変動データセット (KNOWN_LAW_UPDATES_FIXTURE) を一次ソースと突き合わせて
+ * 確認した最終レビュー日 (YYYY-MM-DD)。
+ * Last date the curated law-updates dataset was reviewed against primary sources.
+ * Tanggal terakhir dataset pembaruan peraturan ditinjau terhadap sumber resmi.
+ *
+ * 更新手順: docs/law-updates-maintenance-runbook.md
+ * 値を更新する際は、必ず一次ソース (moj.go.jp 等) を確認すること。
+ */
+export const LAW_UPDATES_DATASET_REVIEWED_DATE = "2026-05-29";
+
+/**
+ * データセットがこの日数を超えてレビューされていない場合、起動時に warning を出す。
+ * Staleness threshold (days); a startup warning fires if the dataset is older.
+ * Ambang basi (hari); peringatan startup muncul bila dataset lebih lama dari ini.
+ */
+export const LAW_UPDATES_STALE_AFTER_DAYS = 90;
+
 // ─── Fixture (Sprint 4 hardcoded, Sprint 5 → Vertex AI Search) ──────────────
 
 /**

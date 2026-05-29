@@ -12,6 +12,7 @@ import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";
 import { sanitizeRetrievedSnippet } from "../../safety/output-sanitizer.js";
 import { vertexSearch } from "../../vertex.js";
+import { toToolErrorResult } from "../tool-error.js";
 import { computeTimeline } from "./deadline-calc.js";
 import { buildTimelineQuery, GetDeadlineTimelineOutput } from "./schema.js";
 
@@ -32,17 +33,26 @@ export const getDeadlineTimelineHandler = instrumentTool(
       const tier = authContext?.tier ?? "free";
 
       if (tier === "free" && args.cases.length > FREE_TIER_CASES_LIMIT) {
-        throw new TierLimitError(
-          "free",
-          "cases",
-          `Free プランでは在留期限ダッシュボードは${FREE_TIER_CASES_LIMIT}名までです。Pro なら${PRO_TIER_CASES_LIMIT}名まで管理できます。`,
+        // Tier 制限は想定済みの制御エラー: 利用者向けメッセージ + 免責を返す。
+        return toToolErrorResult(
+          new TierLimitError(
+            "free",
+            "cases",
+            `Free プランでは在留期限ダッシュボードは${FREE_TIER_CASES_LIMIT}名までです。Pro なら${PRO_TIER_CASES_LIMIT}名まで管理できます。`,
+          ),
+          "get_deadline_timeline",
+          args.language,
         );
       }
       if (tier === "pro" && args.cases.length > PRO_TIER_CASES_LIMIT) {
-        throw new TierLimitError(
-          "pro",
-          "cases",
-          `Pro プランでは在留期限ダッシュボードは${PRO_TIER_CASES_LIMIT}名までです。Business なら無制限です。`,
+        return toToolErrorResult(
+          new TierLimitError(
+            "pro",
+            "cases",
+            `Pro プランでは在留期限ダッシュボードは${PRO_TIER_CASES_LIMIT}名までです。Business なら無制限です。`,
+          ),
+          "get_deadline_timeline",
+          args.language,
         );
       }
     }
@@ -58,9 +68,10 @@ export const getDeadlineTimelineHandler = instrumentTool(
         content: [
           {
             type: "text",
+            // 全レスポンス (エラーパス含む) に免責を含める (.cursor/rules/tools.mdc)
             text:
               "個人情報 (在留番号・パスポート番号・マイナンバー等) は入力できません。" +
-              "一般的な質問のみ受け付けます。",
+              `一般的な質問のみ受け付けます。\n\n${DISCLAIMER_BY_LANG[args.language]}`,
           },
         ],
       };
@@ -72,12 +83,18 @@ export const getDeadlineTimelineHandler = instrumentTool(
     const v3Args = { ...args, language: "ja" as const };
     const deadlines = computeTimeline(v3Args);
 
-    const grounded = await vertexSearch({
-      query: buildTimelineQuery(v3Args),
-      datastore: "visa_legal",
-      confidenceThreshold: 0.7,
-      sourceAllowlist: ["*.go.jp"],
-    });
+    let grounded: Awaited<ReturnType<typeof vertexSearch>>;
+    try {
+      grounded = await vertexSearch({
+        query: buildTimelineQuery(v3Args),
+        datastore: "visa_legal",
+        confidenceThreshold: 0.7,
+        sourceAllowlist: ["*.go.jp"],
+      });
+    } catch (error) {
+      // Vertex API 障害等を安全なエラー結果に変換 (未処理 rejection を防止)。
+      return toToolErrorResult(error, "get_deadline_timeline", args.language);
+    }
 
     const sanitizedReferences = grounded.chunks.map((c) => {
       const result = sanitizeRetrievedSnippet(c.snippet);
