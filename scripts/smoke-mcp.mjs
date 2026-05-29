@@ -101,8 +101,11 @@ const init = await rpc(
   1,
 );
 
+// Stateless Streamable HTTP: the server does NOT issue an mcp-session-id, and
+// every request is self-contained. sessionId is therefore expected to be
+// undefined; follow-up requests omit the header.
 const sessionId = init.response.headers.get("mcp-session-id") ?? undefined;
-expect(sessionId !== undefined, "initialize returns mcp-session-id");
+expect(sessionId === undefined, "initialize is stateless (no mcp-session-id)");
 expect(init.payload.result?.capabilities?.tools !== undefined, "initialize advertises tools");
 expect(
   init.payload.result?.capabilities?.resources !== undefined,
