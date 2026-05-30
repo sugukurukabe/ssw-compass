@@ -168,10 +168,13 @@ export function createApp(): Express {
   // correct model for serverless. No `mcp-session-id` is issued.
   app.post("/mcp", resolveAuth, async (req: Request, res: Response) => {
     const server = createMcpServer();
-    // Stateless: omit sessionIdGenerator entirely. Under exactOptionalPropertyTypes
-    // an explicit `undefined` is rejected for the optional `() => string`, so the
-    // absence of the option is what selects stateless mode.
-    const transport = new StreamableHTTPServerTransport({});
+    // Stateless: the SDK requires sessionIdGenerator to be explicitly undefined.
+    // Its type is `sessionIdGenerator?: () => string`, so exactOptionalPropertyTypes
+    // rejects `{ sessionIdGenerator: undefined }`; use a narrow cast around the SDK
+    // option shape rather than weakening app code types.
+    const transport = new StreamableHTTPServerTransport({
+      sessionIdGenerator: undefined,
+    } as unknown as ConstructorParameters<typeof StreamableHTTPServerTransport>[0]);
     res.on("close", () => {
       void transport.close();
       void server.close();
