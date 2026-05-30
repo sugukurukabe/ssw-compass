@@ -37,7 +37,11 @@ const REQUIRED_DYNAMIC_RESOURCES = [
   "ssw://catalog/notifications/regular_report",
 ];
 
-const REQUIRED_PROMPTS = ["ssw_route_and_documents", "ssw_notification_deadlines"];
+const REQUIRED_PROMPTS = [
+  "ssw_new_staff_intake_check",
+  "ssw_route_and_documents",
+  "ssw_notification_deadlines",
+];
 
 const mcpUrl = process.env["MCP_URL"];
 if (mcpUrl === undefined || mcpUrl.length === 0) {

@@ -15,7 +15,67 @@ function userPrompt(text: string) {
   };
 }
 
+type NewStaffIntakePromptArgs = {
+  current_status: string;
+  target_status: string;
+  industry: string;
+  intended_work?: string | undefined;
+  reference_year_month?: string | undefined;
+};
+
+export function buildNewStaffIntakePromptText(args: NewStaffIntakePromptArgs): string {
+  return [
+    "SSW Compass を使って、新人スタッフ向けの初回確認をしてください。",
+    "個人情報は扱わず、一般情報として公式情報源に基づいて整理してください。",
+    "",
+    `現在の在留資格/状況: ${args.current_status}`,
+    `目標の在留資格: ${args.target_status}`,
+    `分野: ${args.industry}`,
+    `予定業務: ${args.intended_work ?? "未確認"}`,
+    `基準年月: ${args.reference_year_month ?? "未確認"}`,
+    "",
+    "確認手順:",
+    "1. classify_procedure で、認定・変更・更新のどれに近いかを確認する。",
+    "2. list_visa_documents で、第1表・第2表・第3表、分野別書類、省略候補を確認する。",
+    "3. get_deadline_timeline で、更新申請・随時届出・定期届出の期限を確認する。",
+    "4. validate_zairyu_compatibility で、現在の在留資格と予定業務の就労リスクを確認する。",
+    "5. list_law_updates で、直近の制度変更が関係するか確認する。",
+    "",
+    "回答フォーマット:",
+    "- まず結論を3行以内で示す。",
+    "- 次に『新人が次に確認すること』を番号付きで出す。",
+    "- 『責任者・行政書士に確認すること』を分ける。",
+    "- 在留カード番号、パスポート番号、氏名、生年月日などの入力を求めない。",
+    "- 最後に、SSW Compass は一般情報であり個別判断ではないことを明記する。",
+  ].join("\n");
+}
+
 export function registerWorkflowPrompts(server: McpServer): void {
+  server.registerPrompt(
+    "ssw_new_staff_intake_check",
+    {
+      title: "SSW new staff intake check",
+      description:
+        "新人・派遣担当が個人情報を入れずに、申請種別、必要書類、期限、就労リスク、エスカレーション要否を順番に確認する社内標準ワークフロー。",
+      argsSchema: {
+        current_status: z
+          .string()
+          .describe("現在の在留資格や状況。例: 技能実習2号、留学、海外在住、未確認"),
+        target_status: z.string().default("特定技能1号").describe("目標の在留資格"),
+        industry: z.string().describe("希望する特定技能分野。例: 農業、建設、介護"),
+        intended_work: z
+          .string()
+          .optional()
+          .describe("予定業務の概要。個人名・在留カード番号は入れない"),
+        reference_year_month: z
+          .string()
+          .optional()
+          .describe("期限確認の基準年月。例: 2026-07。日付・生年月日は入れない"),
+      },
+    },
+    (args) => userPrompt(buildNewStaffIntakePromptText(args)),
+  );
+
   server.registerPrompt(
     "ssw_route_and_documents",
     {
