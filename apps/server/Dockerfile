@@ -58,6 +58,11 @@ RUN pnpm exec turbo run build \
   --filter=@ssw/ui-ssw-checklist \
   --filter=@ssw/ui-ssw-validate
 
+# Guard against accidentally shipping an old server dist through pnpm deploy.
+# The production MCP transport must be stateless for Cloud Run multi-instance
+# routing and Claude Web tool refreshes (no in-memory session dependency).
+RUN grep -q "sessionIdGenerator: undefined" /workspace/apps/server/dist/index.js
+
 # pnpm 10 default requires inject-workspace-packages=true. We use
 # workspace:* without injection, so pass --legacy (equivalent to pnpm
 # < 10 behaviour) to have pnpm resolve workspace deps into /app's
@@ -75,7 +80,11 @@ WORKDIR /app
 
 COPY --from=builder --chown=nonroot:nonroot /app/node_modules ./node_modules
 COPY --from=builder --chown=nonroot:nonroot /app/package.json ./package.json
-COPY --from=builder --chown=nonroot:nonroot /app/dist ./dist
+# Copy the freshly built server dist directly from the workspace. `pnpm deploy`
+# is still used for prod node_modules, but its package output must not be the
+# source of truth for runtime JS because deploy packaging can lag behind the
+# build artefact if dist is excluded/filtered.
+COPY --from=builder --chown=nonroot:nonroot /workspace/apps/server/dist ./dist
 COPY --from=builder --chown=nonroot:nonroot /workspace/data ./data
 # Ship the hardened single-file UI bundles so the server can serve
 # ui://ssw-<name>/mcp-app.html resources at runtime. UI_DIST_ROOT is
