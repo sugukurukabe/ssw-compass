@@ -172,13 +172,11 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-smoke","version":"1.0"},"capabilities":{}}}')
-          SESSION_ID=$(echo "$INIT_RESP" | grep -i '^mcp-session-id:' | awk '{print $2}' | tr -d '\r\n')
-          test -n "$SESSION_ID" || { echo "No mcp-session-id in initialize response"; exit 1; }
+          # Stateless MCP: no mcp-session-id is issued; follow-up requests are self-contained.
           curl -sS -X POST "$URL/mcp" \
             -H "X-Serverless-Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
-            -H "mcp-session-id: $SESSION_ID" \
             -d '{"jsonrpc":"2.0","id":2,"method":"tools/list"}' \
             > /tmp/tools-raw.txt
           if grep -q '^data: ' /tmp/tools-raw.txt; then
@@ -208,14 +206,11 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-smoke","version":"1.0"},"capabilities":{}}}')
-          SESSION_ID=$(echo "$INIT_RESP" | grep -i '^mcp-session-id:' | awk '{print $2}' | tr -d '\r\n')
-          test -n "$SESSION_ID" || { echo "No mcp-session-id in initialize response"; exit 1; }
-
+          # Stateless MCP: no mcp-session-id is issued; follow-up requests are self-contained.
           curl -sS -X POST "$URL/mcp" \
             -H "X-Serverless-Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
-            -H "mcp-session-id: $SESSION_ID" \
             -d '{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"search_visa","arguments":{"category":"tokutei_ginou_1","industry":"construction","language":"ja"}}}' \
             > /tmp/search-raw.txt
 
@@ -270,13 +265,11 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -d '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2025-03-26","clientInfo":{"name":"cd-smoke","version":"1.0"},"capabilities":{}}}')
-          SESSION_ID=$(echo "$INIT_RESP" | grep -i '^mcp-session-id:' | awk '{print $2}' | tr -d '\r\n')
-          test -n "$SESSION_ID" || { echo "No mcp-session-id"; exit 1; }
+          # Stateless MCP: no mcp-session-id is issued; follow-up requests are self-contained.
           curl -sS -X POST "$URL/mcp" \
             -H "X-Serverless-Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
-            -H "mcp-session-id: $SESSION_ID" \
             -d '{"jsonrpc":"2.0","id":2,"method":"resources/read","params":{"uri":"ui://ssw-search/mcp-app.html"}}' \
             > /tmp/ui-raw.txt
           if grep -q '^data: ' /tmp/ui-raw.txt; then
