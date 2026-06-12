@@ -125,6 +125,17 @@ module "vpc_egress" {
   network_name = "ssw-vpc-prod"
 }
 
+# ADR-024: prepare_document_package の成果物バケット。
+# 24h ライフサイクルで自動削除。PII 非格納。署名 URL は Cloud Run が発行。
+module "package_artifacts" {
+  source           = "../../modules/package-artifacts"
+  project_id       = var.project_id
+  location         = var.region
+  bucket_name      = "ssw-compass-packages-prod"
+  runtime_sa_email = var.runtime_sa_email
+  env              = "prod"
+}
+
 module "cloud_armor" {
   source     = "../../modules/cloud-armor"
   project_id = var.project_id
