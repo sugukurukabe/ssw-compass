@@ -5,7 +5,7 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased] — v2.1 (MCP 2026-07-28 RC readiness)
+## [v2.1.0] — 2026-06-13 (MCP 2026-07-28 RC readiness)
 
 ### Added
 - Supabase 承認状態ストア (`supabase/migrations/`: `drafts` / `approval_requests` / `document_package_tasks`、RLS deny-by-default + service_role 限定) と ADR-024

@@ -65,7 +65,7 @@ const TOOL_NAMES = [
 
 const SERVER_CARD: ServerCard = {
   name: "SSW Compass",
-  version: "4.0.0",
+  version: "2.1.0",
   description:
     "Official-source-grounded informational app for Japanese specified-skilled-worker (SSW / 特定技能) and related visa procedures. " +
     "Six anonymous read-only tools cover search, procedure classification, deadlines, document checklists, law updates, and zairyu compatibility. " +

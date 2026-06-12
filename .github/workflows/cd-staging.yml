@@ -190,7 +190,7 @@ jobs:
           # responses that are not JSON. Do not revert a good image solely on
           # this compatibility smoke; prod and submission endpoints are checked
           # separately. Keep artefacts for diagnosis.
-          jq -e '.result.tools | length >= 5' /tmp/tools.json || {
+          jq -e '.result.tools | length >= 8' /tmp/tools.json || {
             echo "::warning::tools/list smoke did not parse as expected; uploading /tmp/tools-raw.txt and continuing"
           }
 
@@ -251,6 +251,22 @@ jobs:
           jq -e '.name_for_human == "SSW Compass Japan"' /tmp/ai-plugin.json
           curl -fsS -H "X-Serverless-Authorization: Bearer $TOKEN" "$URL/.well-known/openapi.json" | tee /tmp/openapi.json
           jq -e '.openapi == "3.1.0"' /tmp/openapi.json
+
+      - name: OAuth scope step-up (anonymous → submit_gyoseishoshi_approval must 403)
+        run: |
+          set -euo pipefail
+          URL="${{ needs.deploy.outputs.service_url }}"
+          # No bearer token = anonymous = compass:read only.
+          # submit_gyoseishoshi_approval requires compass:approve → expect HTTP 403.
+          HTTP_CODE=$(curl -sS -o /tmp/scope-403.json -w '%{http_code}' -X POST "$URL/mcp" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"submit_gyoseishoshi_approval","arguments":{"case_id":"case_aaaaaaaaaaaaaaaa","draft_document_id":"doc_aaaaaaaaaaaaaaaa","draft_content_hash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","approval_method":"checkbox_only","approver_gyoseishoshi_number":"東京都 12345"}}}')
+          echo "HTTP status: $HTTP_CODE"
+          cat /tmp/scope-403.json
+          test "$HTTP_CODE" = "403"
+          # Verify response body contains the insufficient_scope error code.
+          jq -e '.error.code == -32003' /tmp/scope-403.json
 
       - name: MCP resources/read ui://ssw-search/mcp-app.html (Batch 7 UI dist)
         run: |
