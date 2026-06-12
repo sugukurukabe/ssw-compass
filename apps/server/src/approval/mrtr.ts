@@ -175,10 +175,11 @@ export async function applyApprovalInputResponse(input: {
 
   if (!transition.ok) {
     if (transition.nextStatus === "rejected" || transition.nextStatus === "expired") {
+      const decision = transition.nextStatus === "rejected" ? "reject" : "expire";
       await repository.transitionPendingApproval({
         id: request.id,
         nextStatus: transition.nextStatus,
-        decision: transitionInput.decision,
+        decision,
         now,
       });
       return { ok: false, reason: transition.reason, status: transition.nextStatus };

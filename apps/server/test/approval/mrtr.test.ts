@@ -116,6 +116,9 @@ describe("approval MRTR helpers", () => {
       reason: "draft_hash_mismatch",
       status: "rejected",
     });
+    expect(request.status).toBe("rejected");
+    expect(request.decision).toBe("reject");
+    expect(request.decided_at).toBe(NOW.toISOString());
   });
 
   it("rejects when parent_id is set but parent row cannot be loaded (Bug 1)", async () => {
