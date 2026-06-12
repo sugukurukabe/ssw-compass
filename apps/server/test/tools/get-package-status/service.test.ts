@@ -92,7 +92,7 @@ describe("lookupPackageStatus", () => {
     expect(result.signedUrl).toContain("storage.googleapis.com");
   });
 
-  it("returns running when the record exists but the artifact is not yet written", async () => {
+  it("returns queued when the record exists but the artifact is not yet written", async () => {
     const taskId = "task_BBBBBBBBBBBBBBBBBBBBBB";
     store.set(idempotencyObjectName(), {
       body: JSON.stringify({
@@ -106,7 +106,7 @@ describe("lookupPackageStatus", () => {
 
     const result = await lookupPackageStatus({ authSubject: AUTH_SUBJECT, idempotencyKey: IDEM });
     expect(result.found).toBe(true);
-    expect(result.status).toBe("running");
+    expect(result.status).toBe("queued");
     expect(result.signedUrl).toBeUndefined();
   });
 

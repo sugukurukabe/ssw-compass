@@ -103,7 +103,7 @@ export const getPackageStatusHandler = instrumentTool(
 
       const payload = GetPackageStatusOutput.parse({
         found: true,
-        status: lookup.status ?? "running",
+        status: lookup.status ?? "queued",
         task_id: lookup.taskId,
         disclaimer,
       });
@@ -112,7 +112,7 @@ export const getPackageStatusHandler = instrumentTool(
           content: [
             {
               type: "text",
-              text: `書類パッケージは生成中です。\ntask_id: ${lookup.taskId}\n\n${disclaimer}`,
+              text: `書類パッケージは生成待ちです。\ntask_id: ${lookup.taskId}\n\n${disclaimer}`,
             },
           ],
           structuredContent: payload,

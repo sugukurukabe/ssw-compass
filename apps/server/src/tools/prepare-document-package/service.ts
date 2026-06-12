@@ -291,7 +291,7 @@ export async function resolvePackageIdempotency(input: {
 export interface PackageStatusLookup {
   found: boolean;
   taskId?: string;
-  status?: "queued" | "running" | "completed";
+  status?: "queued" | "completed";
   signedUrl?: string;
   signedUrlExpiresAt?: string;
 }
@@ -330,9 +330,13 @@ export async function lookupPackageStatus(input: {
     ...(input.now === undefined ? {} : { now: input.now }),
   });
   if (artifact === null) {
-    // べき等記録はあるが成果物が未生成 = 非同期実行中 (sync モードでは通常発生しない)。
-    // Idempotency record exists but the artifact is not yet written = async still running.
-    return { found: true, taskId: record.task_id, status: "running" };
+    // べき等記録はあるが成果物が未生成 = まだ生成待ち (enqueue 済みだが artifact 未書き込み)。
+    // prepare_document_package は enqueue 直後に "queued" を返すため、ここも "queued" に揃える。
+    // (sync モードでは通常発生しない。実行中/失敗の区別は task テーブル未配線のため付けない。)
+    // Idempotency record exists but the artifact is not yet written: still queued
+    // (enqueued, artifact not written). Matches prepare_document_package's "queued"
+    // status; running/failed cannot be distinguished without the task table.
+    return { found: true, taskId: record.task_id, status: "queued" };
   }
   return {
     found: true,
