@@ -29,6 +29,7 @@ type ApprovalRequestInsert = {
   step: ApprovalRequestRecord["step"];
   parent_id?: string | null;
   status?: ApprovalRequestRecord["status"];
+  decision?: ApprovalRequestRecord["decision"];
   idempotency_key: string;
   expires_at: string;
   created_at?: string;

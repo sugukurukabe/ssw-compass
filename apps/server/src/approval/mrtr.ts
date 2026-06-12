@@ -78,7 +78,9 @@ export function buildApprovalInputRequiredResult(input: {
   };
 }
 
-function decisionFromResponse(response: ApprovalInputResponse): TransitionDecision {
+function decisionFromResponse(
+  response: ApprovalInputResponse,
+): Exclude<TransitionDecision, "expire" | "execute"> {
   if (response.approval === "approve") {
     return "approve";
   }
@@ -88,18 +90,22 @@ function decisionFromResponse(response: ApprovalInputResponse): TransitionDecisi
   return "reject";
 }
 
-async function countParentChain(
+async function countPriorEditDecisions(
   repository: ApprovalStateRepository,
   request: ApprovalRequestRecord,
 ): Promise<number> {
   let count = 0;
+  let depth = 0;
   let parentId = request.parent_id;
-  while (parentId !== null && count < 10) {
+  while (parentId !== null && depth < 10) {
     const parent = await repository.getApprovalRequest(parentId);
     if (parent === null) {
       break;
     }
-    count += 1;
+    if (parent.decision === "edit") {
+      count += 1;
+    }
+    depth += 1;
     parentId = parent.parent_id;
   }
   return count;
@@ -157,7 +163,7 @@ export async function applyApprovalInputResponse(input: {
     now,
     storedDraftSha256: request.draft_sha256,
     currentDraftSha256: draft.sha256,
-    editLoopCount: await countParentChain(repository, request),
+    priorEditDecisionCount: await countPriorEditDecisions(repository, request),
   };
   const transition =
     parent === null
@@ -172,6 +178,7 @@ export async function applyApprovalInputResponse(input: {
       await repository.transitionPendingApproval({
         id: request.id,
         nextStatus: transition.nextStatus,
+        decision: transitionInput.decision,
         now,
       });
       return { ok: false, reason: transition.reason, status: transition.nextStatus };
@@ -190,6 +197,7 @@ export async function applyApprovalInputResponse(input: {
   const updated = await repository.transitionPendingApproval({
     id: request.id,
     nextStatus: transition.nextStatus,
+    decision: transitionInput.decision,
     now,
   });
   if (!updated.updated) {

@@ -14,6 +14,7 @@ import type {
   CreateApprovalRequestInput,
   CreateDraftInput,
   DraftRecord,
+  TransitionDecision,
 } from "./types.js";
 
 export class ApprovalRepositoryError extends Error {
@@ -99,12 +100,14 @@ export class ApprovalRepository {
   async transitionPendingApproval(input: {
     id: string;
     nextStatus: Exclude<ApprovalStatus, "pending">;
+    decision: Exclude<TransitionDecision, "execute">;
     now: Date;
   }): Promise<ApprovalTransitionUpdateResult> {
     const { data, error } = await this.client
       .from("approval_requests")
       .update({
         status: input.nextStatus,
+        decision: input.decision,
         decided_at: input.now.toISOString(),
       })
       .eq("id", input.id)
@@ -124,6 +127,7 @@ export class ApprovalRepository {
       .from("approval_requests")
       .update({
         status: "executed",
+        decision: "execute",
         decided_at: input.now.toISOString(),
       })
       .eq("id", input.id)

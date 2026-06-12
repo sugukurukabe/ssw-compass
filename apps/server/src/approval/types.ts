@@ -20,6 +20,8 @@ export type ApprovalStatus = (typeof APPROVAL_STATUSES)[number];
 export const DRAFT_STATUSES = ["active", "superseded", "expired", "deleted"] as const;
 export type DraftStatus = (typeof DRAFT_STATUSES)[number];
 
+export type TransitionDecision = "approve" | "reject" | "edit" | "expire" | "execute";
+
 export type DraftRecord = {
   id: string;
   case_handle: string;
@@ -39,6 +41,7 @@ export type ApprovalRequestRecord = {
   step: ApprovalStep;
   parent_id: string | null;
   status: ApprovalStatus;
+  decision: TransitionDecision | null;
   idempotency_key: string;
   expires_at: string;
   created_at: string;
@@ -72,8 +75,6 @@ export type TransitionFailureReason =
   | "draft_hash_mismatch"
   | "parent_not_approved"
   | "parent_hash_mismatch";
-
-export type TransitionDecision = "approve" | "reject" | "edit" | "expire" | "execute";
 
 export type TransitionOk = {
   ok: true;

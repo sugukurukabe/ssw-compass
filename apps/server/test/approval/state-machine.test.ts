@@ -69,7 +69,7 @@ describe("evaluateApprovalTransition", () => {
         now: NOW,
         storedDraftSha256: SHA,
         currentDraftSha256: SHA,
-        editLoopCount: 2,
+        priorEditDecisionCount: 2,
       }),
     ).toEqual({ ok: true, nextStatus: "rejected" });
   });
@@ -83,7 +83,7 @@ describe("evaluateApprovalTransition", () => {
         now: NOW,
         storedDraftSha256: SHA,
         currentDraftSha256: SHA,
-        editLoopCount: 3,
+        priorEditDecisionCount: 3,
       }),
     ).toEqual({ ok: true, nextStatus: "escalated" });
   });

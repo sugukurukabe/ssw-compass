@@ -21,6 +21,7 @@ function approval(input: Partial<ApprovalRequestRecord> = {}): ApprovalRequestRe
     step: "gyoseishoshi_approval",
     parent_id: null,
     status: "pending",
+    decision: null,
     idempotency_key: "idem-1",
     expires_at: FUTURE,
     created_at: NOW.toISOString(),
@@ -67,6 +68,7 @@ function repository(input: {
         return { updated: false };
       }
       row.status = args.nextStatus;
+      row.decision = args.decision;
       row.decided_at = args.now.toISOString();
       return { updated: true, row };
     },
@@ -159,17 +161,23 @@ describe("approval MRTR helpers", () => {
     expect(result.ok).toBe(true);
   });
 
-  it("escalates after three parent approval loops", async () => {
-    const root = approval({ id: "ars_rootabcdefghijklmnopqr", status: "rejected" });
+  it("escalates after three prior edit decisions", async () => {
+    const root = approval({
+      id: "ars_rootabcdefghijklmnopqr",
+      status: "rejected",
+      decision: "edit",
+    });
     const second = approval({
       id: "ars_secondabcdefghijklmnop",
       parent_id: root.id,
       status: "rejected",
+      decision: "edit",
     });
     const third = approval({
       id: "ars_thirdabcdefghijklmnopq",
       parent_id: second.id,
       status: "rejected",
+      decision: "edit",
     });
     const current = approval({ parent_id: third.id });
     const sink: NotificationSink = { notify: vi.fn(async () => undefined) };
@@ -187,5 +195,42 @@ describe("approval MRTR helpers", () => {
       expect(result.status).toBe("escalated");
     }
     expect(sink.notify).toHaveBeenCalledOnce();
+  });
+
+  it("does not count explicit reject ancestors toward edit-loop escalation", async () => {
+    const root = approval({
+      id: "ars_rootabcdefghijklmnopqr",
+      status: "rejected",
+      decision: "reject",
+    });
+    const second = approval({
+      id: "ars_secondabcdefghijklmnop",
+      parent_id: root.id,
+      status: "rejected",
+      decision: "reject",
+    });
+    const third = approval({
+      id: "ars_thirdabcdefghijklmnopq",
+      parent_id: second.id,
+      status: "rejected",
+      decision: "reject",
+    });
+    const current = approval({ parent_id: third.id });
+    const sink: NotificationSink = { notify: vi.fn(async () => undefined) };
+
+    const result = await applyApprovalInputResponse({
+      requestState: current.id,
+      response: { approval: "edit", edit_note: "修正してください" },
+      repository: repository({ requests: [root, second, third, current], draft: draft() }),
+      notificationSink: sink,
+      now: NOW,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.status).toBe("rejected");
+      expect(result.request.decision).toBe("edit");
+    }
+    expect(sink.notify).not.toHaveBeenCalled();
   });
 });

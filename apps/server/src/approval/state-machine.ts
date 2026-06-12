@@ -21,7 +21,7 @@ export type EvaluateApprovalTransitionInput = {
   storedDraftSha256: string;
   currentDraftSha256: string;
   parent?: ParentApprovalSnapshot;
-  editLoopCount?: number;
+  priorEditDecisionCount?: number;
 };
 
 export function evaluateApprovalTransition(
@@ -66,7 +66,7 @@ export function evaluateApprovalTransition(
       if (input.currentStatus !== "pending") {
         return { ok: false, reason: "invalid_transition" };
       }
-      return (input.editLoopCount ?? 0) >= 3
+      return (input.priorEditDecisionCount ?? 0) >= 3
         ? { ok: true, nextStatus: "escalated" }
         : { ok: true, nextStatus: "rejected" };
     case "expire":

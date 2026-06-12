@@ -111,6 +111,7 @@ function approval(status: ApprovalRequestRecord["status"]): ApprovalRequestRecor
     step: "gyoseishoshi_approval",
     parent_id: null,
     status,
+    decision: null,
     idempotency_key: "idem-1",
     expires_at: FUTURE,
     created_at: NOW.toISOString(),
@@ -128,12 +129,14 @@ describe("ApprovalRepository", () => {
     const result = await repository.transitionPendingApproval({
       id: row.id,
       nextStatus: "approved",
+      decision: "approve",
       now: NOW,
     });
 
     expect(result.updated).toBe(true);
     if (result.updated) {
       expect(result.row.status).toBe("approved");
+      expect(result.row.decision).toBe("approve");
       expect(result.row.decided_at).toBe(NOW.toISOString());
     }
   });
@@ -145,6 +148,7 @@ describe("ApprovalRepository", () => {
     const result = await repository.transitionPendingApproval({
       id: row.id,
       nextStatus: "approved",
+      decision: "approve",
       now: NOW,
     });
 
@@ -158,6 +162,7 @@ describe("ApprovalRepository", () => {
     const result = await repository.transitionPendingApproval({
       id: row.id,
       nextStatus: "approved",
+      decision: "approve",
       now: NOW,
     });
 
