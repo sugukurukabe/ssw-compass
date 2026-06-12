@@ -346,6 +346,67 @@ function warnIfLawUpdatesStale(): void {
   }
 }
 
+type GracefulShutdownServer = {
+  close(callback: (err?: Error) => void): void;
+};
+
+type ProcessExit = (code: number) => never;
+
+/**
+ * HTTP drain と OTel flush を順番に実行するシャットダウンハンドラを作る。
+ * Creates a shutdown handler that drains HTTP first, then flushes OTel.
+ * Membuat handler shutdown yang mengosongkan HTTP dulu, lalu flush OTel.
+ */
+export function createGracefulShutdownHandler({
+  httpServer,
+  shutdownOtel = getRegisteredSdkShutdown(),
+  exitProcess = process.exit,
+}: {
+  httpServer: GracefulShutdownServer;
+  shutdownOtel?: () => Promise<void>;
+  exitProcess?: ProcessExit;
+}): (signal: string) => void {
+  let shutdownStarted = false;
+
+  async function flushOtelAndExit(exitCode: number): Promise<void> {
+    try {
+      await shutdownOtel();
+      logger.info("otel_sdk_flushed");
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error({ err: message }, "otel_sdk_shutdown_error");
+    }
+    exitProcess(exitCode);
+  }
+
+  return (signal: string): void => {
+    if (shutdownStarted) {
+      logger.info({ signal }, "graceful_shutdown_already_started");
+      return;
+    }
+    shutdownStarted = true;
+    logger.info({ signal }, "graceful_shutdown_started");
+    try {
+      httpServer.close((err?: Error) => {
+        if (err !== undefined) {
+          logger.error({ err: err.message }, "http_server_close_error");
+          void flushOtelAndExit(1);
+          return;
+        }
+        logger.info("http_server_closed");
+        void flushOtelAndExit(0);
+      });
+    } catch (err: unknown) {
+      const message = err instanceof Error ? err.message : String(err);
+      logger.error({ err: message }, "http_server_close_error");
+      void flushOtelAndExit(1);
+    }
+    // Cloud Run 側の猶予期限に任せ、アプリ内タイマーで処理中リクエストを切らない。
+    // Let Cloud Run enforce the hard deadline; do not cut active requests locally.
+    // Biarkan Cloud Run menegakkan batas keras; jangan memutus request aktif secara lokal.
+  };
+}
+
 export async function startServer(port?: number): Promise<void> {
   // 可観測性: 有効時のみ OTel NodeSDK を起動 (span を実際にエクスポート)。
   await initOtelSdk();
@@ -365,27 +426,7 @@ export async function startServer(port?: number): Promise<void> {
   // Coordinate Express and OTel SDK shutdown on SIGTERM/SIGINT.
   // Cloud Run sends SIGTERM and waits; drain in-flight requests first, then flush OTel.
   // Cloud Run mengirim SIGTERM; selesaikan permintaan yang ada, lalu flush OTel.
-  const gracefulShutdown = (signal: string): void => {
-    logger.info({ signal }, "graceful_shutdown_started");
-    httpServer.close(async () => {
-      logger.info("http_server_closed");
-      try {
-        await getRegisteredSdkShutdown()();
-        logger.info("otel_sdk_flushed");
-      } catch (err: unknown) {
-        const message = err instanceof Error ? err.message : String(err);
-        logger.error({ err: message }, "otel_sdk_shutdown_error");
-      }
-      process.exit(0);
-    });
-    // Cloud Run の graceful shutdown タイムアウト (デフォルト 10s) より短い安全マージンで
-    // 強制終了する。新規リクエストはすでに受け付けないが、ハング対策。
-    // Safety exit in case requests stall beyond Cloud Run's graceful timeout.
-    setTimeout(() => {
-      logger.warn("graceful_shutdown_timeout_force_exit");
-      process.exit(1);
-    }, 9_000).unref();
-  };
+  const gracefulShutdown = createGracefulShutdownHandler({ httpServer });
 
   process.once("SIGTERM", () => {
     gracefulShutdown("SIGTERM");
