@@ -127,6 +127,14 @@ export {
   PRO_TIER_CASES_LIMIT,
 } from "./tools/get-deadline-timeline-v4.js";
 export type {
+  GetPackageStatusInput as GetPackageStatusInputType,
+  GetPackageStatusOutput as GetPackageStatusOutputType,
+} from "./tools/get-package-status.js";
+export {
+  GetPackageStatusInput,
+  GetPackageStatusOutput,
+} from "./tools/get-package-status.js";
+export type {
   ListLawUpdatesInput as ListLawUpdatesInputType,
   ListLawUpdatesOutput as ListLawUpdatesOutputType,
 } from "./tools/list-law-updates.js";

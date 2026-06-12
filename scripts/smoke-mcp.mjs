@@ -9,6 +9,7 @@ const REQUIRED_TOOLS = [
   "validate_zairyu_compatibility",
   "submit_gyoseishoshi_approval",
   "prepare_document_package",
+  "get_package_status",
 ];
 
 const REQUIRED_UI_RESOURCES = [

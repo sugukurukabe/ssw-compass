@@ -13,6 +13,10 @@ import {
 } from "./tools/get-deadline-timeline/index.js";
 import { registerGetDeadlineTimelineUiResource } from "./tools/get-deadline-timeline/ui.js";
 import {
+  GET_PACKAGE_STATUS_ANNOTATION,
+  registerGetPackageStatusTool,
+} from "./tools/get-package-status/index.js";
+import {
   LIST_LAW_UPDATES_ANNOTATION,
   registerListLawUpdatesTool,
 } from "./tools/list-law-updates/index.js";
@@ -64,6 +68,7 @@ export function createMcpServer(): McpServer {
   registerListLawUpdatesTool(server);
   registerSubmitGyoseishoshiApprovalTool(server);
   registerPrepareDocumentPackageTool(server);
+  registerGetPackageStatusTool(server);
   registerWorkflowPrompts(server);
   registerCatalogResources(server);
 
@@ -89,6 +94,10 @@ export function createMcpServer(): McpServer {
     {
       name: "prepare_document_package",
       annotations: PREPARE_DOCUMENT_PACKAGE_ANNOTATION,
+    },
+    {
+      name: "get_package_status",
+      annotations: GET_PACKAGE_STATUS_ANNOTATION,
     },
   ]);
 

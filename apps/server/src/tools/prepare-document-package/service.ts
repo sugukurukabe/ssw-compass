@@ -288,6 +288,65 @@ export async function resolvePackageIdempotency(input: {
   }
 }
 
+export interface PackageStatusLookup {
+  found: boolean;
+  taskId?: string;
+  status?: "queued" | "completed";
+  signedUrl?: string;
+  signedUrlExpiresAt?: string;
+}
+
+/**
+ * 発行済みパッケージの状態を principal スコープで照会する。
+ * Look up a previously prepared package's status, scoped to the caller principal.
+ * Memeriksa status paket yang sudah dibuat, dibatasi ke principal pemanggil.
+ *
+ * (authSubject, idempotencyKey) のべき等記録から task_id を引き、GCS 成果物が
+ * 存在すれば completed + 新しい署名 URL を、まだ無ければ running を返す。
+ * 記録が無い場合は found:false (この principal は当該 key で発行していない)。
+ */
+export async function lookupPackageStatus(input: {
+  authSubject: string;
+  idempotencyKey: string;
+  now?: Date;
+}): Promise<PackageStatusLookup> {
+  const bucketName = requirePackageArtifactBucket();
+  const scopeHash = buildPackageIdempotencyScopeHash({
+    authSubject: input.authSubject,
+    idempotencyKey: input.idempotencyKey,
+  });
+  const recordFile = packageObjectFileFactory(
+    bucketName,
+    packageIdempotencyRecordObjectName(scopeHash),
+  );
+  const record = await readPackageIdempotencyRecord(recordFile);
+  if (record === null) {
+    return { found: false };
+  }
+
+  const artifact = await findSavedPackageArtifact({
+    taskId: record.task_id,
+    requestFingerprint: record.request_fingerprint,
+    ...(input.now === undefined ? {} : { now: input.now }),
+  });
+  if (artifact === null) {
+    // べき等記録はあるが成果物が未生成 = まだ生成待ち (enqueue 済みだが artifact 未書き込み)。
+    // prepare_document_package は enqueue 直後に "queued" を返すため、ここも "queued" に揃える。
+    // (sync モードでは通常発生しない。実行中/失敗の区別は task テーブル未配線のため付けない。)
+    // Idempotency record exists but the artifact is not yet written: still queued
+    // (enqueued, artifact not written). Matches prepare_document_package's "queued"
+    // status; running/failed cannot be distinguished without the task table.
+    return { found: true, taskId: record.task_id, status: "queued" };
+  }
+  return {
+    found: true,
+    taskId: record.task_id,
+    status: "completed",
+    signedUrl: artifact.signedUrl,
+    signedUrlExpiresAt: artifact.signedUrlExpiresAt,
+  };
+}
+
 export function buildDocumentPackageArtifact(input: PrepareDocumentPackageInput): Buffer {
   const documents = lookupDocuments({
     visaCategory: input.visa_category,
