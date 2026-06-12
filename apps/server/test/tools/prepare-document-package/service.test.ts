@@ -1,7 +1,9 @@
 import type { PrepareDocumentPackageInput } from "@ssw/shared-types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  buildDocumentPackageRequestFingerprint,
   buildDocumentPackageArtifact,
+  buildPackageIdempotencyScopeHash,
   enqueuePackageTask,
   generateDocumentPackageTaskId,
 } from "../../../src/tools/prepare-document-package/service.js";
@@ -9,6 +11,7 @@ import {
 type CreateTaskRequest = {
   parent?: string;
   task?: {
+    name?: string;
     httpRequest?: {
       httpMethod?: string;
       url?: string;
@@ -105,6 +108,7 @@ describe("prepare_document_package service", () => {
     expect(createTaskMock).toHaveBeenCalledWith({
       parent: "projects/ssw/locations/asia-northeast1/queues/package-jobs",
       task: {
+        name: "projects/ssw/locations/asia-northeast1/queues/package-jobs/tasks/task_authenticated000000",
         httpRequest: {
           httpMethod: "POST",
           url: "https://executor.example.run.app/package",
@@ -120,5 +124,36 @@ describe("prepare_document_package service", () => {
         dispatchDeadline: { seconds: 600 },
       },
     });
+  });
+
+  it("scopes idempotency keys by authenticated subject", () => {
+    const first = buildPackageIdempotencyScopeHash({
+      authSubject: "user-a",
+      idempotencyKey: "idem-sample-0001",
+    });
+    const second = buildPackageIdempotencyScopeHash({
+      authSubject: "user-b",
+      idempotencyKey: "idem-sample-0001",
+    });
+
+    expect(first).not.toBe(second);
+  });
+
+  it("fingerprints the full package request payload", () => {
+    const base = {
+      procedure_type: "zairyu_shikaku_henko" as const,
+      visa_category: "tokutei_ginou_1" as const,
+      industry: "agriculture" as const,
+      language: "ja" as const,
+      case_handle: "SAMPLE-CASE-0001",
+      idempotency_key: "idem-sample-0001",
+    };
+
+    expect(buildDocumentPackageRequestFingerprint(base)).toBe(
+      buildDocumentPackageRequestFingerprint({ ...base }),
+    );
+    expect(buildDocumentPackageRequestFingerprint(base)).not.toBe(
+      buildDocumentPackageRequestFingerprint({ ...base, case_handle: "SAMPLE-CASE-0002" }),
+    );
   });
 });

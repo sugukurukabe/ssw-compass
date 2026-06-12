@@ -20,7 +20,9 @@ import { toToolErrorResult } from "../tool-error.js";
 import {
   buildDocumentPackageArtifact,
   enqueuePackageTask,
-  generateDocumentPackageTaskId,
+  buildDocumentPackageRequestFingerprint,
+  findSavedPackageArtifact,
+  resolvePackageIdempotency,
   savePackageArtifact,
 } from "./service.js";
 
@@ -54,7 +56,38 @@ export const prepareDocumentPackageHandler = instrumentTool(
     assertHitlGate(authContext, "prepare_document_package", "L2");
 
     try {
-      const taskId = generateDocumentPackageTaskId();
+      const requestFingerprint = buildDocumentPackageRequestFingerprint(args);
+      const idempotency = await resolvePackageIdempotency({
+        authSubject: authContext.user_id,
+        idempotencyKey: args.idempotency_key,
+        requestFingerprint,
+      });
+      const taskId = idempotency.record.task_id;
+      const existing = await findSavedPackageArtifact({ taskId, requestFingerprint });
+      if (existing !== null) {
+        const payload = PrepareDocumentPackageOutput.parse({
+          task_id: taskId,
+          status: "completed",
+          result: {
+            signed_url: existing.signedUrl,
+            expires_at: existing.signedUrlExpiresAt,
+          },
+          disclaimer,
+        });
+        return {
+          content: [
+            {
+              type: "text",
+              text:
+                `既存の書類パッケージを返します。\n` +
+                `task_id: ${taskId}\n` +
+                `署名付きURLの有効期限: ${existing.signedUrlExpiresAt}\n\n${disclaimer}`,
+            },
+          ],
+          structuredContent: payload,
+        };
+      }
+
       const queued = await enqueuePackageTask({ taskId, payload: args });
       if (queued) {
         const payload = PrepareDocumentPackageOutput.parse({
@@ -74,7 +107,7 @@ export const prepareDocumentPackageHandler = instrumentTool(
       }
 
       const artifact = buildDocumentPackageArtifact(args);
-      const saved = await savePackageArtifact({ taskId, artifact });
+      const saved = await savePackageArtifact({ taskId, artifact, requestFingerprint });
       const payload = PrepareDocumentPackageOutput.parse({
         task_id: taskId,
         status: "completed",
