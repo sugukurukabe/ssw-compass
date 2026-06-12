@@ -11,8 +11,13 @@ anonymous MCP App that provides Japanese SSW visa procedural information.
    My Number, full DOB. Year-month only. See pii-guard.mdc.
 2. **No legal representation.** Information only. Every response includes
    the standard disclaimer (DISCLAIMER_BY_LANG in src/disclaimers.ts).
-3. **Read-only tools.** All tools have readOnlyHint: true,
-   destructiveHint: false. No write/mutation tools whatsoever.
+3. **Read-only by default.** Public L0/L1 information tools MUST have
+   readOnlyHint: true, destructiveHint: false. The only write-capable tools
+   are the L2 HITL tools approved in ADR-024 (`submit_gyoseishoshi_approval`,
+   `prepare_document_package`): they set readOnlyHint: false,
+   destructiveHint: false, are guarded by OAuth scope + HITL gate, store no
+   PII, are CAS/idempotent, and emit audit evidence before returning success.
+   No other write/mutation tools are permitted.
 4. **Primary sources only.** Vertex AI Search results filtered to
    primary_source with confidence ≥ 0.7. No fallback to LLM knowledge.
 

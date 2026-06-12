@@ -38,7 +38,9 @@ Replace the absolute read-only rule with:
 - `get_package_status`
 - rc-only `tasks/get`, `tasks/update`, `tasks/cancel`
 
-## Files Not Edited Yet
+## Status: Applied (2026-06-13)
 
-This proposal intentionally does not modify `.cursor/rules/*`. Apply it only
-after owner approval.
+Approved via ADR-024 and applied to `.cursor/rules/00-global-context.mdc`
+constraint #3, which now permits the L2 HITL write tools
+(`submit_gyoseishoshi_approval`, `prepare_document_package`) under the listed
+guards while keeping all public L0/L1 tools read-only.
