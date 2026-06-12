@@ -43,6 +43,10 @@ type ApprovalRequestUpdate = Partial<ApprovalRequestInsert>;
 export type DocumentPackageTaskRecord = {
   id: string;
   case_handle: string;
+  // principal: 行の所有者 (sha256(user_id))。冪等性は (principal, idempotency_key) でスコープ。
+  // principal: row owner (sha256(user_id)); idempotency is scoped per (principal, idempotency_key).
+  // principal: pemilik baris (sha256(user_id)); idempotensi dibatasi per (principal, idempotency_key).
+  principal: string | null;
   idempotency_key: string;
   status: "queued" | "running" | "completed" | "failed" | "cancelled";
   result_uri: string | null;
@@ -55,6 +59,7 @@ export type DocumentPackageTaskRecord = {
 type DocumentPackageTaskInsert = {
   id: string;
   case_handle: string;
+  principal?: string | null;
   idempotency_key: string;
   status?: DocumentPackageTaskRecord["status"];
   result_uri?: string | null;

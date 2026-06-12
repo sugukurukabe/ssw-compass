@@ -60,6 +60,18 @@ export type CreateDraftInput = {
 export type CreateApprovalRequestInput = {
   draftId: string;
   draftSha256: string;
+  /**
+   * 行の所有者 principal。**必ず** `sha256Hex(authContext.user_id)` を渡すこと。
+   * MRTR (applyApprovalInputResponse) は callerPrincipal = sha256Hex(user_id) と
+   * この値を厳密比較する。生の JWT sub 等を入れると全ての承認が principal_mismatch になる。
+   *
+   * MUST be `sha256Hex(authContext.user_id)`. The MRTR path compares the caller's
+   * hashed user id against this value; storing the raw JWT sub (or any other value)
+   * makes every legitimate approval fail with principal_mismatch.
+   *
+   * WAJIB `sha256Hex(authContext.user_id)`. Jalur MRTR membandingkan id pengguna
+   * yang di-hash dengan nilai ini; menyimpan nilai lain menyebabkan principal_mismatch.
+   */
   principal: string;
   step: ApprovalStep;
   parentId?: string;
