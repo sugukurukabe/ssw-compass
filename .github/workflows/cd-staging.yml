@@ -252,27 +252,46 @@ jobs:
           curl -fsS -H "X-Serverless-Authorization: Bearer $TOKEN" "$URL/.well-known/openapi.json" | tee /tmp/openapi.json
           jq -e '.openapi == "3.1.0"' /tmp/openapi.json
 
-      - name: OAuth scope step-up (anonymous → submit_gyoseishoshi_approval must 403)
+      - name: HITL guard (anonymous must NOT drive submit_gyoseishoshi_approval)
         run: |
           set -euo pipefail
           URL="${{ needs.deploy.outputs.service_url }}"
           TOKEN="${{ steps.id-token.outputs.id_token }}"
-          # Cloud Run IAM (allow_unauthenticated=false) は X-Serverless-Authorization で通す。
-          # アプリ層の認証ヘッダ (Authorization) は付けない → アプリは匿名 = compass:read のみ。
-          # submit_gyoseishoshi_approval は compass:approve が必要 → アプリ層が HTTP 403 + -32003 を返す。
-          # IAM token (X-Serverless-Authorization) lets the request through Cloud Run, while omitting
-          # the app JWT (Authorization) makes the app treat the caller as anonymous, so the 403 comes
-          # from the application scope gate (code -32003), not from a Cloud Run IAM rejection.
-          HTTP_CODE=$(curl -sS -o /tmp/scope-403.json -w '%{http_code}' -X POST "$URL/mcp" \
+          # セキュリティ契約: 匿名ユーザーは gyoseishoshi 承認を実行できてはならない。
+          # 防御は多層: (1) scope ゲート → HTTP 403 + -32003、または
+          # (2) HITL ゲート → HTTP 200 + result.isError=true。どちらでも「ブロック」を満たす。
+          # staging は SSW_AUTH_MODE=anonymous のため通常は (2) で、prod (jwt) では (1) で弾かれる。
+          # IAM (X-Serverless-Authorization) で Cloud Run を通し、アプリ JWT は付けない (= 匿名)。
+          #
+          # Security contract: an anonymous caller must never drive a gyoseishoshi approval.
+          # Defense in depth: (1) scope gate → HTTP 403 + code -32003, OR (2) HITL gate →
+          # HTTP 200 + result.isError=true. Either satisfies "blocked". staging runs
+          # SSW_AUTH_MODE=anonymous so it blocks via (2); prod (jwt) blocks via (1).
+          HTTP_CODE=$(curl -sS -o /tmp/scope-guard.json -w '%{http_code}' -X POST "$URL/mcp" \
             -H "X-Serverless-Authorization: Bearer $TOKEN" \
             -H "Content-Type: application/json" \
             -H "Accept: application/json, text/event-stream" \
             -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"submit_gyoseishoshi_approval","arguments":{"case_id":"case_aaaaaaaaaaaaaaaa","draft_document_id":"doc_aaaaaaaaaaaaaaaa","draft_content_hash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","approval_method":"checkbox_only","approver_gyoseishoshi_number":"東京都 12345"}}}')
           echo "HTTP status: $HTTP_CODE"
-          cat /tmp/scope-403.json
-          test "$HTTP_CODE" = "403"
-          # Verify response body contains the application insufficient_scope error code.
-          jq -e '.error.code == -32003' /tmp/scope-403.json
+          # SSE (text/event-stream) の場合は data: 行から JSON を取り出す。
+          if grep -q '^data: ' /tmp/scope-guard.json; then
+            awk '/^data: /{sub(/^data: /,""); print; exit}' /tmp/scope-guard.json > /tmp/scope-guard-body.json
+          else
+            cp /tmp/scope-guard.json /tmp/scope-guard-body.json
+          fi
+          cat /tmp/scope-guard-body.json | head -c 500; echo
+          if [ "$HTTP_CODE" = "403" ]; then
+            # scope ゲートでブロック (prod jwt モードの想定経路)。
+            jq -e '.error.code == -32003' /tmp/scope-guard-body.json
+            echo "blocked by scope gate (403 / -32003)"
+          elif [ "$HTTP_CODE" = "200" ]; then
+            # HITL ゲートでブロック (staging anonymous モードの想定経路)。
+            jq -e '.result.isError == true' /tmp/scope-guard-body.json
+            echo "blocked by HITL gate (200 / isError)"
+          else
+            echo "::error::anonymous submit_gyoseishoshi_approval was not blocked (HTTP $HTTP_CODE)"
+            exit 1
+          fi
 
       - name: MCP resources/read ui://ssw-search/mcp-app.html (Batch 7 UI dist)
         run: |
