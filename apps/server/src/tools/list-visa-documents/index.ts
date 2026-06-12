@@ -1,9 +1,14 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { ListVisaDocumentsInputV4, type SswCompassToolAnnotation } from "@ssw/shared-types";
+import {
+  ListVisaDocumentsInputV4,
+  ListVisaDocumentsOutput,
+  type SswCompassToolAnnotation,
+} from "@ssw/shared-types";
+import { SSW_COMPASS_TOOL_ICONS } from "../metadata.js";
 import { listVisaDocumentsHandler } from "./handler.js";
 
-const UI_RESOURCE_URI = "ui://ssw-checklist/mcp-app.html";
+const UI_RESOURCE_URI = "ui://compass/checklist/1.0.0.html";
 
 export const LIST_VISA_DOCUMENTS_ANNOTATION: SswCompassToolAnnotation = {
   readOnlyHint: true,
@@ -31,8 +36,10 @@ export function registerListVisaDocumentsTool(server: McpServer): void {
         "constitute legal advice. " +
         "Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers).",
       inputSchema: ListVisaDocumentsInputV4.shape,
+      outputSchema: ListVisaDocumentsOutput,
       annotations: LIST_VISA_DOCUMENTS_ANNOTATION,
       _meta: {
+        icons: SSW_COMPASS_TOOL_ICONS,
         ui: {
           resourceUri: UI_RESOURCE_URI,
         },

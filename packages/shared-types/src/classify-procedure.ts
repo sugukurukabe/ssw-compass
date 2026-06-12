@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { FormBundle } from "./forms-catalog.js";
+import { SUPPORTED_LANGUAGES } from "./i18n/supported-languages.js";
 
 /**
  * classify_procedure — determines which Japanese visa procedure type applies
@@ -79,10 +80,7 @@ export const ClassifyProcedureInput = z
       .regex(/^\d{4}-(0[1-9]|1[0-2])$/)
       .optional()
       .describe("入国・申請予定の年月 (YYYY-MM 形式、任意)"),
-    language: z
-      .enum(["ja", "en", "id"])
-      .default("ja")
-      .describe("出力言語: 日本語/英語/インドネシア語"),
+    language: z.enum(SUPPORTED_LANGUAGES).default("ja").describe("出力言語"),
   })
   .strict();
 export type ClassifyProcedureInput = z.infer<typeof ClassifyProcedureInput>;
@@ -99,6 +97,8 @@ export const ClassifyProcedureOutput = z.object({
   rationale: z.string(),
   nextSteps: z.array(z.string()),
   formBundle: FormBundle.optional(),
+  confidence: z.number().min(0).max(1),
+  assumptions: z.array(z.string()),
   references: z.array(
     z.object({
       title: z.string(),

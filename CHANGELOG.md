@@ -5,7 +5,31 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
-## [Unreleased] — Sprint 5
+## [v2.1.0] — 2026-06-13 (MCP 2026-07-28 RC readiness)
+
+### Added
+- Supabase 承認状態ストア (`supabase/migrations/`: `drafts` / `approval_requests` / `document_package_tasks`、RLS deny-by-default + service_role 限定) と ADR-024
+- 承認状態機械 (純粋関数) + アトミック CAS リポジトリ + MRTR ヘルパ (`requestState` = `ars_` 不透明トークン、TOCTOU/リプレイ/編集ループ3周→escalated)
+- `prepare_document_package` 新規ツール (L2、GCS V4 署名 URL、Cloud Tasks opt-in 非同期化)
+- キャッシュ階層 metadata (`_meta.ttlMs` / `cacheScope`、Tier A/B/C/D、法改正検知でキャッシュ世代更新)
+- OTel: ツール引数 `_meta` の `traceparent`/`tracestate`/`baggage` 抽出、`requestState`/taskId スパン属性
+- MCP 2026-07-28 RC トランスポートアダプタ: `server/discover`、`Mcp-Method`/`Mcp-Name` ヘッダ不一致 400
+- 全 8 ツールに `outputSchema` + icons metadata (SDK `registerTool` 移行を含む)
+- 10 言語エラー辞書 (`error.<kind>` 凍結キー × ja/en/id/zh-CN/zh-TW/vi/tl/th/km/my) + 全 5 UI の母語エラー表示・再試行ボタン
+- UI Resource URI の semver 体系 `ui://compass/<feature>/1.0.0.html` (旧 URI はエイリアス併存)
+- OAuth scope step-up (`compass:read/draft/approve/execute`、不足時 403 + `WWW-Authenticate`、既存 JWT tier 互換マッピング)
+- `/.well-known/mcp-server-card.json` (protocolVersions / scopes / tools を自動導出)
+- `docs/conformance-report.md`、`docs/supabase-approval-state-runbook.md`、`docs/proposals/read-only-rule-update-for-hitl.md`
+- `classify_procedure` / `list_law_updates` の入力言語を 10 言語へ統一、classify 出力に `confidence`/`assumptions[]`
+
+### Changed (v2.1)
+- `submit_gyoseishoshi_approval`: MRTR `requestState`/`inputResponses` 経路を追加 (従来呼び出しは後方互換)
+- ai-plugin / Server Card の説明を 8 ツール構成 (Pro-tier 2 ツール) に更新
+- `scripts/smoke-mcp.mjs`: `prepare_document_package` と新 UI URI を検証対象に追加
+
+---
+
+## [Sprint 5]
 
 ### Added
 - `toToolErrorResult` 共通ヘルパ: Vertex 障害 / `TierLimitError` / `HitlGateError` を `isError` + 利用者向けメッセージ + 免責に変換

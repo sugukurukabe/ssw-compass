@@ -19,6 +19,7 @@ import {
   SubmitGyoseishoshiApprovalInput,
   type SupportedLanguage,
 } from "@ssw/shared-types";
+import { applyApprovalInputResponse } from "../../approval/index.js";
 import { emitAuditEvent, sha256Hex } from "../../audit/writer.js";
 import { getRequestAuthContext } from "../../auth/auth-store.js";
 import { assertHitlGate } from "../../hitl/lockgate.js";
@@ -66,6 +67,100 @@ export async function _submitGyoseishoshiApprovalInner(
   const sealImageHash = args.seal_image_base64
     ? createHash("sha256").update(args.seal_image_base64).digest("hex")
     : undefined;
+  if (args.requestState !== undefined) {
+    if (args.inputResponses === undefined) {
+      return {
+        isError: true,
+        content: [
+          {
+            type: "text",
+            text: `承認応答 inputResponses が必要です。\n\n${disclaimer}`,
+          },
+        ],
+      };
+    }
+
+    const approvalResult = await applyApprovalInputResponse({
+      requestState: args.requestState,
+      response: args.inputResponses,
+      // Bug 2 fix: 認証済み呼び出し元を渡し、approval_requests.principal と照合する。
+      // Pass authenticated caller so applyApprovalInputResponse can enforce ownership.
+      // Kirim pemanggil terautentikasi agar kepemilikan dapat ditegakkan.
+      ...(authContext?.user_id !== undefined
+        ? { callerPrincipal: sha256Hex(authContext.user_id) }
+        : {}),
+    });
+    const approved = approvalResult.ok && approvalResult.status === "approved";
+    const auditEvent: AuditEventType = {
+      timestamp: new Date().toISOString(),
+      actor: {
+        user_id_hash: sha256Hex(authContext?.user_id ?? "anonymous"),
+        tier: authContext?.tier ?? "free",
+        gyoseishoshi_number: authContext?.gyoseishoshi_number,
+      },
+      action: approved ? "draft_approved" : "draft_rejected",
+      case_id: args.case_id,
+      tool_id: "submit_gyoseishoshi_approval",
+      legal_level: "L2",
+      input_hash: sha256Hex({
+        case_id: args.case_id,
+        requestState: args.requestState,
+        approval: args.inputResponses.approval,
+      }),
+      output_hash: sha256Hex(approvalResult),
+      approval_signature: {
+        method: args.approval_method,
+        seal_image_hash: sealImageHash,
+        ip_address_hash: undefined,
+      },
+      schema_version: "v1",
+    };
+    emitAuditEvent(auditEvent);
+
+    if (!approvalResult.ok) {
+      return {
+        isError: true,
+        content: [
+          {
+            type: "text",
+            text: `承認処理に失敗しました: ${approvalResult.reason}\n\n${disclaimer}`,
+          },
+        ],
+        structuredContent: {
+          approved: false,
+          case_id: args.case_id,
+          draft_document_id: args.draft_document_id,
+          requestState: args.requestState,
+          reason: approvalResult.reason,
+          disclaimer,
+        },
+      };
+    }
+
+    return {
+      content: [
+        {
+          type: "text",
+          text:
+            `承認状態を更新しました。\n` +
+            `case_id: ${args.case_id}\n` +
+            `requestState: ${args.requestState}\n` +
+            `status: ${approvalResult.status}\n` +
+            `\n${disclaimer}`,
+        },
+      ],
+      structuredContent: {
+        approved,
+        case_id: args.case_id,
+        draft_document_id: args.draft_document_id,
+        requestState: args.requestState,
+        status: approvalResult.status,
+        audit_event_recorded: true,
+        disclaimer,
+      },
+    };
+  }
+
   const auditEvent: AuditEventType = {
     timestamp: new Date().toISOString(),
     actor: {

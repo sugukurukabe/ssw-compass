@@ -45,12 +45,24 @@ module "cloud_run" {
     # ADR-013: 明示的に jwt モード (コード既定値と同じ)。token 無し → 匿名 Free、
     # 不正 token → 401。staging との parity のため明示する。
     SSW_AUTH_MODE = "jwt"
+    # ADR-024: GCS バケット名はシークレットではないため plain env var で注入。
+    # バケット未作成の間は空文字列のまま — prepare_document_package は PACKAGE_ARTIFACT_BUCKET
+    # が空のとき起動時例外を throw して処理を止める（ハンドラ層で catch）。
+    PACKAGE_ARTIFACT_BUCKET = "ssw-compass-packages-prod"
   }
   # ADR-013: SSW_JWT_SECRET from Secret Manager.
   # gcloud secrets create ssw-jwt-secret --project=PROJECT_ID
   # printf '%s' "$(openssl rand -base64 48)" | gcloud secrets versions add ssw-jwt-secret --data-file=- --project=PROJECT_ID
+  #
+  # ADR-024: Supabase 承認状態ストア接続情報 from Secret Manager (asia-northeast1)。
+  # gcloud secrets create ssw-supabase-url --replication-policy=user-managed --locations=asia-northeast1
+  # gcloud secrets create ssw-supabase-service-role-key --replication-policy=user-managed --locations=asia-northeast1
+  # printf '%s' "https://<ref>.supabase.co" | gcloud secrets versions add ssw-supabase-url --data-file=-
+  # printf '%s' "<service_role_key>" | gcloud secrets versions add ssw-supabase-service-role-key --data-file=-
   secret_env_vars = {
-    SSW_JWT_SECRET = "ssw-jwt-secret"
+    SSW_JWT_SECRET            = "ssw-jwt-secret"
+    SUPABASE_URL              = "ssw-supabase-url"
+    SUPABASE_SERVICE_ROLE_KEY = "ssw-supabase-service-role-key"
   }
 
   # ADR-012: route all Cloud Run egress through the prod VPC connector so
@@ -111,6 +123,17 @@ module "vpc_egress" {
   # Use prod-specific names to avoid 409 conflict with staging resources
   # (both staging and prod share the same GCP project ssw-compass-prod-494613)
   network_name = "ssw-vpc-prod"
+}
+
+# ADR-024: prepare_document_package の成果物バケット。
+# 24h ライフサイクルで自動削除。PII 非格納。署名 URL は Cloud Run が発行。
+module "package_artifacts" {
+  source           = "../../modules/package-artifacts"
+  project_id       = var.project_id
+  location         = var.region
+  bucket_name      = "ssw-compass-packages-prod"
+  runtime_sa_email = var.runtime_sa_email
+  env              = "prod"
 }
 
 module "cloud_armor" {

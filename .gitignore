@@ -10,6 +10,8 @@ coverage/
 .idea/
 .cursor/mcp.json
 .claude/desktop_config.json
+supabase/.temp/
+supabase/.branches/
 *.tfstate
 *.tfstate.backup
 .terraform/

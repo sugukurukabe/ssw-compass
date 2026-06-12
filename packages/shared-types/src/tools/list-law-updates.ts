@@ -10,15 +10,12 @@
  */
 
 import { z } from "zod";
+import { SUPPORTED_LANGUAGES } from "../i18n/supported-languages.js";
 import { AffectingRole, LawUpdate, LawUpdateCategory } from "../law-updates.js";
-
-// SUPPORTED_LANGUAGES は Batch 8 で packages/shared-types/src/i18n/supported-languages.ts に移動する予定。
-// Sprint 4 Batch 7 では ja/en/id のみ先行定義して DISCLAIMER_BY_LANG の既存キーと揃える。
-const SUPPORTED_LANGUAGES_B7 = ["ja", "en", "id"] as const;
 
 export const ListLawUpdatesInput = z
   .object({
-    language: z.enum(SUPPORTED_LANGUAGES_B7).default("ja"),
+    language: z.enum(SUPPORTED_LANGUAGES).default("ja"),
     since: z
       .string()
       .regex(/^\d{4}-\d{2}-\d{2}$/)
@@ -35,6 +32,8 @@ export const ListLawUpdatesOutput = z
   .object({
     updates: z.array(LawUpdate),
     asOf: z.string().datetime(),
+    /** データセットの一次ソース突合レビュー日 (YYYY-MM-DD) */
+    datasetReviewedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     disclaimer: z.string(),
   })
   .strict();

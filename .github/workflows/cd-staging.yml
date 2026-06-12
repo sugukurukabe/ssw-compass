@@ -190,7 +190,7 @@ jobs:
           # responses that are not JSON. Do not revert a good image solely on
           # this compatibility smoke; prod and submission endpoints are checked
           # separately. Keep artefacts for diagnosis.
-          jq -e '.result.tools | length >= 5' /tmp/tools.json || {
+          jq -e '.result.tools | length >= 8' /tmp/tools.json || {
             echo "::warning::tools/list smoke did not parse as expected; uploading /tmp/tools-raw.txt and continuing"
           }
 
@@ -251,6 +251,28 @@ jobs:
           jq -e '.name_for_human == "SSW Compass Japan"' /tmp/ai-plugin.json
           curl -fsS -H "X-Serverless-Authorization: Bearer $TOKEN" "$URL/.well-known/openapi.json" | tee /tmp/openapi.json
           jq -e '.openapi == "3.1.0"' /tmp/openapi.json
+
+      - name: OAuth scope step-up (anonymous → submit_gyoseishoshi_approval must 403)
+        run: |
+          set -euo pipefail
+          URL="${{ needs.deploy.outputs.service_url }}"
+          TOKEN="${{ steps.id-token.outputs.id_token }}"
+          # Cloud Run IAM (allow_unauthenticated=false) は X-Serverless-Authorization で通す。
+          # アプリ層の認証ヘッダ (Authorization) は付けない → アプリは匿名 = compass:read のみ。
+          # submit_gyoseishoshi_approval は compass:approve が必要 → アプリ層が HTTP 403 + -32003 を返す。
+          # IAM token (X-Serverless-Authorization) lets the request through Cloud Run, while omitting
+          # the app JWT (Authorization) makes the app treat the caller as anonymous, so the 403 comes
+          # from the application scope gate (code -32003), not from a Cloud Run IAM rejection.
+          HTTP_CODE=$(curl -sS -o /tmp/scope-403.json -w '%{http_code}' -X POST "$URL/mcp" \
+            -H "X-Serverless-Authorization: Bearer $TOKEN" \
+            -H "Content-Type: application/json" \
+            -H "Accept: application/json, text/event-stream" \
+            -d '{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"submit_gyoseishoshi_approval","arguments":{"case_id":"case_aaaaaaaaaaaaaaaa","draft_document_id":"doc_aaaaaaaaaaaaaaaa","draft_content_hash":"sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa","approval_method":"checkbox_only","approver_gyoseishoshi_number":"東京都 12345"}}}')
+          echo "HTTP status: $HTTP_CODE"
+          cat /tmp/scope-403.json
+          test "$HTTP_CODE" = "403"
+          # Verify response body contains the application insufficient_scope error code.
+          jq -e '.error.code == -32003' /tmp/scope-403.json
 
       - name: MCP resources/read ui://ssw-search/mcp-app.html (Batch 7 UI dist)
         run: |

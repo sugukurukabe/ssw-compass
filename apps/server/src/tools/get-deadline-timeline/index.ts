@@ -1,9 +1,14 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { GetDeadlineTimelineInputV4, type SswCompassToolAnnotation } from "@ssw/shared-types";
+import {
+  GetDeadlineTimelineInputV4,
+  GetDeadlineTimelineOutput,
+  type SswCompassToolAnnotation,
+} from "@ssw/shared-types";
+import { SSW_COMPASS_TOOL_ICONS } from "../metadata.js";
 import { getDeadlineTimelineHandler } from "./handler.js";
 
-const UI_RESOURCE_URI = "ui://ssw-timeline/mcp-app.html";
+const UI_RESOURCE_URI = "ui://compass/timeline/1.0.0.html";
 
 export const GET_DEADLINE_TIMELINE_ANNOTATION: SswCompassToolAnnotation = {
   readOnlyHint: true,
@@ -33,8 +38,10 @@ export function registerGetDeadlineTimelineTool(server: McpServer): void {
         "the overall visa timeline looks. Information only — does not constitute legal advice. " +
         "Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers).",
       inputSchema: GetDeadlineTimelineInputV4.shape,
+      outputSchema: GetDeadlineTimelineOutput,
       annotations: GET_DEADLINE_TIMELINE_ANNOTATION,
       _meta: {
+        icons: SSW_COMPASS_TOOL_ICONS,
         ui: {
           resourceUri: UI_RESOURCE_URI,
         },

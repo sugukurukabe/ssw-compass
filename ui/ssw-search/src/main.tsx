@@ -1,6 +1,12 @@
 import { App, applyDocumentTheme, PostMessageTransport } from "@modelcontextprotocol/ext-apps";
-import type { SearchVisaOutput, UILanguage } from "@ssw/shared-types";
-import { extractToolResultText, getElement, renderNotice, setInnerHTML } from "@ssw/ui-bridge";
+import type { SearchVisaOutput, SupportedLanguage, UILanguage } from "@ssw/shared-types";
+import {
+  extractToolResultText,
+  getElement,
+  pickSupportedLanguage,
+  renderLocalizedErrorNotice,
+  setInnerHTML,
+} from "@ssw/ui-bridge";
 import { render } from "./render.js";
 import { renderSkeleton } from "./skeleton.js";
 
@@ -24,6 +30,7 @@ function pickLanguage(locale: string | undefined): UILanguage {
 }
 
 let currentLang: UILanguage = "ja";
+let currentErrorLang: SupportedLanguage = "ja";
 let currentResult: SearchVisaOutput | null = null;
 let showSources = false;
 
@@ -45,6 +52,7 @@ app.onhostcontextchanged = (params: HostContextChangedParams) => {
     applyDocumentTheme(params.theme);
   }
   currentLang = pickLanguage(params.locale);
+  currentErrorLang = pickSupportedLanguage(params.locale, navigator.language);
 };
 
 app.ontoolinput = () => {
@@ -54,8 +62,19 @@ app.ontoolinput = () => {
 app.ontoolresult = (params) => {
   const structured = params.structuredContent;
   if (structured === undefined) {
-    // 空結果・エラー時は skeleton のままにせず、返却テキストを通知として表示する。
-    renderNotice(root, extractToolResultText(params) ?? NOTICE_FALLBACK[currentLang]);
+    renderLocalizedErrorNotice({
+      rootEl: root,
+      language: currentErrorLang,
+      kind: "error.communication_failed",
+      detail: extractToolResultText(params),
+      onRetry: () => {
+        (app as unknown as { updateModelContext?: (ctx: unknown) => void }).updateModelContext?.({
+          error_kind: "communication_failed",
+          tool: "search_visa",
+          retriable: true,
+        });
+      },
+    });
     return;
   }
   currentResult = structured as SearchVisaOutput;

@@ -21,6 +21,10 @@ import {
   registerListVisaDocumentsTool,
 } from "./tools/list-visa-documents/index.js";
 import { registerListVisaDocumentsUiResource } from "./tools/list-visa-documents/ui.js";
+import {
+  PREPARE_DOCUMENT_PACKAGE_ANNOTATION,
+  registerPrepareDocumentPackageTool,
+} from "./tools/prepare-document-package/index.js";
 import { registerSearchVisaTool, SEARCH_VISA_ANNOTATION } from "./tools/search-visa/index.js";
 import { registerSearchVisaUiResource } from "./tools/search-visa/ui.js";
 import {
@@ -59,6 +63,7 @@ export function createMcpServer(): McpServer {
 
   registerListLawUpdatesTool(server);
   registerSubmitGyoseishoshiApprovalTool(server);
+  registerPrepareDocumentPackageTool(server);
   registerWorkflowPrompts(server);
   registerCatalogResources(server);
 
@@ -80,6 +85,10 @@ export function createMcpServer(): McpServer {
     {
       name: "submit_gyoseishoshi_approval",
       annotations: SUBMIT_GYOSEISHOSHI_APPROVAL_ANNOTATION,
+    },
+    {
+      name: "prepare_document_package",
+      annotations: PREPARE_DOCUMENT_PACKAGE_ANNOTATION,
     },
   ]);
 

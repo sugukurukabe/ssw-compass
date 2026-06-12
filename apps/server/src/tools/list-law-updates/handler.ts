@@ -15,6 +15,7 @@ import {
   ListLawUpdatesInput,
   type SupportedLanguage,
 } from "@ssw/shared-types";
+import { CACHE_TIERS, lawUpdatesCacheGeneration, withCacheMeta } from "../../cache.js";
 import { filterActiveLawUpdates } from "../../law-updates/active-filter.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
@@ -90,30 +91,37 @@ export const listLawUpdatesHandler = instrumentTool(
 
     const asOf = new Date().toISOString();
 
-    return {
-      content: [
-        {
-          type: "text",
-          text:
-            `${entries.length}件の制度変動情報 (${args.language})\n` +
-            entries
-              .map(
-                (e) => `・${e.title_ja} (${e.effective_date}) — ${e.impact_severity.toUpperCase()}`,
-              )
-              .join("\n") +
-            // データの鮮度を利用者に明示する (社内運用時の判断材料)。
-            // Surface dataset freshness so internal staff can judge recency.
-            // Tampilkan kesegaran data agar staf dapat menilai kemutakhiran.
-            `\n\nデータ最終確認日: ${LAW_UPDATES_DATASET_REVIEWED_DATE} (一次ソース突合)` +
-            `\n\n${disclaimer}`,
+    return withCacheMeta(
+      {
+        content: [
+          {
+            type: "text",
+            text:
+              `${entries.length}件の制度変動情報 (${args.language})\n` +
+              entries
+                .map(
+                  (e) =>
+                    `・${e.title_ja} (${e.effective_date}) — ${e.impact_severity.toUpperCase()}`,
+                )
+                .join("\n") +
+              // データの鮮度を利用者に明示する (社内運用時の判断材料)。
+              // Surface dataset freshness so internal staff can judge recency.
+              // Tampilkan kesegaran data agar staf dapat menilai kemutakhiran.
+              `\n\nデータ最終確認日: ${LAW_UPDATES_DATASET_REVIEWED_DATE} (一次ソース突合)` +
+              `\n\n${disclaimer}`,
+          },
+        ],
+        structuredContent: {
+          updates: entries,
+          asOf,
+          datasetReviewedDate: LAW_UPDATES_DATASET_REVIEWED_DATE,
+          disclaimer,
         },
-      ],
-      structuredContent: {
-        updates: entries,
-        asOf,
-        datasetReviewedDate: LAW_UPDATES_DATASET_REVIEWED_DATE,
-        disclaimer,
       },
-    };
+      {
+        ...CACHE_TIERS.B_PUBLIC_HOUR,
+        cacheGeneration: lawUpdatesCacheGeneration(LAW_UPDATES_DATASET_REVIEWED_DATE),
+      },
+    );
   },
 );

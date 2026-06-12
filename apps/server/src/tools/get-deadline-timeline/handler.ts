@@ -7,6 +7,7 @@ import {
   TierLimitError,
 } from "@ssw/shared-types";
 import type { Request } from "express";
+import { CACHE_TIERS, withCacheMeta } from "../../cache.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";
@@ -146,14 +147,17 @@ export const getDeadlineTimelineHandler = instrumentTool(
       .map((d) => `・${d.label[labelLang]} — ${d.relativeLabel[labelLang]}`)
       .join("\n");
 
-    return {
-      content: [
-        {
-          type: "text",
-          text: `${summaryLines}\n\n${payload.disclaimer}`,
-        },
-      ],
-      structuredContent: payload,
-    };
+    return withCacheMeta(
+      {
+        content: [
+          {
+            type: "text",
+            text: `${summaryLines}\n\n${payload.disclaimer}`,
+          },
+        ],
+        structuredContent: payload,
+      },
+      CACHE_TIERS.C_PRIVATE_NO_STORE,
+    );
   },
 );
