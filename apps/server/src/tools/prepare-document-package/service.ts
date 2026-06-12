@@ -12,6 +12,19 @@ import { lookupDocuments } from "../list-visa-documents/document-catalog.js";
 
 const SIGNED_URL_TTL_MS = 3_600_000;
 
+function getRequiredEnv(name: string, context: string): string {
+  const value = process.env[name];
+  if (value === undefined || value.length === 0) {
+    throw new Error(`${name} is required ${context}`);
+  }
+  return value;
+}
+
+function getOptionalEnv(name: string): string | undefined {
+  const value = process.env[name];
+  return value === undefined || value.length === 0 ? undefined : value;
+}
+
 export function generateDocumentPackageTaskId(): string {
   return `task_${randomBytes(16).toString("base64url")}`;
 }
@@ -82,14 +95,14 @@ export async function enqueuePackageTask(input: {
   if (process.env["PACKAGE_ASYNC_ENABLED"] !== "true") {
     return false;
   }
-  const queuePath = process.env["PACKAGE_CLOUD_TASKS_QUEUE_PATH"];
-  const executorUrl = process.env["PACKAGE_EXECUTOR_URL"];
-  if (queuePath === undefined || queuePath.length === 0) {
-    throw new Error("PACKAGE_CLOUD_TASKS_QUEUE_PATH is required when PACKAGE_ASYNC_ENABLED=true");
-  }
-  if (executorUrl === undefined || executorUrl.length === 0) {
-    throw new Error("PACKAGE_EXECUTOR_URL is required when PACKAGE_ASYNC_ENABLED=true");
-  }
+  const context = "when PACKAGE_ASYNC_ENABLED=true";
+  const queuePath = getRequiredEnv("PACKAGE_CLOUD_TASKS_QUEUE_PATH", context);
+  const executorUrl = getRequiredEnv("PACKAGE_EXECUTOR_URL", context);
+  const executorServiceAccountEmail = getRequiredEnv(
+    "PACKAGE_EXECUTOR_SERVICE_ACCOUNT_EMAIL",
+    context,
+  );
+  const executorAudience = getOptionalEnv("PACKAGE_EXECUTOR_AUDIENCE") ?? executorUrl;
 
   const client = new CloudTasksClient();
   await client.createTask({
@@ -102,6 +115,10 @@ export async function enqueuePackageTask(input: {
         body: Buffer.from(JSON.stringify({ taskId: input.taskId, input: input.payload })).toString(
           "base64",
         ),
+        oidcToken: {
+          serviceAccountEmail: executorServiceAccountEmail,
+          audience: executorAudience,
+        },
       },
       dispatchDeadline: { seconds: 600 },
     },
