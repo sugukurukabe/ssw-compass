@@ -60,9 +60,9 @@ module "cloud_run" {
   # printf '%s' "https://<ref>.supabase.co" | gcloud secrets versions add ssw-supabase-url --data-file=-
   # printf '%s' "<service_role_key>" | gcloud secrets versions add ssw-supabase-service-role-key --data-file=-
   secret_env_vars = {
-    SSW_JWT_SECRET                = "ssw-jwt-secret"
-    SUPABASE_URL                  = "ssw-supabase-url"
-    SUPABASE_SERVICE_ROLE_KEY     = "ssw-supabase-service-role-key"
+    SSW_JWT_SECRET            = "ssw-jwt-secret"
+    SUPABASE_URL              = "ssw-supabase-url"
+    SUPABASE_SERVICE_ROLE_KEY = "ssw-supabase-service-role-key"
   }
 
   # ADR-012: route all Cloud Run egress through the prod VPC connector so
