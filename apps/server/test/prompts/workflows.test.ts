@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { buildNewStaffIntakePromptText } from "../../src/prompts/workflows.js";
+import { buildNewStaffIntakePromptText, prefixFilter } from "../../src/prompts/workflows.js";
 
 describe("workflow prompts", () => {
   it("builds the new staff intake prompt with the required workflow guardrails", () => {
@@ -16,5 +16,23 @@ describe("workflow prompts", () => {
     expect(text).toContain("list_visa_documents");
     expect(text).toContain("validate_zairyu_compatibility");
     expect(text).toContain("在留カード番号");
+  });
+});
+
+describe("prompt argument completion (prefixFilter)", () => {
+  const candidates = ["農業", "漁業", "建設", "介護"] as const;
+
+  it("returns all candidates for empty input", () => {
+    expect(prefixFilter(candidates)("")).toEqual([...candidates]);
+    expect(prefixFilter(candidates)(undefined)).toEqual([...candidates]);
+  });
+
+  it("filters by prefix", () => {
+    expect(prefixFilter(candidates)("農")).toEqual(["農業"]);
+    expect(prefixFilter(candidates)("漁")).toEqual(["漁業"]);
+  });
+
+  it("returns empty when no candidate matches", () => {
+    expect(prefixFilter(candidates)("航空")).toEqual([]);
   });
 });

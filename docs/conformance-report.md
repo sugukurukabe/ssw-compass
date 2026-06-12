@@ -74,6 +74,18 @@ CD staging (run 27439762161) green after merging PR #99 / #100:
   constraint #3 updated to permit them under scope + HITL + audit guards
   (see `docs/proposals/read-only-rule-update-for-hitl.md`, status: Applied).
 
+## MCP Primitive Activation (2026-06-13, ADR-026)
+
+| Primitive | Status |
+| --- | --- |
+| Tools / Prompts / Resources / Resource Templates | Activated |
+| Completion | Activated on Resource Template args **and** prompt args (`completable()`) |
+| Logging | Intentionally not activated (stateless transport; WORM audit is the log of record) |
+| Pagination | Not applicable (bounded catalogs; SDK auto-paginates if a page overflows) |
+
+Sampling is intentionally never used (conflicts with the primary-source-only,
+no-LLM-fallback principle). See ADR-026 for the full decision record.
+
 ## External SDK Assessment (2026-06-13, ADR-025)
 
 `@modelcontextprotocol/sdk` 1.29.0 (latest published) capability check:

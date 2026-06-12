@@ -113,6 +113,24 @@ MCP の次期仕様（2026-07-28 RC）に**先行対応**しました。
 
 ---
 
+## 4.5 MCP プリミティブ活用状況 / MCP primitive activation / Aktivasi primitif MCP
+
+MCP 公式の 7 プリミティブのうち 5 つを実活性化し、残り 2 つは設計判断として
+意図的に不採用（ADR-026）。
+
+| プリミティブ | 状態 |
+| --- | --- |
+| Tools | ✅ 9ツール（全注釈 + outputSchema + アイコン） |
+| Prompts | ✅ 3ワークフロー |
+| Resources | ✅ 4カタログ |
+| Resource Templates | ✅ 3テンプレート（`{industry}` / `{eventContext}`） |
+| Completion | ✅ Resource Template 引数 **+ Prompt 引数**（日本語候補補完） |
+| Logging | ⛔ 意図的に不採用（ステートレス + WORM 監査が正本） |
+| Pagination | ⛔ 非該当（有界カタログ、SDK が必要時に自動分割） |
+
+Sampling は「一次情報のみ・LLM 知識にフォールバックしない」原則と矛盾するため
+**意図的に未使用**。Elicitation/Tasks は RC アダプタ（ADR-025）で対応。
+
 ## 5. アーキテクチャ / Architecture / Arsitektur
 
 ```mermaid

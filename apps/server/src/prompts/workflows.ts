@@ -1,5 +1,68 @@
+import { completable } from "@modelcontextprotocol/sdk/server/completable.js";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
 import { z } from "zod";
+
+// プロンプト引数の入力補完候補 (自然言語の日本語。新人スタッフが選びやすい代表値)。
+// Curated Japanese completion candidates for prompt arguments (non-technical staff UX).
+// Kandidat pelengkapan otomatis berbahasa Jepang untuk argumen prompt.
+const CURRENT_STATUS_SUGGESTIONS = [
+  "技能実習2号",
+  "技能実習3号",
+  "技能実習1号",
+  "特定技能1号",
+  "留学",
+  "技人国",
+  "家族滞在",
+  "特定活動",
+  "海外在住",
+  "未確認",
+] as const;
+
+const TARGET_STATUS_SUGGESTIONS = ["特定技能1号", "特定技能2号", "技人国"] as const;
+
+const INDUSTRY_SUGGESTIONS = [
+  "農業",
+  "漁業",
+  "飲食料品製造業",
+  "外食業",
+  "建設",
+  "介護",
+  "ビルクリーニング",
+  "工業製品製造業",
+  "造船・舶用工業",
+  "自動車整備",
+  "航空",
+  "宿泊",
+  "自動車運送業",
+  "鉄道",
+  "林業",
+  "木材産業",
+] as const;
+
+const NOTIFICATION_EVENT_SUGGESTIONS = [
+  "雇用契約変更",
+  "雇用契約終了",
+  "支援計画変更",
+  "所属機関変更",
+  "所属機関所在地変更",
+  "定期届出",
+] as const;
+
+const VISA_CATEGORY_SUGGESTIONS = ["特定技能1号", "特定技能2号"] as const;
+
+// 前方一致 (大小文字無視) で候補を絞り込む共通ヘルパ。
+// Prefix filter (case-insensitive) shared by all prompt-arg completers.
+export function prefixFilter(
+  candidates: readonly string[],
+): (value: string | undefined) => string[] {
+  return (value: string | undefined) => {
+    const v = (value ?? "").trim().toLowerCase();
+    if (v.length === 0) {
+      return [...candidates];
+    }
+    return candidates.filter((c) => c.toLowerCase().startsWith(v));
+  };
+}
 
 function userPrompt(text: string) {
   return {
@@ -58,11 +121,18 @@ export function registerWorkflowPrompts(server: McpServer): void {
       description:
         "新人・派遣担当が個人情報を入れずに、申請種別、必要書類、期限、就労リスク、エスカレーション要否を順番に確認する社内標準ワークフロー。",
       argsSchema: {
-        current_status: z
-          .string()
-          .describe("現在の在留資格や状況。例: 技能実習2号、留学、海外在住、未確認"),
-        target_status: z.string().default("特定技能1号").describe("目標の在留資格"),
-        industry: z.string().describe("希望する特定技能分野。例: 農業、建設、介護"),
+        current_status: completable(
+          z.string().describe("現在の在留資格や状況。例: 技能実習2号、留学、海外在住、未確認"),
+          prefixFilter(CURRENT_STATUS_SUGGESTIONS),
+        ),
+        target_status: completable(
+          z.string().default("特定技能1号").describe("目標の在留資格"),
+          prefixFilter(TARGET_STATUS_SUGGESTIONS),
+        ),
+        industry: completable(
+          z.string().describe("希望する特定技能分野。例: 農業、建設、介護"),
+          prefixFilter(INDUSTRY_SUGGESTIONS),
+        ),
         intended_work: z
           .string()
           .optional()
@@ -83,9 +153,18 @@ export function registerWorkflowPrompts(server: McpServer): void {
       description:
         "特定技能の申請種別を判定し、第1表/第2表/第3表、母国語確認、試験免除、届出期限まで確認する標準ワークフロー。",
       argsSchema: {
-        current_status: z.string().describe("現在の在留資格。例: 技能実習2号、技人国、海外在住"),
-        target_status: z.string().default("特定技能1号").describe("目標の在留資格"),
-        industry: z.string().describe("希望する特定技能分野。例: 農業、建設、介護"),
+        current_status: completable(
+          z.string().describe("現在の在留資格。例: 技能実習2号、技人国、海外在住"),
+          prefixFilter(CURRENT_STATUS_SUGGESTIONS),
+        ),
+        target_status: completable(
+          z.string().default("特定技能1号").describe("目標の在留資格"),
+          prefixFilter(TARGET_STATUS_SUGGESTIONS),
+        ),
+        industry: completable(
+          z.string().describe("希望する特定技能分野。例: 農業、建設、介護"),
+          prefixFilter(INDUSTRY_SUGGESTIONS),
+        ),
         receiving_organization_profile: z
           .string()
           .optional()
@@ -119,10 +198,16 @@ export function registerWorkflowPrompts(server: McpServer): void {
       description:
         "雇用契約変更・支援計画変更・所属機関変更・定期届出などの届出期限と関連様式を確認するワークフロー。",
       argsSchema: {
-        event: z
-          .string()
-          .describe("届出事由。例: 支援計画変更、雇用契約終了、所属機関所在地変更、定期届出"),
-        visa_category: z.string().default("特定技能1号").describe("対象の在留資格"),
+        event: completable(
+          z
+            .string()
+            .describe("届出事由。例: 支援計画変更、雇用契約終了、所属機関所在地変更、定期届出"),
+          prefixFilter(NOTIFICATION_EVENT_SUGGESTIONS),
+        ),
+        visa_category: completable(
+          z.string().default("特定技能1号").describe("対象の在留資格"),
+          prefixFilter(VISA_CATEGORY_SUGGESTIONS),
+        ),
       },
     },
     (args) =>
