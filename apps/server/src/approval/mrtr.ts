@@ -11,6 +11,9 @@ import { ApprovalRepository } from "./repository.js";
 import { evaluateApprovalTransition } from "./state-machine.js";
 import type { ApprovalRequestRecord, TransitionDecision } from "./types.js";
 
+const EDIT_ESCALATION_PRIOR_DECISION_LIMIT = 3;
+const MAX_APPROVAL_CHAIN_DEPTH = 10;
+
 export type ApprovalInputRequiredResult = CallToolResult & {
   resultType: "inputRequired";
   inputRequests: {
@@ -97,13 +100,22 @@ async function countPriorEditDecisions(
   let count = 0;
   let depth = 0;
   let parentId = request.parent_id;
-  while (parentId !== null && depth < 10) {
+  while (parentId !== null) {
+    if (depth >= MAX_APPROVAL_CHAIN_DEPTH) {
+      return EDIT_ESCALATION_PRIOR_DECISION_LIMIT;
+    }
     const parent = await repository.getApprovalRequest(parentId);
     if (parent === null) {
-      break;
+      // 祖先チェーンが欠けている場合、既知の件数だけを返すと編集回数を過小評価する。
+      // Missing ancestors make the true edit count unknowable; force the safe escalation path.
+      // Jika rantai leluhur hilang, jumlah edit sebenarnya tidak diketahui; paksa eskalasi aman.
+      return EDIT_ESCALATION_PRIOR_DECISION_LIMIT;
     }
     if (parent.decision === "edit") {
       count += 1;
+      if (count >= EDIT_ESCALATION_PRIOR_DECISION_LIMIT) {
+        return count;
+      }
     }
     depth += 1;
     parentId = parent.parent_id;

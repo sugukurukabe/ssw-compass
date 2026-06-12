@@ -200,6 +200,37 @@ describe("approval MRTR helpers", () => {
     expect(sink.notify).toHaveBeenCalledOnce();
   });
 
+  it("escalates when the ancestor chain is incomplete instead of undercounting edits", async () => {
+    const firstKnown = approval({
+      id: "ars_firstabcdefghijklmnopq",
+      parent_id: "ars_missingabcdefghijklmn",
+      status: "rejected",
+      decision: "edit",
+    });
+    const secondKnown = approval({
+      id: "ars_secondabcdefghijklmnop",
+      parent_id: firstKnown.id,
+      status: "rejected",
+      decision: "edit",
+    });
+    const current = approval({ parent_id: secondKnown.id });
+    const sink: NotificationSink = { notify: vi.fn(async () => undefined) };
+
+    const result = await applyApprovalInputResponse({
+      requestState: current.id,
+      response: { approval: "edit", edit_note: "修正してください" },
+      repository: repository({ requests: [firstKnown, secondKnown, current], draft: draft() }),
+      notificationSink: sink,
+      now: NOW,
+    });
+
+    expect(result.ok).toBe(true);
+    if (result.ok) {
+      expect(result.status).toBe("escalated");
+    }
+    expect(sink.notify).toHaveBeenCalledOnce();
+  });
+
   it("does not count explicit reject ancestors toward edit-loop escalation", async () => {
     const root = approval({
       id: "ars_rootabcdefghijklmnopqr",
