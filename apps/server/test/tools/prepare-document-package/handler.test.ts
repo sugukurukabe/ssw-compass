@@ -113,8 +113,7 @@ describe("prepare_document_package handler — idempotency", () => {
   const previousAsyncEnabled = process.env["PACKAGE_ASYNC_ENABLED"];
   const previousQueuePath = process.env["PACKAGE_CLOUD_TASKS_QUEUE_PATH"];
   const previousExecutorUrl = process.env["PACKAGE_EXECUTOR_URL"];
-  const previousExecutorServiceAccountEmail =
-    process.env["PACKAGE_EXECUTOR_SERVICE_ACCOUNT_EMAIL"];
+  const previousExecutorServiceAccountEmail = process.env["PACKAGE_EXECUTOR_SERVICE_ACCOUNT_EMAIL"];
   const previousExecutorAudience = process.env["PACKAGE_EXECUTOR_AUDIENCE"];
   let store: Map<string, StoredObject>;
   let saveLog: string[];
