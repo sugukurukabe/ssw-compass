@@ -69,7 +69,7 @@ const SERVER_CARD: ServerCard = {
   description:
     "Official-source-grounded informational app for Japanese specified-skilled-worker (SSW / 特定技能) and related visa procedures. " +
     "Six anonymous read-only tools cover search, procedure classification, deadlines, document checklists, law updates, and zairyu compatibility. " +
-    "An additional Pro-tier tool records a certified gyoseishoshi's approval (authenticated; anonymous callers blocked). " +
+    "Two additional Pro-tier tools record a certified gyoseishoshi's approval and prepare document packages (authenticated; anonymous callers blocked). " +
     "Information only — not legal advice.",
   publisher: {
     name: "スグクル株式会社",

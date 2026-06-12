@@ -89,6 +89,14 @@ export const searchVisa = instrumentTool(
                 `\n\n${disclaimer}`,
             },
           ],
+          // outputSchema 検証 (SDK validateToolOutput) のため空結果でも structuredContent を返す。
+          // Empty results still need structuredContent because the SDK validates it against outputSchema.
+          // Hasil kosong tetap memerlukan structuredContent karena SDK memvalidasinya terhadap outputSchema.
+          structuredContent: SearchVisaOutput.parse({
+            results: [],
+            disclaimer,
+            asOf: new Date().toISOString().slice(0, 10),
+          }),
         },
         CACHE_TIERS.A_PUBLIC_DAY,
       );

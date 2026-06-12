@@ -103,6 +103,14 @@ export const listVisaDocumentsHandler = instrumentTool(
                 `\n\n${disclaimer}`,
             },
           ],
+          // outputSchema 検証 (SDK validateToolOutput) のため空結果でも structuredContent を返す。
+          // Empty results still need structuredContent because the SDK validates it against outputSchema.
+          // Hasil kosong tetap memerlukan structuredContent karena SDK memvalidasinya terhadap outputSchema.
+          structuredContent: ListVisaDocumentsOutput.parse({
+            documents: [],
+            disclaimer,
+            asOf: new Date().toISOString().slice(0, 10),
+          }),
         },
         args.industry === undefined ? CACHE_TIERS.A_PUBLIC_DAY : CACHE_TIERS.B_PUBLIC_HOUR,
       );

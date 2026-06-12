@@ -32,6 +32,8 @@ export const ListLawUpdatesOutput = z
   .object({
     updates: z.array(LawUpdate),
     asOf: z.string().datetime(),
+    /** データセットの一次ソース突合レビュー日 (YYYY-MM-DD) */
+    datasetReviewedDate: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
     disclaimer: z.string(),
   })
   .strict();

@@ -8,9 +8,17 @@ const REQUIRED_TOOLS = [
   "list_law_updates",
   "validate_zairyu_compatibility",
   "submit_gyoseishoshi_approval",
+  "prepare_document_package",
 ];
 
 const REQUIRED_UI_RESOURCES = [
+  // v2.1 primary URIs (semver scheme)
+  "ui://compass/search/1.0.0.html",
+  "ui://compass/classify/1.0.0.html",
+  "ui://compass/timeline/1.0.0.html",
+  "ui://compass/checklist/1.0.0.html",
+  "ui://compass/validate/1.0.0.html",
+  // legacy aliases kept for host review caches
   "ui://ssw-search/mcp-app.html",
   "ui://ssw-classify/mcp-app.html",
   "ui://ssw-timeline/mcp-app.html",
