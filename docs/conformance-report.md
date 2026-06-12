@@ -55,9 +55,29 @@ review caught and fixed three would-be production failures before release:
 3. `list_visa_documents` empty-result path had the same gap → now returns a
    validated empty `documents` payload.
 
+## Staging Verification (2026-06-13)
+
+CD staging (run 27439762161) green after merging PR #99 / #100:
+
+- 8 tools served; UI resources (semver + legacy) resolve.
+- HITL guard smoke: anonymous `submit_gyoseishoshi_approval` is blocked.
+  staging (`SSW_AUTH_MODE=anonymous`) blocks via the HITL gate (HTTP 200 +
+  `result.isError=true`); prod (`SSW_AUTH_MODE=jwt`) blocks via the scope gate
+  (HTTP 403 + `-32003`). Both satisfy the "anonymous cannot drive an approval"
+  contract.
+- Supabase migrations 001–005 applied to the dedicated prod project; CAS replay
+  and `decision` column verified.
+
+## Governance Alignment
+
+- ADR-024 approves the two L2 HITL write tools. `.cursor/rules/00-global-context.mdc`
+  constraint #3 updated to permit them under scope + HITL + audit guards
+  (see `docs/proposals/read-only-rule-update-for-hitl.md`, status: Applied).
+
 ## Residual Risk
 
 - The RC may change before the final 2026-07-28 publication.
 - The thin Express adapter should be removed once `@modelcontextprotocol/sdk`
   ships first-class support for `server/discover`, routing headers, and MRTR.
-- Cloud Tasks and GCS lifecycle behavior require deployed GCP verification.
+- Cloud Tasks and GCS lifecycle behavior require deployed GCP verification
+  (prod `prepare_document_package` end-to-end signed-URL check after CD prod).
