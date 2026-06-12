@@ -24,7 +24,37 @@ import {
   findSavedPackageArtifact,
   resolvePackageIdempotency,
   savePackageArtifact,
+  type SavedPackageArtifact,
 } from "./service.js";
+
+function toCompletedPackageResult(input: {
+  taskId: string;
+  artifact: SavedPackageArtifact;
+  disclaimer: string;
+  message: string;
+}): CallToolResult {
+  const payload = PrepareDocumentPackageOutput.parse({
+    task_id: input.taskId,
+    status: "completed",
+    result: {
+      signed_url: input.artifact.signedUrl,
+      expires_at: input.artifact.signedUrlExpiresAt,
+    },
+    disclaimer: input.disclaimer,
+  });
+  return {
+    content: [
+      {
+        type: "text",
+        text:
+          `${input.message}\n` +
+          `task_id: ${input.taskId}\n` +
+          `署名付きURLの有効期限: ${input.artifact.signedUrlExpiresAt}\n\n${input.disclaimer}`,
+      },
+    ],
+    structuredContent: payload,
+  };
+}
 
 export const prepareDocumentPackageHandler = instrumentTool(
   "prepare_document_package",
@@ -65,31 +95,16 @@ export const prepareDocumentPackageHandler = instrumentTool(
       const taskId = idempotency.record.task_id;
       const existing = await findSavedPackageArtifact({ taskId, requestFingerprint });
       if (existing !== null) {
-        const payload = PrepareDocumentPackageOutput.parse({
-          task_id: taskId,
-          status: "completed",
-          result: {
-            signed_url: existing.signedUrl,
-            expires_at: existing.signedUrlExpiresAt,
-          },
+        return toCompletedPackageResult({
+          taskId,
+          artifact: existing,
           disclaimer,
+          message: "既存の書類パッケージを返します。",
         });
-        return {
-          content: [
-            {
-              type: "text",
-              text:
-                `既存の書類パッケージを返します。\n` +
-                `task_id: ${taskId}\n` +
-                `署名付きURLの有効期限: ${existing.signedUrlExpiresAt}\n\n${disclaimer}`,
-            },
-          ],
-          structuredContent: payload,
-        };
       }
 
-      const queued = await enqueuePackageTask({ taskId, payload: args });
-      if (queued) {
+      const enqueueResult = await enqueuePackageTask({ taskId, payload: args });
+      if (enqueueResult === "queued") {
         const payload = PrepareDocumentPackageOutput.parse({
           task_id: taskId,
           status: "queued",
@@ -105,18 +120,29 @@ export const prepareDocumentPackageHandler = instrumentTool(
           structuredContent: payload,
         };
       }
+      if (enqueueResult === "already_exists") {
+        const completedByExecutor = await findSavedPackageArtifact({ taskId, requestFingerprint });
+        if (completedByExecutor !== null) {
+          return toCompletedPackageResult({
+            taskId,
+            artifact: completedByExecutor,
+            disclaimer,
+            message: "既存の書類パッケージを返します。",
+          });
+        }
+        logger.warn(
+          {
+            tool: "prepare_document_package",
+            task_id: taskId,
+            case_handle: args.case_handle,
+            status: "sync_fallback",
+          },
+          "prepare_document_package_async_task_duplicate_sync_fallback",
+        );
+      }
 
       const artifact = buildDocumentPackageArtifact(args);
       const saved = await savePackageArtifact({ taskId, artifact, requestFingerprint });
-      const payload = PrepareDocumentPackageOutput.parse({
-        task_id: taskId,
-        status: "completed",
-        result: {
-          signed_url: saved.signedUrl,
-          expires_at: saved.signedUrlExpiresAt,
-        },
-        disclaimer,
-      });
 
       logger.info(
         {
@@ -129,18 +155,12 @@ export const prepareDocumentPackageHandler = instrumentTool(
         "prepare_document_package_completed",
       );
 
-      return {
-        content: [
-          {
-            type: "text",
-            text:
-              `書類パッケージを生成しました。\n` +
-              `task_id: ${taskId}\n` +
-              `署名付きURLの有効期限: ${saved.signedUrlExpiresAt}\n\n${disclaimer}`,
-          },
-        ],
-        structuredContent: payload,
-      };
+      return toCompletedPackageResult({
+        taskId,
+        artifact: saved,
+        disclaimer,
+        message: "書類パッケージを生成しました。",
+      });
     } catch (error) {
       return toToolErrorResult(error, "prepare_document_package", args.language);
     }

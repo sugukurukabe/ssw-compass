@@ -52,6 +52,8 @@ export interface PackageIdempotencyResolution {
   record: PackageIdempotencyRecord;
 }
 
+export type PackageTaskEnqueueResult = "disabled" | "queued" | "already_exists";
+
 export class IdempotencyConflictError extends Error {
   public readonly userMessage =
     "同じ idempotency_key が異なる入力内容で再利用されました。" +
@@ -372,9 +374,9 @@ function isAlreadyExists(error: unknown): boolean {
 export async function enqueuePackageTask(input: {
   taskId: string;
   payload: PrepareDocumentPackageInput;
-}): Promise<boolean> {
+}): Promise<PackageTaskEnqueueResult> {
   if (process.env["PACKAGE_ASYNC_ENABLED"] !== "true") {
-    return false;
+    return "disabled";
   }
   const context = "when PACKAGE_ASYNC_ENABLED=true";
   const queuePath = getRequiredEnv("PACKAGE_CLOUD_TASKS_QUEUE_PATH", context);
@@ -410,6 +412,7 @@ export async function enqueuePackageTask(input: {
     if (!isAlreadyExists(error)) {
       throw error;
     }
+    return "already_exists";
   }
-  return true;
+  return "queued";
 }

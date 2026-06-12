@@ -1,6 +1,6 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import type { AuthContextType } from "@ssw/shared-types";
-import { afterEach, beforeEach, describe, expect, it } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { runWithAuthContext } from "../../../src/auth/auth-store.js";
 import { prepareDocumentPackageHandler } from "../../../src/tools/prepare-document-package/handler.js";
 import {
@@ -8,6 +8,25 @@ import {
   type PackageObjectFileForTesting,
   type PackageObjectSaveOptions,
 } from "../../../src/tools/prepare-document-package/service.js";
+
+type CreateTaskRequest = {
+  parent?: string;
+  task?: {
+    name?: string;
+  };
+};
+
+type CreateTaskMock = (request: CreateTaskRequest) => Promise<readonly [{ name: string }]>;
+
+const createTaskMock = vi.hoisted(() =>
+  vi.fn<CreateTaskMock>(async () => [{ name: "tasks/document-package" }]),
+);
+
+vi.mock("@google-cloud/tasks", () => ({
+  CloudTasksClient: vi.fn(() => ({
+    createTask: createTaskMock,
+  })),
+}));
 
 const PRO_GYO: AuthContextType = {
   user_id: "pro-gyo-prepare-package",
@@ -92,14 +111,24 @@ function structuredContent(result: CallToolResult): Record<string, unknown> {
 describe("prepare_document_package handler — idempotency", () => {
   const previousBucket = process.env["PACKAGE_ARTIFACT_BUCKET"];
   const previousAsyncEnabled = process.env["PACKAGE_ASYNC_ENABLED"];
+  const previousQueuePath = process.env["PACKAGE_CLOUD_TASKS_QUEUE_PATH"];
+  const previousExecutorUrl = process.env["PACKAGE_EXECUTOR_URL"];
+  const previousExecutorServiceAccountEmail =
+    process.env["PACKAGE_EXECUTOR_SERVICE_ACCOUNT_EMAIL"];
+  const previousExecutorAudience = process.env["PACKAGE_EXECUTOR_AUDIENCE"];
   let store: Map<string, StoredObject>;
   let saveLog: string[];
 
   beforeEach(() => {
     process.env["PACKAGE_ARTIFACT_BUCKET"] = "ssw-package-test";
     delete process.env["PACKAGE_ASYNC_ENABLED"];
+    delete process.env["PACKAGE_CLOUD_TASKS_QUEUE_PATH"];
+    delete process.env["PACKAGE_EXECUTOR_URL"];
+    delete process.env["PACKAGE_EXECUTOR_SERVICE_ACCOUNT_EMAIL"];
+    delete process.env["PACKAGE_EXECUTOR_AUDIENCE"];
     store = new Map<string, StoredObject>();
     saveLog = [];
+    createTaskMock.mockClear();
     __setPackageObjectFileFactoryForTesting(
       (_bucketName, objectName) => new MemoryPackageObjectFile(objectName, store, saveLog),
     );
@@ -116,6 +145,26 @@ describe("prepare_document_package handler — idempotency", () => {
       delete process.env["PACKAGE_ASYNC_ENABLED"];
     } else {
       process.env["PACKAGE_ASYNC_ENABLED"] = previousAsyncEnabled;
+    }
+    if (previousQueuePath === undefined) {
+      delete process.env["PACKAGE_CLOUD_TASKS_QUEUE_PATH"];
+    } else {
+      process.env["PACKAGE_CLOUD_TASKS_QUEUE_PATH"] = previousQueuePath;
+    }
+    if (previousExecutorUrl === undefined) {
+      delete process.env["PACKAGE_EXECUTOR_URL"];
+    } else {
+      process.env["PACKAGE_EXECUTOR_URL"] = previousExecutorUrl;
+    }
+    if (previousExecutorServiceAccountEmail === undefined) {
+      delete process.env["PACKAGE_EXECUTOR_SERVICE_ACCOUNT_EMAIL"];
+    } else {
+      process.env["PACKAGE_EXECUTOR_SERVICE_ACCOUNT_EMAIL"] = previousExecutorServiceAccountEmail;
+    }
+    if (previousExecutorAudience === undefined) {
+      delete process.env["PACKAGE_EXECUTOR_AUDIENCE"];
+    } else {
+      process.env["PACKAGE_EXECUTOR_AUDIENCE"] = previousExecutorAudience;
     }
   });
 
@@ -149,5 +198,32 @@ describe("prepare_document_package handler — idempotency", () => {
     const text = block !== undefined && block.type === "text" ? block.text : "";
     expect(text).toContain("同じ idempotency_key");
     expect(saveLog).toHaveLength(2);
+  });
+
+  it("falls back to synchronous package generation when an async retry finds a duplicate task", async () => {
+    process.env["PACKAGE_ASYNC_ENABLED"] = "true";
+    process.env["PACKAGE_CLOUD_TASKS_QUEUE_PATH"] =
+      "projects/ssw/locations/asia-northeast1/queues/package-jobs";
+    process.env["PACKAGE_EXECUTOR_URL"] = "https://executor.example.run.app/package";
+    process.env["PACKAGE_EXECUTOR_SERVICE_ACCOUNT_EMAIL"] =
+      "package-executor@ssw.iam.gserviceaccount.com";
+
+    const first = await runWithAuthContext(PRO_GYO, () =>
+      prepareDocumentPackageHandler(BASE_INPUT),
+    );
+    const alreadyExists = new Error("task already exists") as Error & { code: string };
+    alreadyExists.code = "ALREADY_EXISTS";
+    createTaskMock.mockRejectedValueOnce(alreadyExists);
+    const retry = await runWithAuthContext(PRO_GYO, () =>
+      prepareDocumentPackageHandler(BASE_INPUT),
+    );
+
+    expect(first.isError).toBeFalsy();
+    expect(retry.isError).toBeFalsy();
+    expect(structuredContent(first)["status"]).toBe("queued");
+    expect(structuredContent(retry)["status"]).toBe("completed");
+    expect(structuredContent(retry)["task_id"]).toBe(structuredContent(first)["task_id"]);
+    expect(saveLog.filter((objectName) => objectName.endsWith("/package.json"))).toHaveLength(1);
+    expect(createTaskMock).toHaveBeenCalledTimes(2);
   });
 });

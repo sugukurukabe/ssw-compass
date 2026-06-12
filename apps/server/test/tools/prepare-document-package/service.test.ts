@@ -103,7 +103,7 @@ describe("prepare_document_package service", () => {
 
     await expect(
       enqueuePackageTask({ taskId: "task_authenticated000000", payload: PACKAGE_INPUT }),
-    ).resolves.toBe(true);
+    ).resolves.toBe("queued");
 
     expect(createTaskMock).toHaveBeenCalledWith({
       parent: "projects/ssw/locations/asia-northeast1/queues/package-jobs",
@@ -124,6 +124,22 @@ describe("prepare_document_package service", () => {
         dispatchDeadline: { seconds: 600 },
       },
     });
+  });
+
+  it("reports duplicate package Cloud Tasks separately from newly queued tasks", async () => {
+    process.env["PACKAGE_ASYNC_ENABLED"] = "true";
+    process.env["PACKAGE_CLOUD_TASKS_QUEUE_PATH"] =
+      "projects/ssw/locations/asia-northeast1/queues/package-jobs";
+    process.env["PACKAGE_EXECUTOR_URL"] = "https://executor.example.run.app/package";
+    process.env["PACKAGE_EXECUTOR_SERVICE_ACCOUNT_EMAIL"] =
+      "package-executor@ssw.iam.gserviceaccount.com";
+    const alreadyExists = new Error("task already exists") as Error & { code: string };
+    alreadyExists.code = "ALREADY_EXISTS";
+    createTaskMock.mockRejectedValueOnce(alreadyExists);
+
+    await expect(
+      enqueuePackageTask({ taskId: "task_duplicate0000000000", payload: PACKAGE_INPUT }),
+    ).resolves.toBe("already_exists");
   });
 
   it("scopes idempotency keys by authenticated subject", () => {
