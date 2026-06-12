@@ -108,6 +108,11 @@ async function countParentChain(
 export async function applyApprovalInputResponse(input: {
   requestState: string;
   response: ApprovalInputResponse;
+  /** 認証済み呼び出し元の principal (user_id のハッシュ等)。
+   *  Authenticated caller's principal (e.g. hashed user_id).
+   *  Principal pemanggil yang terautentikasi.
+   *  指定時は approval_requests.principal と一致しない限り拒否する。 */
+  callerPrincipal?: string;
   repository?: ApprovalStateRepository;
   notificationSink?: NotificationSink;
   now?: Date;
@@ -121,13 +126,30 @@ export async function applyApprovalInputResponse(input: {
     return { ok: false, reason: "request_state_not_found" };
   }
 
+  // Bug 2 fix: 呼び出し元 principal が承認行の principal と一致することを確認する。
+  // Reject if the authenticated caller does not own this approval row.
+  // Tolak jika pemanggil yang terautentikasi bukan pemilik baris persetujuan ini.
+  if (input.callerPrincipal !== undefined && input.callerPrincipal !== request.principal) {
+    return { ok: false, reason: "principal_mismatch" };
+  }
+
   const draft = await repository.getDraft(request.draft_id);
   if (draft === null) {
     return { ok: false, reason: "draft_not_found" };
   }
 
-  const parent =
-    request.parent_id === null ? null : await repository.getApprovalRequest(request.parent_id);
+  // Bug 1 fix: parent_id が存在するのに親行を取得できない場合はゲートを通過させない。
+  // If parent_id is set but the parent row is missing, the parent gate cannot be
+  // evaluated — fail closed rather than silently skip the check.
+  // Jika parent_id diisi tapi baris induk tidak ada, gagalkan dengan aman.
+  let parent: ApprovalRequestRecord | null = null;
+  if (request.parent_id !== null) {
+    parent = await repository.getApprovalRequest(request.parent_id);
+    if (parent === null) {
+      return { ok: false, reason: "parent_not_found" };
+    }
+  }
+
   const transitionInput = {
     currentStatus: request.status,
     decision: decisionFromResponse(input.response),

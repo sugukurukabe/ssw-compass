@@ -116,6 +116,49 @@ describe("approval MRTR helpers", () => {
     });
   });
 
+  it("rejects when parent_id is set but parent row cannot be loaded (Bug 1)", async () => {
+    // parent_id を持つが親行が DB に存在しないケース
+    const request = approval({ parent_id: "ars_missingparent0000000000" });
+    const result = await applyApprovalInputResponse({
+      requestState: request.id,
+      response: { approval: "approve" },
+      // repository には request しかなく parent は存在しない
+      repository: repository({ requests: [request], draft: draft() }),
+      now: NOW,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("parent_not_found");
+    }
+  });
+
+  it("rejects when callerPrincipal does not match stored principal (Bug 2)", async () => {
+    const request = approval({ principal: "user-owner-hash" });
+    const result = await applyApprovalInputResponse({
+      requestState: request.id,
+      response: { approval: "approve" },
+      callerPrincipal: "user-other-hash",
+      repository: repository({ requests: [request], draft: draft() }),
+      now: NOW,
+    });
+    expect(result.ok).toBe(false);
+    if (!result.ok) {
+      expect(result.reason).toBe("principal_mismatch");
+    }
+  });
+
+  it("allows approval when callerPrincipal matches stored principal (Bug 2 positive path)", async () => {
+    const request = approval({ principal: "user-owner-hash" });
+    const result = await applyApprovalInputResponse({
+      requestState: request.id,
+      response: { approval: "approve" },
+      callerPrincipal: "user-owner-hash",
+      repository: repository({ requests: [request], draft: draft() }),
+      now: NOW,
+    });
+    expect(result.ok).toBe(true);
+  });
+
   it("escalates after three parent approval loops", async () => {
     const root = approval({ id: "ars_rootabcdefghijklmnopqr", status: "rejected" });
     const second = approval({

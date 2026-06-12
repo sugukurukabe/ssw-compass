@@ -83,6 +83,12 @@ export async function _submitGyoseishoshiApprovalInner(
     const approvalResult = await applyApprovalInputResponse({
       requestState: args.requestState,
       response: args.inputResponses,
+      // Bug 2 fix: 認証済み呼び出し元を渡し、approval_requests.principal と照合する。
+      // Pass authenticated caller so applyApprovalInputResponse can enforce ownership.
+      // Kirim pemanggil terautentikasi agar kepemilikan dapat ditegakkan.
+      ...(authContext?.user_id !== undefined
+        ? { callerPrincipal: sha256Hex(authContext.user_id) }
+        : {}),
     });
     const approved = approvalResult.ok && approvalResult.status === "approved";
     const auditEvent: AuditEventType = {

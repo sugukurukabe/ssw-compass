@@ -18,6 +18,16 @@
 import { logger } from "./logger.js";
 
 let started = false;
+let registeredShutdown: (() => Promise<void>) | null = null;
+
+/**
+ * OTel SDK の shutdown コールバックを返す (未起動時は no-op)。
+ * Returns the OTel SDK shutdown callback, or a no-op if not started.
+ * Mengembalikan callback shutdown OTel SDK, atau no-op jika belum dimulai.
+ */
+export function getRegisteredSdkShutdown(): () => Promise<void> {
+  return registeredShutdown ?? (() => Promise.resolve());
+}
 
 function isEnabled(): boolean {
   if (process.env["OTEL_SDK_ENABLED"] === "true") return true;
@@ -54,11 +64,12 @@ export async function initOtelSdk(): Promise<void> {
       },
       "otel_sdk_started",
     );
-    const shutdown = (): void => {
-      void sdk.shutdown().finally(() => process.exit(0));
-    };
-    process.once("SIGTERM", shutdown);
-    process.once("SIGINT", shutdown);
+    // Bug 3 fix: SIGTERM/SIGINT ハンドラをここに置かない。
+    // process.exit() の呼び出しタイミングは index.ts のグレースフルシャットダウンに委ねる。
+    // OTel SDK の shutdown は getRegisteredSdkShutdown() 経由で呼び出す。
+    // Do NOT register process.exit() here; graceful shutdown is coordinated by index.ts.
+    // Jangan daftarkan process.exit() di sini; shutdown dikoordinasikan oleh index.ts.
+    registeredShutdown = (): Promise<void> => sdk.shutdown();
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : String(err);
     logger.error({ event: "otel_sdk_init_failed", err: message }, "otel_sdk_init_failed");

@@ -8,7 +8,7 @@ import { resolveAuth } from "./auth/resolve-auth.js";
 import { buildWwwAuthenticate, hasScope, requiredScopeForTool } from "./auth/scopes.js";
 import { isLawUpdatesDatasetStale, lawUpdatesDatasetAgeDays } from "./law-updates/active-filter.js";
 import { logger } from "./logger.js";
-import { initOtelSdk } from "./otel-sdk.js";
+import { getRegisteredSdkShutdown, initOtelSdk } from "./otel-sdk.js";
 import { createMcpServer } from "./server.js";
 import { buildServerCard } from "./server-card.js";
 
@@ -352,11 +352,46 @@ export async function startServer(port?: number): Promise<void> {
   const app = createApp();
   warnIfLawUpdatesStale();
   const resolvedPort = port ?? Number(process.env["PORT"] ?? DEFAULT_PORT);
-  await new Promise<void>((resolve) => {
-    app.listen(resolvedPort, () => {
+  const httpServer = await new Promise<ReturnType<typeof app.listen>>((resolve) => {
+    const s = app.listen(resolvedPort, () => {
       logger.info({ port: resolvedPort, service: "ssw-mcp" }, "server_listening");
-      resolve();
+      resolve(s);
     });
+  });
+
+  // Bug 3 fix: Express と OTel SDK を協調してシャットダウンする。
+  // Cloud Run は SIGTERM 後に一定時間を与えてからコンテナを強制終了するため、
+  // インフライトリクエストを処理してから OTel を flush し、最後に exit する。
+  // Coordinate Express and OTel SDK shutdown on SIGTERM/SIGINT.
+  // Cloud Run sends SIGTERM and waits; drain in-flight requests first, then flush OTel.
+  // Cloud Run mengirim SIGTERM; selesaikan permintaan yang ada, lalu flush OTel.
+  const gracefulShutdown = (signal: string): void => {
+    logger.info({ signal }, "graceful_shutdown_started");
+    httpServer.close(async () => {
+      logger.info("http_server_closed");
+      try {
+        await getRegisteredSdkShutdown()();
+        logger.info("otel_sdk_flushed");
+      } catch (err: unknown) {
+        const message = err instanceof Error ? err.message : String(err);
+        logger.error({ err: message }, "otel_sdk_shutdown_error");
+      }
+      process.exit(0);
+    });
+    // Cloud Run の graceful shutdown タイムアウト (デフォルト 10s) より短い安全マージンで
+    // 強制終了する。新規リクエストはすでに受け付けないが、ハング対策。
+    // Safety exit in case requests stall beyond Cloud Run's graceful timeout.
+    setTimeout(() => {
+      logger.warn("graceful_shutdown_timeout_force_exit");
+      process.exit(1);
+    }, 9_000).unref();
+  };
+
+  process.once("SIGTERM", () => {
+    gracefulShutdown("SIGTERM");
+  });
+  process.once("SIGINT", () => {
+    gracefulShutdown("SIGINT");
   });
 }
 
