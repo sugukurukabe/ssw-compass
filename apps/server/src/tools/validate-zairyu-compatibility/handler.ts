@@ -17,6 +17,7 @@ import {
   type SupportedLanguage,
   ValidateZairyuCompatibilityInput,
 } from "@ssw/shared-types";
+import { CACHE_TIERS, withCacheMeta } from "../../cache.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";
@@ -130,23 +131,26 @@ export const validateZairyuCompatibilityHandler = instrumentTool(
       "validate_zairyu_compatibility_ok",
     );
 
-    return {
-      content: [
-        {
-          type: "text",
-          text:
-            `判定結果: ${compatibility}\n` +
-            (issues.length > 0 ? `${issues.map((i) => `⚠️ ${i}`).join("\n")}\n` : "") +
-            `\n推奨アクション: ${recommendedAction}\n\n${disclaimer}`,
+    return withCacheMeta(
+      {
+        content: [
+          {
+            type: "text",
+            text:
+              `判定結果: ${compatibility}\n` +
+              (issues.length > 0 ? `${issues.map((i) => `⚠️ ${i}`).join("\n")}\n` : "") +
+              `\n推奨アクション: ${recommendedAction}\n\n${disclaimer}`,
+          },
+        ],
+        structuredContent: {
+          compatibility,
+          legal_basis: legalBasis,
+          recommended_action: recommendedAction,
+          escalate_to_professional: escalate,
+          disclaimer,
         },
-      ],
-      structuredContent: {
-        compatibility,
-        legal_basis: legalBasis,
-        recommended_action: recommendedAction,
-        escalate_to_professional: escalate,
-        disclaimer,
       },
-    };
+      CACHE_TIERS.C_PRIVATE_NO_STORE,
+    );
   },
 );

@@ -6,6 +6,7 @@ import {
   ListVisaDocumentsInputV4,
   type SupportedLanguage,
 } from "@ssw/shared-types";
+import { CACHE_TIERS, withCacheMeta } from "../../cache.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
 import { scrubInputForPII } from "../../pii/index.js";
@@ -88,20 +89,23 @@ export const listVisaDocumentsHandler = instrumentTool(
         { tool: "list_visa_documents", visa_category: args.visaCategory, result: "empty" },
         "list_visa_documents_empty",
       );
-      return {
-        content: [
-          {
-            type: "text",
-            // 空結果でも免責を必ず含める (.cursor/rules/tools.mdc)
-            // Always include the disclaimer even when there are no results.
-            // Selalu sertakan penafian meskipun tidak ada hasil.
-            text:
-              "該当の在留資格についての書類一覧は本ツールでは提供していません。" +
-              "出入国在留管理庁公式サイト (https://www.moj.go.jp/isa/) をご確認ください。" +
-              `\n\n${disclaimer}`,
-          },
-        ],
-      };
+      return withCacheMeta(
+        {
+          content: [
+            {
+              type: "text",
+              // 空結果でも免責を必ず含める (.cursor/rules/tools.mdc)
+              // Always include the disclaimer even when there are no results.
+              // Selalu sertakan penafian meskipun tidak ada hasil.
+              text:
+                "該当の在留資格についての書類一覧は本ツールでは提供していません。" +
+                "出入国在留管理庁公式サイト (https://www.moj.go.jp/isa/) をご確認ください。" +
+                `\n\n${disclaimer}`,
+            },
+          ],
+        },
+        args.industry === undefined ? CACHE_TIERS.A_PUBLIC_DAY : CACHE_TIERS.B_PUBLIC_HOUR,
+      );
     }
 
     const payload = ListVisaDocumentsOutput.parse({
@@ -137,14 +141,17 @@ export const listVisaDocumentsHandler = instrumentTool(
       extraContent["watermark"] = HTML_PREVIEW_WATERMARK;
     }
 
-    return {
-      content: [
-        {
-          type: "text",
-          text: `${summary}\n\n${payload.disclaimer}`,
-        },
-      ],
-      structuredContent: { ...payload, ...extraContent },
-    };
+    return withCacheMeta(
+      {
+        content: [
+          {
+            type: "text",
+            text: `${summary}\n\n${payload.disclaimer}`,
+          },
+        ],
+        structuredContent: { ...payload, ...extraContent },
+      },
+      args.industry === undefined ? CACHE_TIERS.A_PUBLIC_DAY : CACHE_TIERS.B_PUBLIC_HOUR,
+    );
   },
 );

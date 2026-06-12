@@ -1,5 +1,6 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { DISCLAIMER_BY_LANG, isVertexGrounded, SearchVisaInputV4 } from "@ssw/shared-types";
+import { CACHE_TIERS, withCacheMeta } from "../../cache.js";
 import { routeForIndustry } from "../../industry-routing.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
@@ -74,20 +75,23 @@ export const searchVisa = instrumentTool(
         { tool: "search_visa", duration_ms: performance.now() - t0, result_count: 0 },
         "search_visa_empty",
       );
-      return {
-        content: [
-          {
-            type: "text",
-            // 空結果でも免責を必ず含める (.cursor/rules/tools.mdc)
-            // Always include the disclaimer even when there are no results.
-            // Selalu sertakan penafian meskipun tidak ada hasil.
-            text:
-              "公式情報源で該当する内容が見つかりませんでした。" +
-              "出入国在留管理庁公式サイト (https://www.moj.go.jp/isa/) をご確認ください。" +
-              `\n\n${disclaimer}`,
-          },
-        ],
-      };
+      return withCacheMeta(
+        {
+          content: [
+            {
+              type: "text",
+              // 空結果でも免責を必ず含める (.cursor/rules/tools.mdc)
+              // Always include the disclaimer even when there are no results.
+              // Selalu sertakan penafian meskipun tidak ada hasil.
+              text:
+                "公式情報源で該当する内容が見つかりませんでした。" +
+                "出入国在留管理庁公式サイト (https://www.moj.go.jp/isa/) をご確認ください。" +
+                `\n\n${disclaimer}`,
+            },
+          ],
+        },
+        CACHE_TIERS.A_PUBLIC_DAY,
+      );
     }
 
     const sanitizedChunks = grounded.chunks.map((c) => {
@@ -129,16 +133,19 @@ export const searchVisa = instrumentTool(
       "search_visa_ok",
     );
 
-    return {
-      content: [
-        {
-          type: "text",
-          text:
-            `${payload.results.length}件の公式情報源を検出 (${payload.asOf}時点)\n` +
-            payload.disclaimer,
-        },
-      ],
-      structuredContent: payload,
-    };
+    return withCacheMeta(
+      {
+        content: [
+          {
+            type: "text",
+            text:
+              `${payload.results.length}件の公式情報源を検出 (${payload.asOf}時点)\n` +
+              payload.disclaimer,
+          },
+        ],
+        structuredContent: payload,
+      },
+      CACHE_TIERS.A_PUBLIC_DAY,
+    );
   },
 );

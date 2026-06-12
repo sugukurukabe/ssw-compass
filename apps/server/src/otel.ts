@@ -1,4 +1,4 @@
-import { SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
+import { context, propagation, SpanKind, SpanStatusCode, trace } from "@opentelemetry/api";
 
 const tracer = trace.getTracer("ssw-mcp", "1.0.0");
 
@@ -24,31 +24,86 @@ function toErrorLike(value: unknown): ErrorLike {
   return { code: undefined, message: String(value) };
 }
 
+function objectRecord(value: unknown): Record<string, unknown> | null {
+  return typeof value === "object" && value !== null ? (value as Record<string, unknown>) : null;
+}
+
+function extractStringField(record: Record<string, unknown>, key: string): string | undefined {
+  const value = record[key];
+  return typeof value === "string" && value.length > 0 ? value : undefined;
+}
+
+function extractTraceCarrier(args: unknown): Record<string, string> | undefined {
+  const root = objectRecord(args);
+  const meta = objectRecord(root?.["_meta"]);
+  if (meta === null) {
+    return undefined;
+  }
+  const carrier: Record<string, string> = {};
+  for (const key of ["traceparent", "tracestate", "baggage"]) {
+    const value = extractStringField(meta, key);
+    if (value !== undefined) {
+      carrier[key] = value;
+    }
+  }
+  return Object.keys(carrier).length > 0 ? carrier : undefined;
+}
+
+function extractRequestState(args: unknown): string | undefined {
+  const root = objectRecord(args);
+  return root === null ? undefined : extractStringField(root, "requestState");
+}
+
+function extractRelatedTaskId(args: unknown): string | undefined {
+  const root = objectRecord(args);
+  const meta = objectRecord(root?.["_meta"]);
+  const relatedTask = objectRecord(meta?.["io.modelcontextprotocol/related-task"]);
+  return relatedTask === null ? undefined : extractStringField(relatedTask, "taskId");
+}
+
 export function instrumentTool<T>(
   name: string,
   fn: (args: unknown) => Promise<T>,
 ): (args: unknown) => Promise<T> {
-  return async (args: unknown): Promise<T> =>
-    tracer.startActiveSpan(`tools/call ${name}`, { kind: SpanKind.SERVER }, async (span) => {
-      span.setAttributes({
-        "mcp.method.name": "tools/call",
-        "gen_ai.tool.name": name,
-      });
-      const t0 = performance.now();
-      try {
-        const result = await fn(args);
-        span.setAttribute("mcp.tool.duration_ms", performance.now() - t0);
-        return result;
-      } catch (e: unknown) {
-        const err = toErrorLike(e);
-        if (e instanceof Error) {
-          span.recordException(e);
+  return async (args: unknown): Promise<T> => {
+    const carrier = extractTraceCarrier(args);
+    const parentContext =
+      carrier === undefined ? context.active() : propagation.extract(context.active(), carrier);
+
+    return tracer.startActiveSpan(
+      `tools/call ${name}`,
+      { kind: SpanKind.SERVER },
+      parentContext,
+      async (span) => {
+        span.setAttributes({
+          "mcp.method.name": "tools/call",
+          "gen_ai.tool.name": name,
+        });
+        const requestState = extractRequestState(args);
+        if (requestState !== undefined) {
+          span.setAttribute("mcp.request_state.id", requestState);
         }
-        span.setAttribute("error.type", err.code ?? "INTERNAL");
-        span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
-        throw e;
-      } finally {
-        span.end();
-      }
-    });
+        const taskId = extractRelatedTaskId(args);
+        if (taskId !== undefined) {
+          span.setAttribute("mcp.task.id", taskId);
+        }
+        const t0 = performance.now();
+        try {
+          const result = await fn(args);
+          span.setAttribute("mcp.tool.duration_ms", performance.now() - t0);
+          return result;
+        } catch (e: unknown) {
+          const err = toErrorLike(e);
+          if (e instanceof Error) {
+            span.recordException(e);
+          }
+          span.setAttribute("error.type", err.code ?? "INTERNAL");
+          span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
+          throw e;
+        } finally {
+          span.end();
+        }
+      },
+    );
+  };
 }

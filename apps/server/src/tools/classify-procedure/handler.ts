@@ -1,5 +1,10 @@
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
-import { DISCLAIMER_BY_LANG, type FormBundle as FormBundleType } from "@ssw/shared-types";
+import {
+  DISCLAIMER_BY_LANG,
+  type FormBundle as FormBundleType,
+  toUILanguage,
+} from "@ssw/shared-types";
+import { CACHE_TIERS, withCacheMeta } from "../../cache.js";
 import { buildFormBundle } from "../../forms-catalog.js";
 import { logger } from "../../logger.js";
 import { instrumentTool } from "../../otel.js";
@@ -48,6 +53,7 @@ export const classifyProcedureHandler = instrumentTool(
 
     const t0 = performance.now();
     const decision = classifyProcedure(args);
+    const uiLanguage = toUILanguage(args.language);
 
     let grounded: Awaited<ReturnType<typeof vertexSearch>>;
     try {
@@ -87,8 +93,8 @@ export const classifyProcedureHandler = instrumentTool(
     const payload = ClassifyProcedureOutput.parse({
       procedureType: decision.type,
       procedureLabel: PROCEDURE_LABEL[decision.type],
-      rationale: PROCEDURE_RATIONALE[decision.type][args.language],
-      nextSteps: [...PROCEDURE_NEXT_STEPS[decision.type][args.language]],
+      rationale: PROCEDURE_RATIONALE[decision.type][uiLanguage],
+      nextSteps: [...PROCEDURE_NEXT_STEPS[decision.type][uiLanguage]],
       formBundle:
         args.targetStatus === "tokutei_ginou_1"
           ? buildFormBundle({
@@ -102,6 +108,11 @@ export const classifyProcedureHandler = instrumentTool(
                 "https://www.moj.go.jp/isa/applications/status/specifiedskilledworker.html",
             })
           : undefined,
+      confidence: 0.9,
+      assumptions: [
+        "The classification is based on the provided current status, target status, and location.",
+        "No personal identifiers were accepted or used.",
+      ],
       references: sanitizedReferences,
       disclaimer: DISCLAIMER_BY_LANG[args.language],
       asOf: new Date().toISOString().slice(0, 10),
@@ -118,20 +129,23 @@ export const classifyProcedureHandler = instrumentTool(
       "classify_procedure_ok",
     );
 
-    const procedureLabelForLang = payload.procedureLabel[args.language];
+    const procedureLabelForLang = payload.procedureLabel[uiLanguage];
 
-    return {
-      content: [
-        {
-          type: "text",
-          text:
-            `${procedureLabelForLang} (${payload.asOf}時点)\n` +
-            payload.rationale +
-            "\n\n" +
-            payload.disclaimer,
-        },
-      ],
-      structuredContent: payload,
-    };
+    return withCacheMeta(
+      {
+        content: [
+          {
+            type: "text",
+            text:
+              `${procedureLabelForLang} (${payload.asOf}時点)\n` +
+              payload.rationale +
+              "\n\n" +
+              payload.disclaimer,
+          },
+        ],
+        structuredContent: payload,
+      },
+      CACHE_TIERS.C_PRIVATE_NO_STORE,
+    );
   },
 );

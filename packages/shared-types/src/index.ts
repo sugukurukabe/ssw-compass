@@ -26,6 +26,8 @@ export {
 } from "./classify-procedure.js";
 export { DISCLAIMER_BY_LANG } from "./disclaimers.js";
 export { assertDispatchAllowed, DispatchNotAllowedError } from "./dispatch/validate.js";
+export type { ErrorDictionaryKey, ErrorKind } from "./errors/error-dictionary.js";
+export { ERROR_DICTIONARY, ERROR_KINDS, getErrorMessage } from "./errors/error-dictionary.js";
 export { TierLimitError } from "./errors/tier-limit.js";
 export type {
   ApplicantProfile as ApplicantProfileType,
@@ -138,10 +140,26 @@ export {
   HTML_PREVIEW_WATERMARK,
   ListVisaDocumentsInputV4,
 } from "./tools/list-visa-documents-v4.js";
+export type {
+  DocumentPackageStatus as DocumentPackageStatusType,
+  PrepareDocumentPackageInput as PrepareDocumentPackageInputType,
+  PrepareDocumentPackageOutput as PrepareDocumentPackageOutputType,
+} from "./tools/prepare-document-package.js";
+export {
+  DocumentPackageStatus,
+  PrepareDocumentPackageInput,
+  PrepareDocumentPackageOutput,
+} from "./tools/prepare-document-package.js";
 export type { SearchVisaInputV4 as SearchVisaInputV4Type } from "./tools/search-visa-v4.js";
 export { SearchVisaInputV4 } from "./tools/search-visa-v4.js";
-export type { SubmitGyoseishoshiApprovalInput as SubmitGyoseishoshiApprovalInputType } from "./tools/submit-gyoseishoshi-approval.js";
-export { SubmitGyoseishoshiApprovalInput } from "./tools/submit-gyoseishoshi-approval.js";
+export type {
+  SubmitGyoseishoshiApprovalInput as SubmitGyoseishoshiApprovalInputType,
+  SubmitGyoseishoshiApprovalOutput as SubmitGyoseishoshiApprovalOutputType,
+} from "./tools/submit-gyoseishoshi-approval.js";
+export {
+  SubmitGyoseishoshiApprovalInput,
+  SubmitGyoseishoshiApprovalOutput,
+} from "./tools/submit-gyoseishoshi-approval.js";
 export type {
   ValidateZairyuCompatibilityInput as ValidateZairyuCompatibilityInputType,
   ValidateZairyuCompatibilityOutput as ValidateZairyuCompatibilityOutputType,

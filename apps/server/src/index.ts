@@ -5,6 +5,7 @@ import express from "express";
 import { runWithAuthContext } from "./auth/auth-store.js";
 import type { AuthedRequest } from "./auth/resolve-auth.js";
 import { resolveAuth } from "./auth/resolve-auth.js";
+import { buildWwwAuthenticate, hasScope, requiredScopeForTool } from "./auth/scopes.js";
 import { isLawUpdatesDatasetStale, lawUpdatesDatasetAgeDays } from "./law-updates/active-filter.js";
 import { logger } from "./logger.js";
 import { initOtelSdk } from "./otel-sdk.js";
@@ -13,6 +14,97 @@ import { buildServerCard } from "./server-card.js";
 
 const DEFAULT_PORT = 8080;
 const MAX_BODY_BYTES = 1024 * 1024;
+const RC_PROTOCOL_VERSION = "2026-07-28";
+
+function recordBody(body: unknown): Record<string, unknown> | null {
+  return typeof body === "object" && body !== null ? (body as Record<string, unknown>) : null;
+}
+
+function bodyMethod(body: unknown): string | undefined {
+  const record = recordBody(body);
+  const method = record?.["method"];
+  return typeof method === "string" ? method : undefined;
+}
+
+function bodyToolName(body: unknown): string | undefined {
+  const record = recordBody(body);
+  const params = recordBody(record?.["params"]);
+  const name = params?.["name"];
+  return typeof name === "string" ? name : undefined;
+}
+
+export function enforceScopes(req: Request, res: Response): boolean {
+  if (bodyMethod(req.body) !== "tools/call") {
+    return true;
+  }
+  const required = requiredScopeForTool(bodyToolName(req.body));
+  if (required === undefined) {
+    return true;
+  }
+  const authCtx = (req as AuthedRequest).authContext ?? ANONYMOUS_AUTH_CONTEXT;
+  if (hasScope(authCtx, required)) {
+    return true;
+  }
+  res
+    .status(403)
+    .set("WWW-Authenticate", buildWwwAuthenticate(required))
+    .json({
+      jsonrpc: "2.0",
+      error: { code: -32003, message: `Insufficient scope: ${required}` },
+      id: recordBody(req.body)?.["id"] ?? null,
+    });
+  return false;
+}
+
+function rejectHeaderMismatch(res: Response, message: string): void {
+  res.status(400).json({
+    jsonrpc: "2.0",
+    error: { code: -32001, message },
+    id: null,
+  });
+}
+
+export function validateMcpRoutingHeaders(req: Request, res: Response): boolean {
+  // MCP 2026-07-28 RC requires Mcp-Method / Mcp-Name routing headers.
+  // Reference: https://blog.modelcontextprotocol.io/posts/2026-07-28-release-candidate/
+  const protocolVersion = req.header("MCP-Protocol-Version");
+  const methodHeader = req.header("Mcp-Method");
+  const nameHeader = req.header("Mcp-Name");
+  const method = bodyMethod(req.body);
+
+  if (protocolVersion === RC_PROTOCOL_VERSION && methodHeader === undefined) {
+    rejectHeaderMismatch(res, "Missing Mcp-Method header for MCP 2026-07-28");
+    return false;
+  }
+  if (methodHeader !== undefined && methodHeader !== method) {
+    rejectHeaderMismatch(res, "Mcp-Method header does not match JSON-RPC method");
+    return false;
+  }
+  if (nameHeader !== undefined && nameHeader !== bodyToolName(req.body)) {
+    rejectHeaderMismatch(res, "Mcp-Name header does not match JSON-RPC params.name");
+    return false;
+  }
+  return true;
+}
+
+export function handleServerDiscover(req: Request, res: Response): boolean {
+  // MCP 2026-07-28 RC replaces initialize with server/discover for up-front discovery.
+  // Reference: https://mcp-staging.mintlify.app/specification/draft/basic/lifecycle
+  if (bodyMethod(req.body) !== "server/discover") {
+    return false;
+  }
+  const id = recordBody(req.body)?.["id"] ?? null;
+  res.status(200).json({
+    jsonrpc: "2.0",
+    id,
+    result: {
+      protocolVersions: ["2025-11-25", RC_PROTOCOL_VERSION],
+      serverInfo: { name: "ssw-mcp", version: "1.0.0" },
+      capabilities: { tools: {}, resources: {}, prompts: {} },
+    },
+  });
+  return true;
+}
 
 export function createApp(): Express {
   const app = express();
@@ -156,6 +248,14 @@ export function createApp(): Express {
       .json(buildServerCard());
   });
 
+  app.get("/.well-known/mcp-server-card.json", (_req: Request, res: Response) => {
+    res
+      .status(200)
+      .set("Cache-Control", "public, max-age=300")
+      .type("application/json")
+      .json(buildServerCard());
+  });
+
   // ADR-013: resolveAuth resolves Free/Pro/Business tier from optional JWT.
   // No token → anonymous Free. Invalid token → 401.
   // Applied to POST /mcp only; health and .well-known remain public.
@@ -167,6 +267,15 @@ export function createApp(): Express {
   // instances. Stateless mode makes every request self-contained, which is the
   // correct model for serverless. No `mcp-session-id` is issued.
   app.post("/mcp", resolveAuth, async (req: Request, res: Response) => {
+    if (!validateMcpRoutingHeaders(req, res)) {
+      return;
+    }
+    if (handleServerDiscover(req, res)) {
+      return;
+    }
+    if (!enforceScopes(req, res)) {
+      return;
+    }
     const server = createMcpServer();
     // Stateless: the SDK requires sessionIdGenerator to be explicitly undefined.
     // Its type is `sessionIdGenerator?: () => string`, so exactOptionalPropertyTypes

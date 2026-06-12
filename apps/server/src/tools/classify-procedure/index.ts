@@ -1,10 +1,11 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import type { SswCompassToolAnnotation } from "@ssw/shared-types";
+import { ClassifyProcedureOutput, type SswCompassToolAnnotation } from "@ssw/shared-types";
+import { SSW_COMPASS_TOOL_ICONS } from "../metadata.js";
 import { classifyProcedureHandler } from "./handler.js";
 import { ClassifyProcedureInput } from "./schema.js";
 
-const UI_RESOURCE_URI = "ui://ssw-classify/mcp-app.html";
+const UI_RESOURCE_URI = "ui://compass/classify/1.0.0.html";
 
 export const CLASSIFY_PROCEDURE_ANNOTATION: SswCompassToolAnnotation = {
   readOnlyHint: true,
@@ -32,8 +33,10 @@ export function registerClassifyProcedureTool(server: McpServer): void {
         "status, and location. Information only — does not constitute legal advice. " +
         "Does not accept personal identifiers (residence card numbers, passport numbers, individual numbers).",
       inputSchema: ClassifyProcedureInput.shape,
+      outputSchema: ClassifyProcedureOutput,
       annotations: CLASSIFY_PROCEDURE_ANNOTATION,
       _meta: {
+        icons: SSW_COMPASS_TOOL_ICONS,
         ui: {
           resourceUri: UI_RESOURCE_URI,
         },

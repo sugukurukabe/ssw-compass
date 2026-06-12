@@ -32,6 +32,19 @@ export const SubmitGyoseishoshiApprovalInput = z
     approver_gyoseishoshi_number: z.string().regex(/^[\u4e00-\u9fa5]+ \d+$/),
     /** 備考 (任意) */
     notes: z.string().max(2000).optional(),
+    /** MCP 2026-07-28 MRTR の不透明 requestState */
+    requestState: z
+      .string()
+      .regex(/^ars_[A-Za-z0-9_-]{22}$/)
+      .optional(),
+    /** MRTR でクライアントから戻る承認応答 */
+    inputResponses: z
+      .object({
+        approval: z.enum(["approve", "edit", "reject"]),
+        edit_note: z.string().max(2000).optional(),
+      })
+      .strict()
+      .optional(),
     /** 出力言語 */
     language: z.enum(SUPPORTED_LANGUAGES).default("ja"),
   })
@@ -41,3 +54,22 @@ export const SubmitGyoseishoshiApprovalInput = z
     path: ["seal_image_base64"],
   });
 export type SubmitGyoseishoshiApprovalInput = z.infer<typeof SubmitGyoseishoshiApprovalInput>;
+
+export const SubmitGyoseishoshiApprovalOutput = z
+  .object({
+    approved: z.boolean(),
+    case_id: CaseId,
+    draft_document_id: z.string().regex(/^doc_[a-z0-9]{16}$/),
+    approval_method: z.enum(["checkbox_only", "checkbox_with_seal", "esign"]).optional(),
+    approver_gyoseishoshi_number: z.string().optional(),
+    requestState: z
+      .string()
+      .regex(/^ars_[A-Za-z0-9_-]{22}$/)
+      .optional(),
+    status: z.string().optional(),
+    reason: z.string().optional(),
+    audit_event_recorded: z.boolean().optional(),
+    disclaimer: z.string(),
+  })
+  .strict();
+export type SubmitGyoseishoshiApprovalOutput = z.infer<typeof SubmitGyoseishoshiApprovalOutput>;

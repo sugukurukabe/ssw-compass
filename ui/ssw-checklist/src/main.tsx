@@ -1,6 +1,12 @@
 import { App, applyDocumentTheme, PostMessageTransport } from "@modelcontextprotocol/ext-apps";
-import type { ListVisaDocumentsOutput, UILanguage } from "@ssw/shared-types";
-import { extractToolResultText, getElement, renderNotice, setInnerHTML } from "@ssw/ui-bridge";
+import type { ListVisaDocumentsOutput, SupportedLanguage, UILanguage } from "@ssw/shared-types";
+import {
+  extractToolResultText,
+  getElement,
+  pickSupportedLanguage,
+  renderLocalizedErrorNotice,
+  setInnerHTML,
+} from "@ssw/ui-bridge";
 import { render } from "./render.js";
 import { renderSkeleton } from "./skeleton.js";
 import {
@@ -10,13 +16,6 @@ import {
   setNotes,
   toggleDocId,
 } from "./state.js";
-
-// structuredContent が無い (空結果・エラー) tool 結果向けのフォールバック文言。
-const NOTICE_FALLBACK: Record<UILanguage, string> = {
-  ja: "結果を表示できませんでした。もう一度お試しください。",
-  en: "Could not display a result. Please try again.",
-  id: "Tidak dapat menampilkan hasil. Silakan coba lagi.",
-};
 
 type HostContextChangedParams = {
   theme?: Parameters<typeof applyDocumentTheme>[0];
@@ -31,6 +30,7 @@ function pickLanguage(locale: string | undefined): UILanguage {
 }
 
 let currentLang: UILanguage = "ja";
+let currentErrorLang: SupportedLanguage = "ja";
 let current: ChecklistState = EMPTY_STATE;
 let lastCommitted: ChecklistState | null = null;
 let committedOnce = false;
@@ -73,6 +73,7 @@ function rerender(): void {
 app.onhostcontextchanged = (params: HostContextChangedParams) => {
   if (params.theme !== undefined) applyDocumentTheme(params.theme);
   currentLang = pickLanguage(params.locale);
+  currentErrorLang = pickSupportedLanguage(params.locale, navigator.language);
   if (currentDocs !== null) rerender();
 };
 
@@ -83,8 +84,17 @@ app.ontoolinput = () => {
 app.ontoolresult = (params) => {
   const structured = params.structuredContent;
   if (structured === undefined) {
-    // 空結果・エラー時は skeleton のままにせず、返却テキストを通知として表示する。
-    renderNotice(root, extractToolResultText(params) ?? NOTICE_FALLBACK[currentLang]);
+    renderLocalizedErrorNotice({
+      rootEl: root,
+      language: currentErrorLang,
+      kind: "error.communication_failed",
+      detail: extractToolResultText(params),
+      onRetry: () => {
+        void app.updateModelContext({
+          content: [{ type: "text", text: "Retry list_visa_documents with the same arguments." }],
+        });
+      },
+    });
     return;
   }
   currentDocs = structured as ListVisaDocumentsOutput;

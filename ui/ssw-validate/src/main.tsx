@@ -1,16 +1,21 @@
 import { App, applyDocumentTheme, PostMessageTransport } from "@modelcontextprotocol/ext-apps";
-import type { ValidateZairyuCompatibilityOutput } from "@ssw/shared-types";
-import { extractToolResultText, getElement, renderNotice, setInnerHTML } from "@ssw/ui-bridge";
+import type { SupportedLanguage, ValidateZairyuCompatibilityOutput } from "@ssw/shared-types";
+import {
+  extractToolResultText,
+  getElement,
+  pickSupportedLanguage,
+  renderLocalizedErrorNotice,
+  setInnerHTML,
+} from "@ssw/ui-bridge";
 import DOMPurify from "dompurify";
-
-// structuredContent が無い (空結果・エラー) tool 結果向けのフォールバック文言。
-const NOTICE_FALLBACK = "結果を表示できませんでした。もう一度お試しください。";
 
 type HostContextChangedParams = {
   theme?: Parameters<typeof applyDocumentTheme>[0];
+  locale?: string;
 };
 
 const root = getElement("root", HTMLDivElement);
+let currentErrorLang: SupportedLanguage = "ja";
 
 setInnerHTML(root, `<div class="panel"><h2>在留資格の適合性を確認中</h2></div>`);
 
@@ -18,13 +23,25 @@ const app = new App({ name: "SSW", version: "1.0.0" }, {});
 
 app.onhostcontextchanged = (params: HostContextChangedParams) => {
   if (params.theme !== undefined) applyDocumentTheme(params.theme);
+  currentErrorLang = pickSupportedLanguage(params.locale, navigator.language);
 };
 
 app.ontoolresult = (params) => {
   const structured = params.structuredContent;
   if (structured === undefined) {
-    // 空結果・エラー時は「確認中」のままにせず、返却テキストを通知として表示する。
-    renderNotice(root, extractToolResultText(params) ?? NOTICE_FALLBACK);
+    renderLocalizedErrorNotice({
+      rootEl: root,
+      language: currentErrorLang,
+      kind: "error.communication_failed",
+      detail: extractToolResultText(params),
+      onRetry: () => {
+        (app as unknown as { updateModelContext?: (ctx: unknown) => void }).updateModelContext?.({
+          error_kind: "communication_failed",
+          tool: "validate_zairyu_compatibility",
+          retriable: true,
+        });
+      },
+    });
     return;
   }
   render(structured as ValidateZairyuCompatibilityOutput);

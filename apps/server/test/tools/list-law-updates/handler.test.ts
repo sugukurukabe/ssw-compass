@@ -60,4 +60,11 @@ describe("list_law_updates handler — basic", () => {
     expect(content).toHaveProperty("asOf");
     expect(content).toHaveProperty("disclaimer");
   });
+
+  it("adds public cache metadata with a law-update generation", async () => {
+    const result = await listLawUpdatesHandler({});
+    expect(result._meta?.["cacheScope"]).toBe("public");
+    expect(result._meta?.["ttlMs"]).toBe(3_600_000);
+    expect(result._meta?.["cacheGeneration"]).toBe("law-updates-2026-05-29");
+  });
 });

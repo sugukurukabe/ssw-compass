@@ -21,5 +21,8 @@
   "devDependencies": {
     "@ssw/tsconfig": "workspace:*",
     "typescript": "^5.7.0"
+  },
+  "dependencies": {
+    "@ssw/shared-types": "workspace:*"
   }
 }

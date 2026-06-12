@@ -1,9 +1,14 @@
 import { registerAppTool } from "@modelcontextprotocol/ext-apps/server";
 import type { McpServer } from "@modelcontextprotocol/sdk/server/mcp.js";
-import { type SswCompassToolAnnotation, ValidateZairyuCompatibilityInput } from "@ssw/shared-types";
+import {
+  type SswCompassToolAnnotation,
+  ValidateZairyuCompatibilityInput,
+  ValidateZairyuCompatibilityOutput,
+} from "@ssw/shared-types";
+import { SSW_COMPASS_TOOL_ICONS } from "../metadata.js";
 import { validateZairyuCompatibilityHandler } from "./handler.js";
 
-const UI_RESOURCE_URI = "ui://ssw-validate/mcp-app.html";
+const UI_RESOURCE_URI = "ui://compass/validate/1.0.0.html";
 
 export const VALIDATE_ZAIRYU_COMPATIBILITY_ANNOTATION: SswCompassToolAnnotation = {
   readOnlyHint: true,
@@ -27,8 +32,10 @@ export function registerValidateZairyuCompatibilityTool(server: McpServer): void
         "在留資格と想定就労の適合性を判定する (H06 不法就労判定アラート)。" +
         "Validate compatibility between residence status and intended employment.",
       inputSchema: ValidateZairyuCompatibilityInput.shape,
+      outputSchema: ValidateZairyuCompatibilityOutput,
       annotations: VALIDATE_ZAIRYU_COMPATIBILITY_ANNOTATION,
       _meta: {
+        icons: SSW_COMPASS_TOOL_ICONS,
         ui: {
           resourceUri: UI_RESOURCE_URI,
         },

@@ -26,6 +26,7 @@ export interface ServerCardCapabilities {
 
 export interface ServerCardAuth {
   type: "none" | "oauth2" | "bearer";
+  scopes?: readonly string[];
 }
 
 export interface ServerCardCompliance {
@@ -47,7 +48,20 @@ export interface ServerCard {
   license?: string;
   privacyPolicy?: string;
   termsOfService?: string;
+  protocolVersions?: readonly string[];
+  tools?: readonly string[];
 }
+
+const TOOL_NAMES = [
+  "search_visa",
+  "classify_procedure",
+  "get_deadline_timeline",
+  "list_visa_documents",
+  "validate_zairyu_compatibility",
+  "list_law_updates",
+  "submit_gyoseishoshi_approval",
+  "prepare_document_package",
+] as const;
 
 const SERVER_CARD: ServerCard = {
   name: "SSW Compass",
@@ -65,11 +79,14 @@ const SERVER_CARD: ServerCard = {
     tools: true,
     resources: true,
     apps: true,
-    tasks: false,
+    tasks: true,
     prompts: false,
   },
   // Public connector submission path: anonymous read-only access is available.
-  auth: { type: "none" },
+  auth: {
+    type: "oauth2",
+    scopes: ["compass:read", "compass:draft", "compass:approve", "compass:execute"],
+  },
   compliance: {
     dataResidency: "JP",
     certifications: ["P-Mark-roadmap"],
@@ -86,6 +103,8 @@ const SERVER_CARD: ServerCard = {
   license: "Apache-2.0",
   privacyPolicy: "https://mcp.ssw-compass.jp/privacy",
   termsOfService: "https://mcp.ssw-compass.jp/privacy",
+  protocolVersions: ["2025-11-25", "2026-07-28"],
+  tools: TOOL_NAMES,
 };
 
 export function buildServerCard(): ServerCard {
