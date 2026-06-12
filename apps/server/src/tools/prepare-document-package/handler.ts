@@ -19,8 +19,8 @@ import { scrubInputForPII } from "../../pii/index.js";
 import { toToolErrorResult } from "../tool-error.js";
 import {
   buildDocumentPackageArtifact,
-  enqueuePackageTask,
   buildDocumentPackageRequestFingerprint,
+  enqueuePackageTask,
   findSavedPackageArtifact,
   resolvePackageIdempotency,
   savePackageArtifact,

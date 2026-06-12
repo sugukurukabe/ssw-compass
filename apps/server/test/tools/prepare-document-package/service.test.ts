@@ -1,8 +1,8 @@
 import type { PrepareDocumentPackageInput } from "@ssw/shared-types";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
-  buildDocumentPackageRequestFingerprint,
   buildDocumentPackageArtifact,
+  buildDocumentPackageRequestFingerprint,
   buildPackageIdempotencyScopeHash,
   enqueuePackageTask,
   generateDocumentPackageTaskId,

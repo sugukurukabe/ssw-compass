@@ -120,8 +120,12 @@ describe("prepare_document_package handler — idempotency", () => {
   });
 
   it("reuses the same task and stored artifact for repeated idempotency_key calls", async () => {
-    const first = await runWithAuthContext(PRO_GYO, () => prepareDocumentPackageHandler(BASE_INPUT));
-    const second = await runWithAuthContext(PRO_GYO, () => prepareDocumentPackageHandler(BASE_INPUT));
+    const first = await runWithAuthContext(PRO_GYO, () =>
+      prepareDocumentPackageHandler(BASE_INPUT),
+    );
+    const second = await runWithAuthContext(PRO_GYO, () =>
+      prepareDocumentPackageHandler(BASE_INPUT),
+    );
 
     expect(first.isError).toBeFalsy();
     expect(second.isError).toBeFalsy();
@@ -132,7 +136,9 @@ describe("prepare_document_package handler — idempotency", () => {
   });
 
   it("rejects the same idempotency_key when the request payload changes", async () => {
-    const first = await runWithAuthContext(PRO_GYO, () => prepareDocumentPackageHandler(BASE_INPUT));
+    const first = await runWithAuthContext(PRO_GYO, () =>
+      prepareDocumentPackageHandler(BASE_INPUT),
+    );
     const conflict = await runWithAuthContext(PRO_GYO, () =>
       prepareDocumentPackageHandler({ ...BASE_INPUT, case_handle: "SAMPLE-CASE-0002" }),
     );

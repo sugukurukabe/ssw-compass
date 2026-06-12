@@ -35,7 +35,10 @@ export interface PackageObjectFileForTesting {
   getSignedUrl(expiresAt: Date): Promise<string>;
 }
 
-type PackageObjectFileFactory = (bucketName: string, objectName: string) => PackageObjectFileForTesting;
+type PackageObjectFileFactory = (
+  bucketName: string,
+  objectName: string,
+) => PackageObjectFileForTesting;
 
 export interface PackageIdempotencyRecord {
   schema_version: typeof IDEMPOTENCY_RECORD_SCHEMA_VERSION;
@@ -60,7 +63,10 @@ export class IdempotencyConflictError extends Error {
   }
 }
 
-function createGoogleStorageFile(bucketName: string, objectName: string): PackageObjectFileForTesting {
+function createGoogleStorageFile(
+  bucketName: string,
+  objectName: string,
+): PackageObjectFileForTesting {
   const file = new Storage().bucket(bucketName).file(objectName);
   return {
     async exists(): Promise<boolean> {
@@ -95,7 +101,13 @@ function createGoogleStorageFile(bucketName: string, objectName: string): Packag
     },
     async getCustomMetadata(): Promise<Record<string, string | undefined>> {
       const [metadata] = await file.getMetadata();
-      return metadata.metadata ?? {};
+      const customMetadata: Record<string, string | undefined> = {};
+      for (const [key, value] of Object.entries(metadata.metadata ?? {})) {
+        if (typeof value === "string") {
+          customMetadata[key] = value;
+        }
+      }
+      return customMetadata;
     },
     async getSignedUrl(expiresAt: Date): Promise<string> {
       const [signedUrl] = await file.getSignedUrl({
@@ -221,7 +233,10 @@ async function readPackageIdempotencyRecord(
   return parsePackageIdempotencyRecord(await file.readText());
 }
 
-function assertMatchingFingerprint(record: PackageIdempotencyRecord, requestFingerprint: string): void {
+function assertMatchingFingerprint(
+  record: PackageIdempotencyRecord,
+  requestFingerprint: string,
+): void {
   if (record.request_fingerprint !== requestFingerprint) {
     throw new IdempotencyConflictError();
   }
@@ -380,9 +395,9 @@ export async function enqueuePackageTask(input: {
           httpMethod: "POST",
           url: executorUrl,
           headers: { "Content-Type": "application/json" },
-          body: Buffer.from(JSON.stringify({ taskId: input.taskId, input: input.payload })).toString(
-            "base64",
-          ),
+          body: Buffer.from(
+            JSON.stringify({ taskId: input.taskId, input: input.payload }),
+          ).toString("base64"),
           oidcToken: {
             serviceAccountEmail: executorServiceAccountEmail,
             audience: executorAudience,
