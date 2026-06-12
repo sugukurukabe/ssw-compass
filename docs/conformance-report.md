@@ -74,10 +74,26 @@ CD staging (run 27439762161) green after merging PR #99 / #100:
   constraint #3 updated to permit them under scope + HITL + audit guards
   (see `docs/proposals/read-only-rule-update-for-hitl.md`, status: Applied).
 
+## External SDK Assessment (2026-06-13, ADR-025)
+
+`@modelcontextprotocol/sdk` 1.29.0 (latest published) capability check:
+
+| RC feature | SDK 1.29.0 | Status |
+| --- | --- | --- |
+| `server/discover` RPC | Not in transport/protocol | Adapter still required |
+| `Mcp-Method` / `Mcp-Name` routing headers | Not implemented | Adapter still required |
+| Elicitation (`inputRequired`) | Stable types present | Custom MRTR retained |
+| Tasks extension | `experimental/tasks/*`, marked "may change without notice" | Not adopted (too unstable for a live approval flow) |
+
+Decision (ADR-025): keep the thin Express adapter and custom MRTR until a stable
+SDK release covers `server/discover` + routing headers and the Tasks/elicitation
+API graduates out of `experimental`. The adapter is isolated and covered by
+`test/mcp-rc-transport.test.ts`.
+
 ## Residual Risk
 
 - The RC may change before the final 2026-07-28 publication.
-- The thin Express adapter should be removed once `@modelcontextprotocol/sdk`
-  ships first-class support for `server/discover`, routing headers, and MRTR.
-- Cloud Tasks and GCS lifecycle behavior require deployed GCP verification
-  (prod `prepare_document_package` end-to-end signed-URL check after CD prod).
+- Adapter removal is gated on the ADR-025 migration triggers (stable SDK support).
+- Cloud Tasks behavior requires deployed verification when async is enabled;
+  GCS lifecycle + `prepare_document_package` / `get_package_status` signed-URL
+  flow verified end-to-end on prod (2026-06-13).
