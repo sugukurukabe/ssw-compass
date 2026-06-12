@@ -9,6 +9,9 @@ import {
 } from "@ssw/ui-bridge";
 import DOMPurify from "dompurify";
 
+// structuredContent が無い (空結果・エラー) tool 結果向けのフォールバック文言。
+const NOTICE_FALLBACK = "結果を表示できませんでした。もう一度お試しください。";
+
 type HostContextChangedParams = {
   theme?: Parameters<typeof applyDocumentTheme>[0];
   locale?: string;
