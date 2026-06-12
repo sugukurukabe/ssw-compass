@@ -288,6 +288,61 @@ export async function resolvePackageIdempotency(input: {
   }
 }
 
+export interface PackageStatusLookup {
+  found: boolean;
+  taskId?: string;
+  status?: "queued" | "running" | "completed";
+  signedUrl?: string;
+  signedUrlExpiresAt?: string;
+}
+
+/**
+ * 発行済みパッケージの状態を principal スコープで照会する。
+ * Look up a previously prepared package's status, scoped to the caller principal.
+ * Memeriksa status paket yang sudah dibuat, dibatasi ke principal pemanggil.
+ *
+ * (authSubject, idempotencyKey) のべき等記録から task_id を引き、GCS 成果物が
+ * 存在すれば completed + 新しい署名 URL を、まだ無ければ running を返す。
+ * 記録が無い場合は found:false (この principal は当該 key で発行していない)。
+ */
+export async function lookupPackageStatus(input: {
+  authSubject: string;
+  idempotencyKey: string;
+  now?: Date;
+}): Promise<PackageStatusLookup> {
+  const bucketName = requirePackageArtifactBucket();
+  const scopeHash = buildPackageIdempotencyScopeHash({
+    authSubject: input.authSubject,
+    idempotencyKey: input.idempotencyKey,
+  });
+  const recordFile = packageObjectFileFactory(
+    bucketName,
+    packageIdempotencyRecordObjectName(scopeHash),
+  );
+  const record = await readPackageIdempotencyRecord(recordFile);
+  if (record === null) {
+    return { found: false };
+  }
+
+  const artifact = await findSavedPackageArtifact({
+    taskId: record.task_id,
+    requestFingerprint: record.request_fingerprint,
+    ...(input.now === undefined ? {} : { now: input.now }),
+  });
+  if (artifact === null) {
+    // べき等記録はあるが成果物が未生成 = 非同期実行中 (sync モードでは通常発生しない)。
+    // Idempotency record exists but the artifact is not yet written = async still running.
+    return { found: true, taskId: record.task_id, status: "running" };
+  }
+  return {
+    found: true,
+    taskId: record.task_id,
+    status: "completed",
+    signedUrl: artifact.signedUrl,
+    signedUrlExpiresAt: artifact.signedUrlExpiresAt,
+  };
+}
+
 export function buildDocumentPackageArtifact(input: PrepareDocumentPackageInput): Buffer {
   const documents = lookupDocuments({
     visaCategory: input.visa_category,

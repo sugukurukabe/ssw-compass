@@ -61,6 +61,7 @@ const TOOL_NAMES = [
   "list_law_updates",
   "submit_gyoseishoshi_approval",
   "prepare_document_package",
+  "get_package_status",
 ] as const;
 
 const SERVER_CARD: ServerCard = {
@@ -69,7 +70,7 @@ const SERVER_CARD: ServerCard = {
   description:
     "Official-source-grounded informational app for Japanese specified-skilled-worker (SSW / 特定技能) and related visa procedures. " +
     "Six anonymous read-only tools cover search, procedure classification, deadlines, document checklists, law updates, and zairyu compatibility. " +
-    "Two additional Pro-tier tools record a certified gyoseishoshi's approval and prepare document packages (authenticated; anonymous callers blocked). " +
+    "Three additional Pro-tier tools record a certified gyoseishoshi's approval, prepare document packages, and report package status (authenticated; anonymous callers blocked). " +
     "Information only — not legal advice.",
   publisher: {
     name: "スグクル株式会社",

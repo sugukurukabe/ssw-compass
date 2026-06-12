@@ -5,6 +5,14 @@ Format follows [Keep a Changelog](https://keepachangelog.com/en/1.1.0/).
 
 ---
 
+## [Unreleased] — v2.2
+
+### Added
+- `get_package_status` 新規ツール (L2、Pro + gyoseishoshi、`compass:draft`): prepare_document_package で生成済みのパッケージ状態を idempotency_key で照会し、完了済みなら新しい短期署名 URL を再発行する。呼び出し元 principal にスコープ (`sha256(authSubject) + idempotency_key`)。read-only (状態変更なし)。
+- Server Card / ai-plugin を 9 ツール構成 (Pro-tier 3 ツール) に更新、`scripts/smoke-mcp.mjs` に `get_package_status` を追加
+
+---
+
 ## [v2.1.0] — 2026-06-13 (MCP 2026-07-28 RC readiness)
 
 ### Added

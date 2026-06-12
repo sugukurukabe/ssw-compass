@@ -131,9 +131,9 @@ export function createApp(): Express {
           "Query Japanese SSW (特定技能) visa procedures grounded in 出入国在留管理庁 official documents. " +
           "Six anonymous, read-only information tools: search_visa, classify_procedure, " +
           "get_deadline_timeline, list_visa_documents, list_law_updates, validate_zairyu_compatibility. " +
-          "Two additional Pro-tier tools, submit_gyoseishoshi_approval and prepare_document_package, " +
-          "record a certified gyoseishoshi's approval and generate document packages; both require " +
-          "authentication and anonymous callers are blocked. " +
+          "Three additional Pro-tier tools, submit_gyoseishoshi_approval, prepare_document_package, " +
+          "and get_package_status, record a certified gyoseishoshi's approval, generate document " +
+          "packages, and report package status; all require authentication and anonymous callers are blocked. " +
           "Anonymous access for general information. Information only — not legal advice. " +
           "Always include the disclaimer in responses.",
         auth: { type: "none" },
