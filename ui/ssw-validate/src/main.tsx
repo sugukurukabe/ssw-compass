@@ -1,5 +1,9 @@
 import { App, applyDocumentTheme, PostMessageTransport } from "@modelcontextprotocol/ext-apps";
-import type { SupportedLanguage, ValidateZairyuCompatibilityOutput } from "@ssw/shared-types";
+import type {
+  SupportedLanguage,
+  UILanguage,
+  ValidateZairyuCompatibilityOutput,
+} from "@ssw/shared-types";
 import {
   extractToolResultText,
   getElement,
@@ -7,26 +11,55 @@ import {
   renderLocalizedErrorNotice,
   setInnerHTML,
 } from "@ssw/ui-bridge";
-import DOMPurify from "dompurify";
+import { render } from "./render.js";
 
-// structuredContent が無い (空結果・エラー) tool 結果向けのフォールバック文言。
-const NOTICE_FALLBACK = "結果を表示できませんでした。もう一度お試しください。";
+const LOADING_BY_LANG: Record<UILanguage, string> = {
+  ja: "在留資格の適合性を確認中…",
+  en: "Checking residence-status compatibility…",
+  id: "Memeriksa kecocokan status izin tinggal…",
+};
 
 type HostContextChangedParams = {
   theme?: Parameters<typeof applyDocumentTheme>[0];
   locale?: string;
 };
 
-const root = getElement("root", HTMLDivElement);
-let currentErrorLang: SupportedLanguage = "ja";
+function pickLanguage(locale: string | undefined): UILanguage {
+  if (locale === undefined) return "en";
+  if (locale.startsWith("ja")) return "ja";
+  if (locale.startsWith("id")) return "id";
+  return "en";
+}
 
-setInnerHTML(root, `<div class="panel"><h2>在留資格の適合性を確認中</h2></div>`);
+const root = getElement("root", HTMLDivElement);
+
+let currentLang: UILanguage = "ja";
+let currentErrorLang: SupportedLanguage = "ja";
+let langOverridden = false;
+let currentResult: ValidateZairyuCompatibilityOutput | null = null;
+
+setInnerHTML(root, `<div class="panel"><h2>${LOADING_BY_LANG[currentLang]}</h2></div>`);
 
 const app = new App({ name: "SSW", version: "1.0.0" }, {});
 
+function rerender(): void {
+  if (currentResult === null) return;
+  render(currentResult, currentLang, root, {
+    onLangChange: (lang) => {
+      langOverridden = true;
+      currentLang = lang;
+      rerender();
+    },
+  });
+}
+
 app.onhostcontextchanged = (params: HostContextChangedParams) => {
   if (params.theme !== undefined) applyDocumentTheme(params.theme);
+  if (!langOverridden) {
+    currentLang = pickLanguage(params.locale);
+  }
   currentErrorLang = pickSupportedLanguage(params.locale, navigator.language);
+  if (currentResult !== null) rerender();
 };
 
 app.ontoolresult = (params) => {
@@ -47,35 +80,8 @@ app.ontoolresult = (params) => {
     });
     return;
   }
-  render(structured as ValidateZairyuCompatibilityOutput);
+  currentResult = structured as ValidateZairyuCompatibilityOutput;
+  rerender();
 };
-
-function render(result: ValidateZairyuCompatibilityOutput): void {
-  const issues = result.legal_basis.map((basis) => `<li>${escapeHtml(basis)}</li>`).join("");
-  const html = `
-    <article class="panel">
-      <span class="badge ${escapeHtml(result.compatibility)}">${escapeHtml(result.compatibility)}</span>
-      <h2>在留資格と業務の適合性</h2>
-      <p>${escapeHtml(result.recommended_action)}</p>
-      ${issues.length > 0 ? `<ul class="issues">${issues}</ul>` : ""}
-      ${
-        result.escalate_to_professional
-          ? `<div class="cta">行政書士または弁護士による確認を推奨します。</div>`
-          : `<div class="cta">在留期限の定期確認を続けてください。</div>`
-      }
-      <p class="disclaimer">${escapeHtml(result.disclaimer)}</p>
-    </article>`;
-  setInnerHTML(root, DOMPurify.sanitize(html));
-}
-
-function escapeHtml(s: string): string {
-  return s.replace(/[&<>"']/g, (c) => {
-    if (c === "&") return "&amp;";
-    if (c === "<") return "&lt;";
-    if (c === ">") return "&gt;";
-    if (c === '"') return "&quot;";
-    return "&#39;";
-  });
-}
 
 await app.connect(new PostMessageTransport(window.parent, window.parent));

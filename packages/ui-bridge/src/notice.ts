@@ -8,18 +8,8 @@
  * Tanpa ini, widget akan macet pada skeleton pemuatan.
  */
 
+import { escapeHtml } from "./escape.js";
 import { setInnerHTML } from "./trusted-html.js";
-
-function escapeHtml(input: string): string {
-  const map: Record<string, string> = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  };
-  return input.replace(/[&<>"']/g, (char) => map[char] ?? char);
-}
 
 /**
  * tool 結果の text content を連結して返す (structuredContent が無い場合の本文取得)。

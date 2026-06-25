@@ -10,13 +10,6 @@ import {
 import { render } from "./render.js";
 import { renderSkeleton } from "./skeleton.js";
 
-// structuredContent が無い (空結果・エラー) tool 結果向けのフォールバック文言。
-const NOTICE_FALLBACK: Record<UILanguage, string> = {
-  ja: "結果を表示できませんでした。もう一度お試しください。",
-  en: "Could not display a result. Please try again.",
-  id: "Tidak dapat menampilkan hasil. Silakan coba lagi.",
-};
-
 type HostContextChangedParams = {
   theme?: Parameters<typeof applyDocumentTheme>[0];
   locale?: string;
@@ -33,6 +26,8 @@ let currentLang: UILanguage = "ja";
 let currentErrorLang: SupportedLanguage = "ja";
 let currentResult: SearchVisaOutput | null = null;
 let showSources = false;
+// 利用者がウィジェット内で言語を選んだら、以後ホスト locale で上書きしない。
+let langOverridden = false;
 
 const root = getElement("root", HTMLDivElement);
 
@@ -51,7 +46,9 @@ app.onhostcontextchanged = (params: HostContextChangedParams) => {
   if (params.theme !== undefined) {
     applyDocumentTheme(params.theme);
   }
-  currentLang = pickLanguage(params.locale);
+  if (!langOverridden) {
+    currentLang = pickLanguage(params.locale);
+  }
   currentErrorLang = pickSupportedLanguage(params.locale, navigator.language);
 };
 
@@ -84,9 +81,16 @@ app.ontoolresult = (params) => {
 
 function rerender(): void {
   if (currentResult === null) return;
-  render(currentResult, currentLang, root, showSources, () => {
-    showSources = !showSources;
-    rerender();
+  render(currentResult, currentLang, root, showSources, {
+    onToggleSources: () => {
+      showSources = !showSources;
+      rerender();
+    },
+    onLangChange: (lang) => {
+      langOverridden = true;
+      currentLang = lang;
+      rerender();
+    },
   });
 }
 
