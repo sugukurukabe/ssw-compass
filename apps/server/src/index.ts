@@ -9,6 +9,7 @@ import { buildWwwAuthenticate, hasScope, requiredScopeForTool } from "./auth/sco
 import { isLawUpdatesDatasetStale, lawUpdatesDatasetAgeDays } from "./law-updates/active-filter.js";
 import { logger } from "./logger.js";
 import { getRegisteredSdkShutdown, initOtelSdk } from "./otel-sdk.js";
+import { PRIVACY_POLICY_TEXT } from "./privacy/policy.js";
 import { createMcpServer } from "./server.js";
 import { buildServerCard } from "./server-card.js";
 
@@ -222,23 +223,16 @@ export function createApp(): Express {
       });
   });
 
-  // Privacy policy endpoint (trilingual drafts in docs/privacy/)
+  // Privacy policy endpoint — serves the full trilingual policy inline (no summary
+  // placeholder, no external link for the body). The canonical text lives in
+  // src/privacy/policy.ts; docs/privacy/*.md is the human-facing mirror.
+  // 文面の確定は行政書士・人間レビューが必須 (AGENTS.md の免責境界)。
   app.get("/privacy", (_req: Request, res: Response) => {
     res
       .status(200)
       .set("Cache-Control", "public, max-age=86400")
       .type("text/plain; charset=utf-8")
-      .send(
-        "SSW Compass Privacy Policy\n==========================\n\n" +
-          "This service does NOT collect personal information.\n" +
-          "Inputs containing residence card numbers, passport numbers, or My Number are automatically blocked.\n\n" +
-          "Operational logs may include access timestamps and security metadata for abuse prevention. " +
-          "SSW Compass does not use logs for behavioral profiling.\n\n" +
-          "Visa application content and personal identifiers are not stored.\n\n" +
-          "Full trilingual policy:\n" +
-          "https://github.com/sugukurukabe/ssw-compass/tree/main/docs/privacy/\n\n" +
-          "Contact: a_kabe@sugu-kuru.co.jp\n",
-      );
+      .send(`${PRIVACY_POLICY_TEXT}\n`);
   });
 
   app.get("/.well-known/mcp.json", (_req: Request, res: Response) => {
