@@ -80,6 +80,64 @@ describe("submit_gyoseishoshi_approval — audit event written BEFORE return", (
   });
 });
 
+describe("submit_gyoseishoshi_approval — gate unmet has zero side effects (boundary: auth gate)", () => {
+  // ゲート判定は authContext の署名 JWT クレームのみを使う。
+  // args の自己申告 (approver_gyoseishoshi_number 等) は信用しない。
+  it("Free tier with a self-asserted approver number → throws before any audit event", async () => {
+    const spy = vi.spyOn(writer, "emitAuditEvent");
+    await expect(
+      _submitGyoseishoshiApprovalInner(
+        { ...BASE_INPUT, approver_gyoseishoshi_number: "東京都 99999" },
+        FREE_AUTH,
+      ),
+    ).rejects.toThrow(HitlGateError);
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it("null (anonymous) auth → throws and emits no audit event (no side effects)", async () => {
+    const spy = vi.spyOn(writer, "emitAuditEvent");
+    await expect(_submitGyoseishoshiApprovalInner(BASE_INPUT, null)).rejects.toThrow(HitlGateError);
+    expect(spy).not.toHaveBeenCalled();
+    spy.mockRestore();
+  });
+
+  it("outer wrapper anonymous → unapproved isError result, no audit event, no approved structuredContent", async () => {
+    const spy = vi.spyOn(writer, "emitAuditEvent");
+    const result = await submitGyoseishoshiApprovalHandler(BASE_INPUT);
+    expect(result.isError).toBe(true);
+    expect(spy).not.toHaveBeenCalled();
+    const sc = result.structuredContent as Record<string, unknown> | undefined;
+    expect(sc?.["approved"]).not.toBe(true);
+    spy.mockRestore();
+  });
+});
+
+describe("submit_gyoseishoshi_approval — records only (no document generation / authority filing)", () => {
+  // 記録のみ: ハンドラは承認の記録 (監査ログ) だけを行い、書類生成・当局提出・
+  // ファイル書き出しのいずれも行わない。出力にもそれらを示すフィールドを返さない。
+  it("legacy success returns a record acknowledgement only — no generated document or filing fields", async () => {
+    const result = await _submitGyoseishoshiApprovalInner(BASE_INPUT, PRO_GYO);
+    const sc = result.structuredContent as Record<string, unknown>;
+    for (const forbidden of [
+      "document_generated",
+      "generated_document",
+      "submitted_to_authority",
+      "filed",
+      "filing_id",
+      "submission_id",
+      "pdf",
+      "pdf_url",
+      "file_path",
+      "storage_uri",
+    ]) {
+      expect(sc).not.toHaveProperty(forbidden);
+    }
+    expect(sc["audit_event_recorded"]).toBe(true);
+    expect(sc["approved"]).toBe(true);
+  });
+});
+
 describe("submit_gyoseishoshi_approval — input validation", () => {
   it("checkbox_with_seal without seal_image → zod rejects", async () => {
     const badInput = { ...BASE_INPUT, approval_method: "checkbox_with_seal" as const };
