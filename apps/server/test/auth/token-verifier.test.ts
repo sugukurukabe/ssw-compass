@@ -151,6 +151,52 @@ describe("JwtTokenVerifier.verify", () => {
     const ctx = await verifier.verify(token);
     expect(ctx).toBeNull();
   });
+
+  // クライアント申告非信用: 署名されたクレームだけを信用する。
+  // Client self-claims are not trusted: only the signed claims are honored.
+  // Klaim mandiri klien tidak dipercaya: hanya klaim bertanda tangan yang dihormati.
+  it("tampered payload (self-claimed gyoseishoshi_verified/tier) with original signature → null", async () => {
+    // 正規の Free トークンを発行し、ペイロードだけを権限昇格させて元の署名を流用する。
+    const honest = makeJwt({
+      sub: "user-free",
+      tier: "free",
+      gyoseishoshi_verified: false,
+      auth_source: "jwt",
+      iat: nowSeconds(),
+      exp: futureExp(),
+    });
+    const [header, , sig] = honest.split(".") as [string, string, string];
+    const forgedPayload = base64UrlEncode(
+      JSON.stringify({
+        sub: "user-free",
+        tier: "business",
+        gyoseishoshi_verified: true,
+        gyoseishoshi_number: "東京都 99999",
+        auth_source: "jwt",
+        iat: nowSeconds(),
+        exp: futureExp(),
+      }),
+    );
+    const ctx = await verifier.verify(`${header}.${forgedPayload}.${sig}`);
+    expect(ctx).toBeNull();
+  });
+
+  it("alg=none downgrade attack with escalated claims → null", async () => {
+    const header = base64UrlEncode(JSON.stringify({ alg: "none", typ: "JWT" }));
+    const payload = base64UrlEncode(
+      JSON.stringify({
+        sub: "attacker",
+        tier: "business",
+        gyoseishoshi_verified: true,
+        gyoseishoshi_number: "東京都 00000",
+        auth_source: "jwt",
+        iat: nowSeconds(),
+        exp: futureExp(),
+      }),
+    );
+    const ctx = await verifier.verify(`${header}.${payload}.`);
+    expect(ctx).toBeNull();
+  });
 });
 
 describe("extractBearerToken", () => {
