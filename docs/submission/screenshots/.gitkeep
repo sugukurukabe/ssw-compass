@@ -1,0 +1,7 @@
+# 審査提出用スクリーンショット (PNG) の配置場所。
+# Placeholder directory for submission screenshots (PNG).
+# Lokasi penempatan tangkapan layar pengajuan (PNG).
+#
+# 取得手順・命名規則は ../screenshots-guide.md を参照。
+# 命名規則: NN-<tool-name-kebab>.png (例: 01-search-visa.png)。
+# PNG はバイナリのためコミット運用は人間が判断する。
