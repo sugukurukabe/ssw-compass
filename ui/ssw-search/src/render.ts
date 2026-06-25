@@ -1,5 +1,12 @@
 import type { SearchVisaOutput, UILanguage } from "@ssw/shared-types";
-import { setInnerHTML } from "@ssw/ui-bridge";
+import {
+  attachCopyButton,
+  escapeAttr,
+  renderLanguageToggle,
+  safePrimaryHref,
+  setInnerHTML,
+  wireLanguageToggle,
+} from "@ssw/ui-bridge";
 import DOMPurify from "dompurify";
 
 /**
@@ -26,6 +33,14 @@ const I18N = {
     sources: "出典を確認",
     asOf: "情報基準日",
     openSource: "原典を開く",
+    confidence: "信頼度",
+    copyUrl: "URLをコピー",
+    copyAll: "出典URLをすべてコピー",
+    copied: "コピーしました",
+    copyFailed: "コピー失敗",
+    empty: "公式情報源で該当する内容が見つかりませんでした。条件を変えてもう一度お試しください。",
+    summaryLead: (n: number) =>
+      `${n}件の一次情報を確認しました。まずは申請種別 → 必要書類 → 期限の順に確認してください。`,
     followups: ["申請種別を判定する", "必要書類を確認する", "期限を確認する"],
   },
   en: {
@@ -33,6 +48,14 @@ const I18N = {
     sources: "Show sources",
     asOf: "As of",
     openSource: "Open source",
+    confidence: "Confidence",
+    copyUrl: "Copy URL",
+    copyAll: "Copy all source URLs",
+    copied: "Copied",
+    copyFailed: "Copy failed",
+    empty: "No matching content was found in official sources. Try adjusting your query.",
+    summaryLead: (n: number) =>
+      `Checked ${n} primary source(s). Review in order: procedure type → documents → deadlines.`,
     followups: ["Classify procedure", "Check documents", "Check deadlines"],
   },
   id: {
@@ -40,24 +63,23 @@ const I18N = {
     sources: "Tampilkan sumber",
     asOf: "Per tanggal",
     openSource: "Buka sumber",
+    confidence: "Keyakinan",
+    copyUrl: "Salin URL",
+    copyAll: "Salin semua URL sumber",
+    copied: "Tersalin",
+    copyFailed: "Gagal menyalin",
+    empty: "Tidak ada konten yang cocok di sumber resmi. Coba ubah kueri Anda.",
+    summaryLead: (n: number) =>
+      `Memeriksa ${n} sumber utama. Tinjau berurutan: jenis prosedur → dokumen → tenggat.`,
     followups: ["Klasifikasi prosedur", "Periksa dokumen", "Periksa tenggat"],
   },
 } as const;
 
 const ALLOWED_HREF = /^https:\/\/(www\.)?(moj|mhlw|soumu|cao|maff|mlit)\.go\.jp\//;
 
-function escapeAttr(s: string): string {
-  const map: Record<string, string> = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  };
-  return s.replace(/[&<>"']/g, (c) => {
-    const mapped = map[c];
-    return mapped !== undefined ? mapped : c;
-  });
+export interface SearchCallbacks {
+  onToggleSources: () => void;
+  onLangChange: (lang: UILanguage) => void;
 }
 
 export function render(
@@ -65,35 +87,56 @@ export function render(
   lang: UILanguage,
   rootEl: HTMLElement,
   showSources: boolean,
-  onToggleSources: () => void,
+  cb: SearchCallbacks,
 ): void {
   const t = I18N[lang];
   const l1 = L1_NOTICE_BY_LANG[lang];
 
   const cardsHtml = result.results
-    .map((r) => {
-      const safeHref = ALLOWED_HREF.test(r.sourceUrl) ? r.sourceUrl : "#";
+    .map((r, i) => {
+      const safeHref = safePrimaryHref(r.sourceUrl);
+      const confPct = Math.round(r.confidence * 100);
       return `<article class="card" tabindex="0" aria-label="${escapeAttr(r.title)}">
         <h3>${escapeAttr(r.title)}</h3>
         <p>${escapeAttr(r.snippet)}</p>
-        <a href="${escapeAttr(safeHref)}" rel="noopener noreferrer" target="_blank">${t.openSource}</a>
-        <small>${t.asOf}: ${escapeAttr(r.sourceDate)}</small>
+        <div class="conf" aria-label="${escapeAttr(t.confidence)} ${confPct}%">
+          <span class="conf-label">${escapeAttr(t.confidence)} ${confPct}%</span>
+          <span class="conf-track"><span class="conf-fill" data-conf="${confPct}"></span></span>
+        </div>
+        <div class="card-actions">
+          <a href="${escapeAttr(safeHref)}" rel="noopener noreferrer" target="_blank">${escapeAttr(t.openSource)}</a>
+          <button type="button" class="ssw-copy-btn" data-copy-idx="${i}">${escapeAttr(t.copyUrl)}</button>
+        </div>
+        <small>${escapeAttr(t.asOf)}: ${escapeAttr(r.sourceDate)}</small>
       </article>`;
     })
     .join("");
 
-  const fullHtml = `
-    <small class="notice-l1" role="note" aria-label="service scope notice">${escapeAttr(l1)}</small>
-    <article class="summary-card">
-      <h2>${escapeAttr(t.summary)}</h2>
-      <p>${escapeAttr(summaryText(result))}</p>
+  const hasResults = result.results.length > 0;
+  const copyAllHtml = hasResults
+    ? `<button type="button" class="ssw-copy-btn" id="ssw-copy-all">${escapeAttr(t.copyAll)}</button>`
+    : "";
+
+  const summaryBody = hasResults
+    ? `<p>${escapeAttr(summaryText(result, t))}</p>
       <div class="followup-row">
         ${t.followups.map((f) => `<span class="followup-chip">${escapeAttr(f)}</span>`).join("")}
       </div>
-      <button type="button" id="ssw-toggle-sources" class="sources-chip">${escapeAttr(t.sources)} (${result.results.length})</button>
+      <div class="summary-actions">
+        <button type="button" id="ssw-toggle-sources" class="sources-chip" aria-expanded="${showSources ? "true" : "false"}">${escapeAttr(t.sources)} (${result.results.length})</button>
+        ${copyAllHtml}
+      </div>`
+    : `<p class="empty-state" role="status">${escapeAttr(t.empty)}</p>`;
+
+  const fullHtml = `
+    <div class="ssw-toolbar">${renderLanguageToggle(lang)}</div>
+    <small class="notice-l1" role="note" aria-label="service scope notice">${escapeAttr(l1)}</small>
+    <article class="summary-card">
+      <h2>${escapeAttr(t.summary)}</h2>
+      ${summaryBody}
     </article>
     ${
-      showSources
+      showSources && hasResults
         ? `<section aria-labelledby="ssw-sources-heading">
             <h2 id="ssw-sources-heading" class="sr-only">${escapeAttr(t.sources)}</h2>
             ${cardsHtml}
@@ -109,7 +152,32 @@ export function render(
   });
 
   setInnerHTML(rootEl, sanitized);
-  rootEl.querySelector("#ssw-toggle-sources")?.addEventListener("click", onToggleSources);
+
+  // confidence bar の幅は CSS 変数経由 (HTML 文字列に inline style を入れず CSP 適合)。
+  for (const fill of Array.from(rootEl.querySelectorAll<HTMLElement>(".conf-fill"))) {
+    const conf = fill.getAttribute("data-conf");
+    if (conf !== null) fill.style.width = `${conf}%`;
+  }
+
+  rootEl.querySelector("#ssw-toggle-sources")?.addEventListener("click", cb.onToggleSources);
+  wireLanguageToggle(rootEl, cb.onLangChange);
+
+  const copyLabels = { idle: t.copyUrl, done: t.copied, failed: t.copyFailed };
+  for (const button of Array.from(rootEl.querySelectorAll<HTMLButtonElement>("[data-copy-idx]"))) {
+    const idx = Number(button.getAttribute("data-copy-idx"));
+    const entry = result.results[idx];
+    if (entry !== undefined) {
+      attachCopyButton(button, () => entry.sourceUrl, copyLabels);
+    }
+  }
+  const copyAllBtn = rootEl.querySelector<HTMLButtonElement>("#ssw-copy-all");
+  if (copyAllBtn !== null) {
+    attachCopyButton(copyAllBtn, () => result.results.map((r) => r.sourceUrl).join("\n"), {
+      idle: t.copyAll,
+      done: t.copied,
+      failed: t.copyFailed,
+    });
+  }
 
   requestAnimationFrame(() => {
     const cards = rootEl.querySelectorAll<HTMLElement>(".card");
@@ -120,14 +188,10 @@ export function render(
   });
 }
 
-function summaryText(result: SearchVisaOutput): string {
-  const first = result.results[0];
-  if (first === undefined) {
-    return "公式情報源で該当する内容が見つかりませんでした。";
-  }
+function summaryText(result: SearchVisaOutput, t: (typeof I18N)[UILanguage]): string {
   const titles = result.results
     .slice(0, 3)
     .map((r) => r.title)
     .join(" / ");
-  return `${result.results.length}件の一次情報を確認しました。まずは申請種別、必要書類、期限の順に確認してください。主な根拠: ${titles}`;
+  return `${t.summaryLead(result.results.length)} ${titles}`;
 }

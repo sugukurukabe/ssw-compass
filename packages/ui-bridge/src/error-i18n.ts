@@ -10,18 +10,8 @@ import {
   SUPPORTED_LANGUAGES,
   type SupportedLanguage,
 } from "@ssw/shared-types";
+import { escapeHtml } from "./escape.js";
 import { setInnerHTML } from "./trusted-html.js";
-
-function escapeHtml(input: string): string {
-  const map: Record<string, string> = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  };
-  return input.replace(/[&<>"']/g, (char) => map[char] ?? char);
-}
 
 export function pickSupportedLanguage(
   language: string | undefined,

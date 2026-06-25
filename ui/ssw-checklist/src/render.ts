@@ -1,5 +1,12 @@
 import type { ListVisaDocumentsOutput, UILanguage } from "@ssw/shared-types";
-import { setInnerHTML } from "@ssw/ui-bridge";
+import {
+  attachCopyButton,
+  escapeAttr,
+  renderLanguageToggle,
+  safePrimaryHref,
+  setInnerHTML,
+  wireLanguageToggle,
+} from "@ssw/ui-bridge";
 import DOMPurify from "dompurify";
 import type { ChecklistState } from "./state.js";
 import { containsPii, isDirty } from "./state.js";
@@ -8,6 +15,7 @@ export interface RenderCallbacks {
   onToggle: (id: string) => void;
   onNotesChange: (notes: string) => void;
   onCommit: () => void;
+  onLangChange: (lang: UILanguage) => void;
 }
 
 const L1_NOTICE_BY_LANG = {
@@ -43,6 +51,11 @@ const I18N = {
     translatedTemplateBadge: "多言語様式あり",
     asOf: "情報基準日",
     ministryPrefix: "所管",
+    openSource: "原典を開く",
+    progress: "確認済み",
+    copyChecklist: "リストをコピー",
+    copied: "コピーしました",
+    copyFailed: "コピー失敗",
   },
   en: {
     notesLabel: "Notes (optional, do not include personal identifiers)",
@@ -70,6 +83,11 @@ const I18N = {
     translatedTemplateBadge: "Translations available",
     asOf: "As of",
     ministryPrefix: "Ministry",
+    openSource: "Open source",
+    progress: "Checked",
+    copyChecklist: "Copy list",
+    copied: "Copied",
+    copyFailed: "Copy failed",
   },
   id: {
     notesLabel: "Catatan (opsional, jangan masukkan pengenal pribadi)",
@@ -97,6 +115,11 @@ const I18N = {
     translatedTemplateBadge: "Terjemahan tersedia",
     asOf: "Per tanggal",
     ministryPrefix: "Kementerian",
+    openSource: "Buka sumber",
+    progress: "Diperiksa",
+    copyChecklist: "Salin daftar",
+    copied: "Tersalin",
+    copyFailed: "Gagal menyalin",
   },
 } as const;
 
@@ -105,20 +128,6 @@ const TRUST_LABEL_BY_LANG = {
   en: { primary_source: "Primary source", secondary: "Secondary", community: "Community" },
   id: { primary_source: "Sumber utama", secondary: "Sekunder", community: "Komunitas" },
 } as const;
-
-function escapeAttr(s: string): string {
-  const map: Record<string, string> = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  };
-  return s.replace(/[&<>"']/g, (c) => {
-    const mapped = map[c];
-    return mapped !== undefined ? mapped : c;
-  });
-}
 
 function trustClass(trustLevel: string): string {
   if (trustLevel === "primary_source") return "trust-badge trust-badge--primary";
@@ -170,6 +179,10 @@ export function render(ctx: RenderContext, rootEl: HTMLElement, cb: RenderCallba
             d.multilingualSourceUrl !== undefined && d.multilingualSourceUrl.length > 0
               ? `<small class="language-source">${escapeAttr(d.multilingualSourceUrl)}</small>`
               : "";
+          const sourceLinkHtml =
+            d.sourceUrl !== undefined && d.sourceUrl.length > 0
+              ? `<a class="doc-source" href="${escapeAttr(safePrimaryHref(d.sourceUrl))}" target="_blank" rel="noopener noreferrer">${escapeAttr(t.openSource)}</a>`
+              : "";
           return `<li class="doc-row">
             <input type="checkbox" id="doc-${escapeAttr(d.id)}"${checked ? " checked" : ""} data-doc-id="${escapeAttr(d.id)}" />
             <div class="doc-meta">
@@ -179,6 +192,7 @@ export function render(ctx: RenderContext, rootEl: HTMLElement, cb: RenderCallba
               <p class="desc">${escapeAttr(d.description)}</p>
               <div class="language-badges">${multilingualBadges}</div>
               ${ministryHtml}
+              ${sourceLinkHtml}
               ${multilingualSourceHtml}
             </div>
           </li>`;
@@ -200,8 +214,18 @@ export function render(ctx: RenderContext, rootEl: HTMLElement, cb: RenderCallba
         ? t.commitSent
         : t.commitNoChange;
 
+  const totalDocs = result.documents.length;
+  const checkedCount = state.checkedDocIds.size;
+  const progressPct = totalDocs > 0 ? Math.round((checkedCount / totalDocs) * 100) : 0;
+
   const fullHtml = `
+    <div class="ssw-toolbar">${renderLanguageToggle(lang)}</div>
     <small class="notice-l1" role="note" aria-label="service scope notice">${escapeAttr(l1)}</small>
+    <div class="progress-bar" role="group" aria-label="${escapeAttr(t.progress)}">
+      <span class="progress-count">${escapeAttr(t.progress)}: ${checkedCount} / ${totalDocs}</span>
+      <span class="progress-track"><span class="progress-fill" data-progress="${progressPct}"></span></span>
+      <button type="button" class="ssw-copy-btn" id="ssw-copy-checklist">${escapeAttr(t.copyChecklist)}</button>
+    </div>
     <div class="doc-list">${rowsHtml}</div>
     <div class="notes">
       <label for="ssw-notes">${escapeAttr(t.notesLabel)}</label>
@@ -220,6 +244,22 @@ export function render(ctx: RenderContext, rootEl: HTMLElement, cb: RenderCallba
 
   const sanitized = DOMPurify.sanitize(fullHtml);
   setInnerHTML(rootEl, sanitized);
+
+  const progressFill = rootEl.querySelector<HTMLElement>(".progress-fill");
+  if (progressFill !== null) {
+    progressFill.style.width = `${progressPct}%`;
+  }
+
+  wireLanguageToggle(rootEl, cb.onLangChange);
+
+  const copyBtn = rootEl.querySelector<HTMLButtonElement>("#ssw-copy-checklist");
+  if (copyBtn !== null) {
+    attachCopyButton(copyBtn, () => buildChecklistText(result, lang, t), {
+      idle: t.copyChecklist,
+      done: t.copied,
+      failed: t.copyFailed,
+    });
+  }
 
   for (const checkbox of Array.from(
     rootEl.querySelectorAll<HTMLInputElement>('input[type="checkbox"][data-doc-id]'),
@@ -243,4 +283,31 @@ export function render(ctx: RenderContext, rootEl: HTMLElement, cb: RenderCallba
       if (!commitBtn.disabled) cb.onCommit();
     });
   }
+}
+
+/**
+ * クリップボード用のプレーンテキスト書類リストを生成する (グループ別・出典付き)。
+ * Builds a plain-text checklist for clipboard (grouped, with sources).
+ * Membangun daftar dokumen teks polos untuk clipboard (per grup, dengan sumber).
+ */
+function buildChecklistText(
+  result: ListVisaDocumentsOutput,
+  lang: UILanguage,
+  t: (typeof I18N)[UILanguage],
+): string {
+  const groups = ["table1", "table2", "table3", "reference_form", "omission"] as const;
+  const lines: string[] = [];
+  for (const group of groups) {
+    const docs = result.documents.filter((d) => d.group === group);
+    if (docs.length === 0) continue;
+    lines.push(`# ${t.groups[group]}`);
+    for (const d of docs) {
+      const status = t.statuses[d.status];
+      const source = d.sourceUrl !== undefined && d.sourceUrl.length > 0 ? `  ${d.sourceUrl}` : "";
+      lines.push(`- [${status}] ${d.label[lang]}${source}`);
+    }
+    lines.push("");
+  }
+  lines.push(`${t.asOf}: ${result.asOf}`);
+  return lines.join("\n");
 }

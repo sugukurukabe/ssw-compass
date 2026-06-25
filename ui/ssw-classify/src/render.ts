@@ -5,7 +5,13 @@ import type {
   ReceivingOrganizationProfile,
   UILanguage,
 } from "@ssw/shared-types";
-import { setInnerHTML } from "@ssw/ui-bridge";
+import {
+  escapeAttr,
+  renderLanguageToggle,
+  safePrimaryHref,
+  setInnerHTML,
+  wireLanguageToggle,
+} from "@ssw/ui-bridge";
 import DOMPurify from "dompurify";
 
 /**
@@ -34,6 +40,8 @@ const I18N = {
     internSameField: "同一分野として扱える場合のみ技能試験・日本語試験の両方が免除候補になります。",
     internDifferentField: "異なる分野の場合、日本語試験のみ免除候補で、分野別技能試験は必要です。",
     asOf: "情報基準日",
+    confidence: "判定の信頼度",
+    assumptions: "前提条件",
   },
   en: {
     title: "Procedure route",
@@ -51,6 +59,8 @@ const I18N = {
     internDifferentField:
       "For a different field, only the Japanese test may be exempt; the sector skills test is still required.",
     asOf: "As of",
+    confidence: "Classification confidence",
+    assumptions: "Assumptions",
   },
   id: {
     title: "Rute prosedur",
@@ -67,6 +77,8 @@ const I18N = {
     internDifferentField:
       "Jika bidang berbeda, hanya ujian bahasa Jepang yang mungkin dikecualikan; ujian keterampilan bidang tetap diperlukan.",
     asOf: "Per tanggal",
+    confidence: "Keyakinan klasifikasi",
+    assumptions: "Asumsi",
   },
 } as const;
 
@@ -89,6 +101,7 @@ export interface RenderCallbacks {
   onIndustryChange: (value: FormBundle["industry"]) => void;
   onToggleSources: () => void;
   onCommit: () => void;
+  onLangChange: (lang: UILanguage) => void;
 }
 
 const ORG_LABEL: Record<ReceivingOrganizationProfile, string> = {
@@ -135,20 +148,6 @@ const INDUSTRY_LABEL: Record<FormBundle["industry"], string> = {
   other: "その他",
 };
 
-function escapeAttr(s: string): string {
-  const map: Record<string, string> = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  };
-  return s.replace(/[&<>"']/g, (c) => {
-    const mapped = map[c];
-    return mapped !== undefined ? mapped : c;
-  });
-}
-
 export function render(
   result: ClassifyProcedureOutput,
   lang: UILanguage,
@@ -167,7 +166,7 @@ export function render(
 
   const referencesHtml = result.references
     .map((r) => {
-      const safeHref = ALLOWED_HREF.test(r.sourceUrl) ? r.sourceUrl : "#";
+      const safeHref = safePrimaryHref(r.sourceUrl);
       return `<article class="card" tabindex="0" aria-label="${escapeAttr(r.title)}">
         <h5>${escapeAttr(r.title)}</h5>
         <a href="${escapeAttr(safeHref)}" rel="noopener noreferrer" target="_blank">${escapeAttr(r.sourceUrl)}</a>
@@ -176,11 +175,24 @@ export function render(
     })
     .join("");
 
+  const confPct = Math.round(result.confidence * 100);
+  const confTier = result.confidence >= 0.8 ? "high" : result.confidence >= 0.5 ? "mid" : "low";
+  const assumptionsHtml =
+    result.assumptions.length > 0
+      ? `<details class="assumptions">
+          <summary>${escapeAttr(t.assumptions)} (${result.assumptions.length})</summary>
+          <ul>${result.assumptions.map((a) => `<li>${escapeAttr(a)}</li>`).join("")}</ul>
+        </details>`
+      : "";
+
   const fullHtml = `
+    <div class="ssw-toolbar">${renderLanguageToggle(lang)}</div>
     <small class="notice-l1" role="note" aria-label="service scope notice">${escapeAttr(l1)}</small>
     <article class="decision classifier" tabindex="0" aria-label="${escapeAttr(label)}">
       <h3>${escapeAttr(t.title)}: ${escapeAttr(label)}</h3>
+      <span class="conf-badge conf-badge--${confTier}">${escapeAttr(t.confidence)}: ${confPct}%</span>
       <p class="rationale">${escapeAttr(result.rationale)}</p>
+      ${assumptionsHtml}
       ${stepHtml(
         t.procedure,
         "procedure",
@@ -285,6 +297,7 @@ export function render(
   });
   rootEl.querySelector("#ssw-toggle-sources")?.addEventListener("click", cb.onToggleSources);
   rootEl.querySelector("#ssw-classify-commit")?.addEventListener("click", cb.onCommit);
+  wireLanguageToggle(rootEl, cb.onLangChange);
 
   requestAnimationFrame(() => {
     const decision = rootEl.querySelector<HTMLElement>(".decision");

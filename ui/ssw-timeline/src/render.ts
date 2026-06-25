@@ -1,5 +1,11 @@
 import type { GetDeadlineTimelineOutput, UILanguage } from "@ssw/shared-types";
-import { setInnerHTML } from "@ssw/ui-bridge";
+import {
+  attachCopyButton,
+  escapeAttr,
+  renderLanguageToggle,
+  setInnerHTML,
+  wireLanguageToggle,
+} from "@ssw/ui-bridge";
 import DOMPurify from "dompurify";
 
 /**
@@ -20,6 +26,9 @@ const I18N = {
     asOf: "情報基準日",
     dueByPrefix: "期限 (目安)",
     relatedForms: "関連様式",
+    copyUrl: "URLをコピー",
+    copied: "コピーしました",
+    copyFailed: "コピー失敗",
     trustLevel: {
       primary_source: "一次情報",
       secondary: "二次情報",
@@ -31,6 +40,9 @@ const I18N = {
     asOf: "As of",
     dueByPrefix: "Due (approx.)",
     relatedForms: "Related forms",
+    copyUrl: "Copy URL",
+    copied: "Copied",
+    copyFailed: "Copy failed",
     trustLevel: {
       primary_source: "Primary source",
       secondary: "Secondary",
@@ -42,6 +54,9 @@ const I18N = {
     asOf: "Per tanggal",
     dueByPrefix: "Tenggat (kira-kira)",
     relatedForms: "Formulir terkait",
+    copyUrl: "Salin URL",
+    copied: "Tersalin",
+    copyFailed: "Gagal menyalin",
     trustLevel: {
       primary_source: "Sumber utama",
       secondary: "Sekunder",
@@ -50,24 +65,15 @@ const I18N = {
   },
 } as const;
 
-function escapeAttr(s: string): string {
-  const map: Record<string, string> = {
-    "&": "&amp;",
-    "<": "&lt;",
-    ">": "&gt;",
-    '"': "&quot;",
-    "'": "&#39;",
-  };
-  return s.replace(/[&<>"']/g, (c) => {
-    const mapped = map[c];
-    return mapped !== undefined ? mapped : c;
-  });
+export interface TimelineCallbacks {
+  onLangChange: (lang: UILanguage) => void;
 }
 
 export function render(
   result: GetDeadlineTimelineOutput,
   lang: UILanguage,
   rootEl: HTMLElement,
+  cb: TimelineCallbacks,
 ): void {
   const t = I18N[lang];
   const l1 = L1_NOTICE_BY_LANG[lang];
@@ -86,7 +92,7 @@ export function render(
           ? `<div class="related-forms"><strong>${escapeAttr(t.relatedForms)}</strong><ul>${d.relatedForms
               .map(
                 (form) =>
-                  `<li><a href="${escapeAttr(form.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeAttr(form.title)}</a></li>`,
+                  `<li><a href="${escapeAttr(form.sourceUrl)}" target="_blank" rel="noopener noreferrer">${escapeAttr(form.title)}</a> <button type="button" class="ssw-copy-btn" data-copy-url="${escapeAttr(form.sourceUrl)}">${escapeAttr(t.copyUrl)}</button></li>`,
               )
               .join("")}</ul></div>`
           : "";
@@ -96,7 +102,8 @@ export function render(
           : d.trustLevel === "secondary"
             ? "trust-badge trust-badge--secondary"
             : "trust-badge trust-badge--community";
-      return `<li class="deadline" tabindex="0" aria-label="${escapeAttr(labelText)}">
+      const dueClass = d.dueBy !== undefined ? " deadline--due" : "";
+      return `<li class="deadline${dueClass}" tabindex="0" aria-label="${escapeAttr(labelText)}">
         <h3>${escapeAttr(labelText)} <span class="${trustClass}" aria-label="${escapeAttr(trustText)}">${escapeAttr(trustText)}</span></h3>
         <span class="relative">${escapeAttr(relativeText)}</span>${dueByHtml}
         <p class="description">${escapeAttr(d.description)}</p>
@@ -106,6 +113,7 @@ export function render(
     .join("");
 
   const fullHtml = `
+    <div class="ssw-toolbar">${renderLanguageToggle(lang)}</div>
     <small class="notice-l1" role="note" aria-label="service scope notice">${escapeAttr(l1)}</small>
     <section aria-labelledby="ssw-timeline-heading">
       <h2 id="ssw-timeline-heading" class="sr-only">${escapeAttr(t.timelineHeading)}</h2>
@@ -118,6 +126,13 @@ export function render(
   const sanitized = DOMPurify.sanitize(fullHtml);
 
   setInnerHTML(rootEl, sanitized);
+  wireLanguageToggle(rootEl, cb.onLangChange);
+
+  const copyLabels = { idle: t.copyUrl, done: t.copied, failed: t.copyFailed };
+  for (const button of Array.from(rootEl.querySelectorAll<HTMLButtonElement>("[data-copy-url]"))) {
+    const url = button.getAttribute("data-copy-url");
+    if (url !== null) attachCopyButton(button, () => url, copyLabels);
+  }
 
   requestAnimationFrame(() => {
     const rows = rootEl.querySelectorAll<HTMLElement>(".deadline");
