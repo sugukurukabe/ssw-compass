@@ -26,7 +26,7 @@ MCP_URL="<staging-or-prod-mcp-url>/mcp" pnpm smoke:mcp
 
 Expected:
 
-- 7 tools present
+- 9 tools present
 - 5 UI resources present
 - all UI resources have `text/html;profile=mcp-app`
 - all UI resources include CSP and Trusted Types
