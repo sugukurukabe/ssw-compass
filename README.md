@@ -24,7 +24,7 @@ attorney for individual cases, and the pipeline blocks personal identifiers
 
 **Sprint 4 complete.** Production deployed and live at **https://mcp.ssw-compass.jp**:
 
-- **7 tools** (search, classify, deadline, docs, law_updates, approval, zairyu)
+- **9 tools** — 6 read-only (search, classify, deadline, docs, law_updates, zairyu) + 3 Pro tier (prepare_document_package, submit_gyoseishoshi_approval, get_package_status)
 - **10 languages** (ja/en/id full Vertex grounding; 7 others disclaimer-only)
 - **Freemium tiers**: Free (anonymous) / Pro (JWT) / Business (Sprint 5+)
 - **HITL 12 controls** (H01 L2 lockgate, H04 7-year audit log, H06 illegal-work alert, H07 PII guard)

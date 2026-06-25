@@ -359,11 +359,11 @@ TOKEN=$(gcloud auth print-identity-token)
 curl -s "$URL/health" | jq '.status'
 # expected: "ok"
 
-# 2. tools/list (7 tools)
+# 2. tools/list (9 tools)
 curl -s -H "Authorization: Bearer $TOKEN" "$URL/mcp" \
   -d '{"jsonrpc":"2.0","method":"tools/list","id":1}' | \
   jq '.result.tools | length'
-# expected: 7
+# expected: 9
 
 # 3. tools/call search_visa (disclaimer + results)
 curl -s -H "Authorization: Bearer $TOKEN" "$URL/mcp" \

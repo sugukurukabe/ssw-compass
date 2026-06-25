@@ -129,7 +129,7 @@ default:
 
 ### チェックリスト
 
-- [ ] tools/list で 7 tools 取得
+- [ ] tools/list で 9 tools 取得
 - [ ] tools/call search_visa で正常レスポンス
 - [ ] resources/read ui://ssw-search/mcp-app.html で HTML 取得
 
