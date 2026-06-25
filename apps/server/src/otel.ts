@@ -94,11 +94,16 @@ export function instrumentTool<T>(
           return result;
         } catch (e: unknown) {
           const err = toErrorLike(e);
-          if (e instanceof Error) {
-            span.recordException(e);
-          }
-          span.setAttribute("error.type", err.code ?? "INTERNAL");
-          span.setStatus({ code: SpanStatusCode.ERROR, message: err.message });
+          // 例外の生メッセージ・スタックには echo されたユーザー入力 (PII) や
+          // シークレットが含まれうるため span には載せない。非 PII な error.type のみ記録する。
+          // Raw exception messages/stacktraces may carry echoed user input (PII) or
+          // secrets, so they are never placed on the span — only the non-PII error.type.
+          // Pesan/stacktrace exception mentah bisa memuat input pengguna (PII) atau
+          // rahasia, jadi tidak ditaruh di span — hanya error.type non-PII yang dicatat.
+          const errorType = err.code ?? "INTERNAL";
+          span.recordException({ name: errorType, message: errorType });
+          span.setAttribute("error.type", errorType);
+          span.setStatus({ code: SpanStatusCode.ERROR });
           throw e;
         } finally {
           span.end();
