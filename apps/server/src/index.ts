@@ -123,7 +123,8 @@ export function handleServerDiscover(req: Request, res: Response): boolean {
     id,
     result: {
       protocolVersions: ["2025-11-25", RC_PROTOCOL_VERSION],
-      serverInfo: { name: "ssw-mcp", version: "1.0.0" },
+      // T10 ③: serverInfo.version は server.ts SERVER_INFO / Server Card と統一 (2.1.0)。
+      serverInfo: { name: "ssw-mcp", version: "2.1.0" },
       capabilities: { tools: {}, resources: {}, prompts: {} },
     },
   });
