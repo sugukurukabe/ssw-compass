@@ -1,11 +1,17 @@
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
-import { ANONYMOUS_AUTH_CONTEXT, LAW_UPDATES_DATASET_REVIEWED_DATE } from "@ssw/shared-types";
+import {
+  ANONYMOUS_AUTH_CONTEXT,
+  LAW_UPDATES_DATASET_REVIEWED_DATE,
+  SUPPORTED_LANGUAGES,
+  type SupportedLanguage,
+} from "@ssw/shared-types";
 import type { Express, Request, Response } from "express";
 import express from "express";
 import { runWithAuthContext } from "./auth/auth-store.js";
 import type { AuthedRequest } from "./auth/resolve-auth.js";
 import { resolveAuth } from "./auth/resolve-auth.js";
 import { buildWwwAuthenticate, hasScope, requiredScopeForTool } from "./auth/scopes.js";
+import { buildScopeDenialBody } from "./auth/upgrade-notice.js";
 import { isLawUpdatesDatasetStale, lawUpdatesDatasetAgeDays } from "./law-updates/active-filter.js";
 import { logger } from "./logger.js";
 import { getRegisteredSdkShutdown, initOtelSdk } from "./otel-sdk.js";
@@ -34,6 +40,18 @@ function bodyToolName(body: unknown): string | undefined {
   return typeof name === "string" ? name : undefined;
 }
 
+// host locale を best-effort で取得 (params.arguments.language)。既定は ja。
+// Best-effort host locale from params.arguments.language; defaults to ja.
+function bodyToolLanguage(body: unknown): SupportedLanguage {
+  const record = recordBody(body);
+  const params = recordBody(record?.["params"]);
+  const args = recordBody(params?.["arguments"]);
+  const lang = args?.["language"];
+  return typeof lang === "string" && (SUPPORTED_LANGUAGES as readonly string[]).includes(lang)
+    ? (lang as SupportedLanguage)
+    : "ja";
+}
+
 export function enforceScopes(req: Request, res: Response): boolean {
   if (bodyMethod(req.body) !== "tools/call") {
     return true;
@@ -46,14 +64,19 @@ export function enforceScopes(req: Request, res: Response): boolean {
   if (hasScope(authCtx, required)) {
     return true;
   }
+  // 拒否契約 (403 + -32003 + WWW-Authenticate) は不変。ボディに graceful な
+  // 上位移行説明 (Phase 2a) を上乗せするだけで、ゲートは弱めない (副作用ゼロ)。
   res
     .status(403)
     .set("WWW-Authenticate", buildWwwAuthenticate(required))
-    .json({
-      jsonrpc: "2.0",
-      error: { code: -32003, message: `Insufficient scope: ${required}` },
-      id: recordBody(req.body)?.["id"] ?? null,
-    });
+    .json(
+      buildScopeDenialBody({
+        tool: bodyToolName(req.body),
+        requiredScope: required,
+        id: recordBody(req.body)?.["id"],
+        lang: bodyToolLanguage(req.body),
+      }),
+    );
   return false;
 }
 

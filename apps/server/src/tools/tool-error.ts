@@ -13,6 +13,12 @@
 
 import type { CallToolResult } from "@modelcontextprotocol/sdk/types.js";
 import { DISCLAIMER_BY_LANG, type SupportedLanguage } from "@ssw/shared-types";
+import {
+  buildUpgradeNotice,
+  buildUpgradeNoticeMeta,
+  renderUpgradeExplanation,
+} from "../auth/upgrade-notice.js";
+import { HitlGateError } from "../hitl/lockgate.js";
 import { logger } from "../logger.js";
 
 const GENERIC_SYSTEM_ERROR_JA =
@@ -44,6 +50,20 @@ export function toToolErrorResult(
   const disclaimer = DISCLAIMER_BY_LANG[lang];
   const known = userMessageOf(error);
   if (known !== undefined) {
+    // HITL ロックゲート拒否 (200 + isError) は契約を維持したまま、graceful な
+    // 上位移行説明 (Phase 2a) を上乗せする。ゲートは弱めない (説明を載せるだけ)。
+    // The HITL lockgate denial keeps its 200 + isError contract; we only enrich
+    // the body with a graceful upgrade explanation. The gate is never weakened.
+    if (error instanceof HitlGateError) {
+      const notice = buildUpgradeNotice({ tool: toolId, lang });
+      const explanation = renderUpgradeExplanation(notice);
+      return {
+        isError: true,
+        // 免責 (§19) は末尾に逐語維持。説明は免責の前に挿入する。
+        content: [{ type: "text", text: `${known}\n\n${explanation}\n\n${disclaimer}` }],
+        _meta: buildUpgradeNoticeMeta(notice),
+      };
+    }
     return {
       isError: true,
       content: [{ type: "text", text: `${known}\n\n${disclaimer}` }],
