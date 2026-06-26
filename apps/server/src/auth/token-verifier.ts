@@ -39,6 +39,29 @@ interface JwtClaims {
   auth_source: string;
   iat: number;
   exp: number;
+  // RFC 7519 §4.1.1 / §4.1.3 — opt-in でのみ検証する登録済みクレーム。
+  // Registered claims, verified only when opt-in expectations are configured.
+  // Klaim terdaftar, diverifikasi hanya saat ekspektasi opt-in dikonfigurasi.
+  iss?: string;
+  aud?: string | string[];
+}
+
+/**
+ * iss/aud 検証の期待値 (opt-in)。
+ * Expected issuer/audience for opt-in iss/aud verification.
+ * Penerbit/audiens yang diharapkan untuk verifikasi iss/aud opt-in.
+ *
+ * 後方互換: いずれも未設定なら iss/aud は検証しない (ADR-013 既定挙動を維持)。
+ * Backward compatible: when both are unset, iss/aud are NOT verified.
+ * Kompatibel mundur: bila keduanya kosong, iss/aud TIDAK diverifikasi.
+ *
+ * RFC 9728 (Protected Resource Metadata) / RFC 8707 (Resource Indicators):
+ * expectedAudience はこのリソースサーバーの正規リソース識別子を表す。
+ * expectedAudience represents this resource server's canonical resource identifier.
+ */
+export interface JwtVerifierOptions {
+  expectedIssuer?: string;
+  expectedAudience?: string;
 }
 
 function base64UrlDecode(s: string): string {
@@ -61,11 +84,38 @@ function verifyHs256Signature(
   return timingSafeEqual(mac, provided);
 }
 
+/**
+ * トークンの aud クレームが期待 audience を含むか判定する (RFC 7519 §4.1.3)。
+ * Returns true when the token's aud claim contains the expected audience.
+ * Mengembalikan true bila klaim aud token memuat audiens yang diharapkan.
+ *
+ * aud は文字列または文字列配列を許容する。配列の場合は要素一致で受理。
+ * aud may be a string or an array of strings; an array matches on membership.
+ */
+function audienceMatches(aud: string | string[] | undefined, expected: string): boolean {
+  if (typeof aud === "string") return aud === expected;
+  if (Array.isArray(aud)) return aud.includes(expected);
+  return false;
+}
+
 export class JwtTokenVerifier implements SswCompassTokenVerifier {
   private readonly secret: Buffer;
+  private readonly expectedIssuer: string | undefined;
+  private readonly expectedAudience: string | undefined;
 
-  constructor(secret: string) {
+  constructor(secret: string, options?: JwtVerifierOptions) {
     this.secret = Buffer.from(secret, "utf8");
+    // 空文字は「未設定」と同義に正規化し、後方互換 (検証スキップ) を維持する。
+    // Normalize empty strings to "unset" so backward-compat skip is preserved.
+    // Normalkan string kosong menjadi "tidak diset" agar kompatibilitas mundur terjaga.
+    this.expectedIssuer =
+      options?.expectedIssuer !== undefined && options.expectedIssuer.length > 0
+        ? options.expectedIssuer
+        : undefined;
+    this.expectedAudience =
+      options?.expectedAudience !== undefined && options.expectedAudience.length > 0
+        ? options.expectedAudience
+        : undefined;
   }
 
   async verify(token: string | null): Promise<AuthContext | null> {
@@ -107,6 +157,26 @@ export class JwtTokenVerifier implements SswCompassTokenVerifier {
     const nowSeconds = Math.floor(Date.now() / 1000);
     if (claims.exp < nowSeconds) {
       logger.warn({ event: "jwt_rejected", reason: "expired", exp: claims.exp }, "jwt_rejected");
+      return null;
+    }
+
+    // iss/aud 検証は opt-in (env で期待値が設定された時のみ)。
+    // 未設定なら以降をスキップし、ADR-013 の既定挙動を維持する (後方互換)。
+    // iss/aud verification is opt-in (only when expectations are configured).
+    // When unset, the checks are skipped, preserving ADR-013 default behaviour.
+    // Verifikasi iss/aud bersifat opt-in (hanya bila ekspektasi dikonfigurasi).
+    if (this.expectedIssuer !== undefined && claims.iss !== this.expectedIssuer) {
+      logger.warn(
+        { event: "jwt_rejected", reason: "issuer_mismatch", iss: claims.iss },
+        "jwt_rejected",
+      );
+      return null;
+    }
+    if (
+      this.expectedAudience !== undefined &&
+      !audienceMatches(claims.aud, this.expectedAudience)
+    ) {
+      logger.warn({ event: "jwt_rejected", reason: "audience_mismatch" }, "jwt_rejected");
       return null;
     }
 
@@ -166,6 +236,31 @@ function resolveJwtSecret(): string {
   return secret;
 }
 
+/**
+ * env から iss/aud の期待値 (opt-in) を解決する。
+ * Resolve opt-in iss/aud expectations from the environment.
+ * Selesaikan ekspektasi iss/aud opt-in dari environment.
+ *
+ * - SSW_JWT_EXPECTED_ISS: 期待 issuer (例: トークン発行ゲートウェイの URL)
+ * - SSW_JWT_EXPECTED_AUD: このリソースサーバーの canonical resource 識別子
+ *   (RFC 9728 / RFC 8707)
+ *
+ * 未設定 (または空) のものは undefined となり、当該クレームの検証はスキップされる。
+ * Unset (or empty) values become undefined and the corresponding check is skipped.
+ */
+function resolveJwtVerifierOptions(): JwtVerifierOptions {
+  const options: JwtVerifierOptions = {};
+  const expectedIssuer = process.env["SSW_JWT_EXPECTED_ISS"];
+  if (expectedIssuer !== undefined && expectedIssuer.length > 0) {
+    options.expectedIssuer = expectedIssuer;
+  }
+  const expectedAudience = process.env["SSW_JWT_EXPECTED_AUD"];
+  if (expectedAudience !== undefined && expectedAudience.length > 0) {
+    options.expectedAudience = expectedAudience;
+  }
+  return options;
+}
+
 let _verifier: SswCompassTokenVerifier | null = null;
 
 export function getTokenVerifier(): SswCompassTokenVerifier {
@@ -175,7 +270,7 @@ export function getTokenVerifier(): SswCompassTokenVerifier {
   if (mode === "anonymous") {
     _verifier = { verify: async (_token) => ANONYMOUS_AUTH_CONTEXT };
   } else {
-    _verifier = new JwtTokenVerifier(resolveJwtSecret());
+    _verifier = new JwtTokenVerifier(resolveJwtSecret(), resolveJwtVerifierOptions());
   }
   return _verifier;
 }

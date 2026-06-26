@@ -199,6 +199,151 @@ describe("JwtTokenVerifier.verify", () => {
   });
 });
 
+// iss/aud 検証 (opt-in / 後方互換) — T11 Pro/JWT 認可ハードニング
+// iss/aud verification (opt-in / backward compatible) — T11 hardening
+// Verifikasi iss/aud (opt-in / kompatibel mundur) — pengerasan T11
+describe("JwtTokenVerifier iss/aud verification (opt-in)", () => {
+  const EXPECTED_ISS = "https://auth.ssw-compass.example/issuer";
+  const EXPECTED_AUD = "https://mcp.ssw-compass.example/mcp";
+
+  function makeBaseClaims(extra: Record<string, unknown>): Record<string, unknown> {
+    return {
+      sub: "user-pro-1",
+      tier: "pro",
+      gyoseishoshi_verified: true,
+      auth_source: "jwt",
+      iat: nowSeconds(),
+      exp: futureExp(),
+      ...extra,
+    };
+  }
+
+  // 後方互換の中核: env 未設定 (= options 未指定) なら iss/aud 無しトークンが従来どおり通る。
+  // Core backward-compat: with no expectations, a token without iss/aud verifies as before.
+  it("env unset → token WITHOUT iss/aud verifies (backward compatible)", async () => {
+    const verifier = new JwtTokenVerifier(TEST_SECRET);
+    const token = makeJwt(makeBaseClaims({}));
+    const ctx = await verifier.verify(token);
+    expect(ctx).not.toBeNull();
+    expect(ctx?.tier).toBe("pro");
+  });
+
+  // 空文字の期待値は「未設定」と同義 (検証スキップ)。
+  it("empty-string expectations → treated as unset (no iss/aud enforcement)", async () => {
+    const verifier = new JwtTokenVerifier(TEST_SECRET, {
+      expectedIssuer: "",
+      expectedAudience: "",
+    });
+    const token = makeJwt(makeBaseClaims({}));
+    const ctx = await verifier.verify(token);
+    expect(ctx).not.toBeNull();
+  });
+
+  it("expected aud set → matching aud (string) verifies", async () => {
+    const verifier = new JwtTokenVerifier(TEST_SECRET, { expectedAudience: EXPECTED_AUD });
+    const token = makeJwt(makeBaseClaims({ aud: EXPECTED_AUD }));
+    const ctx = await verifier.verify(token);
+    expect(ctx).not.toBeNull();
+    expect(ctx?.user_id).toBe("user-pro-1");
+  });
+
+  it("expected aud set → matching aud (array membership) verifies", async () => {
+    const verifier = new JwtTokenVerifier(TEST_SECRET, { expectedAudience: EXPECTED_AUD });
+    const token = makeJwt(makeBaseClaims({ aud: ["other-rs", EXPECTED_AUD] }));
+    const ctx = await verifier.verify(token);
+    expect(ctx).not.toBeNull();
+  });
+
+  // 不正 aud 拒否。
+  it("expected aud set → wrong aud → null (rejected)", async () => {
+    const verifier = new JwtTokenVerifier(TEST_SECRET, { expectedAudience: EXPECTED_AUD });
+    const token = makeJwt(makeBaseClaims({ aud: "https://evil.example/mcp" }));
+    const ctx = await verifier.verify(token);
+    expect(ctx).toBeNull();
+  });
+
+  // 他サーバー向けトークン (aud 配列に期待値が無い) を拒否。
+  it("expected aud set → token aimed at another resource server → null", async () => {
+    const verifier = new JwtTokenVerifier(TEST_SECRET, { expectedAudience: EXPECTED_AUD });
+    const token = makeJwt(makeBaseClaims({ aud: ["https://other-rs.example/api"] }));
+    const ctx = await verifier.verify(token);
+    expect(ctx).toBeNull();
+  });
+
+  // 期待 aud 設定下で aud クレーム欠落のトークンを拒否 (strict mode)。
+  it("expected aud set → token missing aud claim → null", async () => {
+    const verifier = new JwtTokenVerifier(TEST_SECRET, { expectedAudience: EXPECTED_AUD });
+    const token = makeJwt(makeBaseClaims({}));
+    const ctx = await verifier.verify(token);
+    expect(ctx).toBeNull();
+  });
+
+  it("expected iss set → matching iss verifies", async () => {
+    const verifier = new JwtTokenVerifier(TEST_SECRET, { expectedIssuer: EXPECTED_ISS });
+    const token = makeJwt(makeBaseClaims({ iss: EXPECTED_ISS }));
+    const ctx = await verifier.verify(token);
+    expect(ctx).not.toBeNull();
+  });
+
+  it("expected iss set → wrong iss → null (rejected)", async () => {
+    const verifier = new JwtTokenVerifier(TEST_SECRET, { expectedIssuer: EXPECTED_ISS });
+    const token = makeJwt(makeBaseClaims({ iss: "https://evil.example/issuer" }));
+    const ctx = await verifier.verify(token);
+    expect(ctx).toBeNull();
+  });
+
+  it("expected iss set → token missing iss claim → null", async () => {
+    const verifier = new JwtTokenVerifier(TEST_SECRET, { expectedIssuer: EXPECTED_ISS });
+    const token = makeJwt(makeBaseClaims({}));
+    const ctx = await verifier.verify(token);
+    expect(ctx).toBeNull();
+  });
+
+  it("both iss and aud expected → both matching verifies", async () => {
+    const verifier = new JwtTokenVerifier(TEST_SECRET, {
+      expectedIssuer: EXPECTED_ISS,
+      expectedAudience: EXPECTED_AUD,
+    });
+    const token = makeJwt(makeBaseClaims({ iss: EXPECTED_ISS, aud: EXPECTED_AUD }));
+    const ctx = await verifier.verify(token);
+    expect(ctx).not.toBeNull();
+  });
+
+  // 改ざん署名 (forged aud) は iss/aud 設定の有無に関係なく署名検証で先に落ちる。
+  it("tampered aud with original signature → null even with expectations set", async () => {
+    const honest = makeJwt(makeBaseClaims({ aud: EXPECTED_AUD }));
+    const [header, , sig] = honest.split(".") as [string, string, string];
+    const forgedPayload = base64UrlEncode(
+      JSON.stringify(makeBaseClaims({ aud: "https://evil.example/mcp" })),
+    );
+    const verifier = new JwtTokenVerifier(TEST_SECRET, { expectedAudience: EXPECTED_AUD });
+    const ctx = await verifier.verify(`${header}.${forgedPayload}.${sig}`);
+    expect(ctx).toBeNull();
+  });
+
+  // issue-jwt.ts の --iss/--aud で発行したトークンが期待値検証を通過する (移行パス)。
+  it("issue-jwt --iss/--aud token verifies under matching expectations", async () => {
+    const options = parseIssueJwtArgs([
+      "--sub",
+      "jvag-gateway",
+      "--tier",
+      "pro",
+      "--iss",
+      EXPECTED_ISS,
+      "--aud",
+      EXPECTED_AUD,
+    ]);
+    const token = signHs256Jwt(buildJwtClaims(options, nowSeconds()), TEST_SECRET);
+    const verifier = new JwtTokenVerifier(TEST_SECRET, {
+      expectedIssuer: EXPECTED_ISS,
+      expectedAudience: EXPECTED_AUD,
+    });
+    const ctx = await verifier.verify(token);
+    expect(ctx?.user_id).toBe("jvag-gateway");
+    expect(ctx?.tier).toBe("pro");
+  });
+});
+
 describe("extractBearerToken", () => {
   it("Bearer header → token string", () => {
     expect(extractBearerToken("Bearer abc.def.ghi")).toBe("abc.def.ghi");
@@ -243,5 +388,27 @@ describe("scripts/issue-jwt integration", () => {
       auth_source: "jwt",
       issued_at: claims.iat,
     });
+  });
+
+  // 既定 (--iss/--aud 未指定) では iss/aud は claims に付与されない (後方互換)。
+  it("omits iss/aud by default (backward compatible)", () => {
+    const options = parseIssueJwtArgs(["--sub", "u", "--tier", "pro"]);
+    const claims = buildJwtClaims(options, nowSeconds());
+    expect(claims.iss).toBeUndefined();
+    expect(claims.aud).toBeUndefined();
+  });
+
+  it("includes iss/aud when --iss/--aud are provided", () => {
+    const options = parseIssueJwtArgs([
+      "--sub",
+      "u",
+      "--iss",
+      "https://issuer.example",
+      "--aud",
+      "https://rs.example/mcp",
+    ]);
+    const claims = buildJwtClaims(options, nowSeconds());
+    expect(claims.iss).toBe("https://issuer.example");
+    expect(claims.aud).toBe("https://rs.example/mcp");
   });
 });

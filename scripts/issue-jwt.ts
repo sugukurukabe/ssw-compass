@@ -25,6 +25,11 @@ export interface IssueJwtOptions {
   secret: string;
   secretVersion: string;
   authSource: IssueJwtAuthSource;
+  // RFC 7519 §4.1.1 / §4.1.3 — 移行パス用。既定では未付与 (後方互換)。
+  // For the iss/aud hardening migration path. Omitted by default (backward compatible).
+  // Untuk jalur migrasi iss/aud. Tidak disertakan secara default (kompatibel mundur).
+  iss?: string;
+  aud?: string;
 }
 
 export interface IssueJwtClaims {
@@ -35,6 +40,8 @@ export interface IssueJwtClaims {
   iat: number;
   exp: number;
   gyoseishoshi_number?: string;
+  iss?: string;
+  aud?: string;
 }
 
 const DEFAULT_PROJECT = "ssw-compass-prod-494613";
@@ -55,6 +62,8 @@ Options:
   --secret <secret-id>               Secret Manager secret id (default: ssw-jwt-secret)
   --secret-version <version>         Secret version (default: latest)
   --auth-source <jwt|oauth_client_credentials>
+  --iss <issuer>                     RFC 7519 iss claim (migration path; omitted by default)
+  --aud <audience>                   RFC 7519 aud claim (resource identifier; omitted by default)
   --help
 `;
 
@@ -158,6 +167,14 @@ export function parseIssueJwtArgs(args: string[]): IssueJwtOptions {
         options.authSource = parseAuthSource(requireValue(args, i, arg));
         i += 1;
         break;
+      case "--iss":
+        options.iss = requireValue(args, i, arg);
+        i += 1;
+        break;
+      case "--aud":
+        options.aud = requireValue(args, i, arg);
+        i += 1;
+        break;
       default:
         throw new Error(`Unknown argument: ${arg ?? ""}`);
     }
@@ -189,6 +206,14 @@ export function buildJwtClaims(options: IssueJwtOptions, nowSeconds: number): Is
 
   if (options.gyoseishoshiNumber !== undefined) {
     claims.gyoseishoshi_number = options.gyoseishoshiNumber;
+  }
+
+  if (options.iss !== undefined) {
+    claims.iss = options.iss;
+  }
+
+  if (options.aud !== undefined) {
+    claims.aud = options.aud;
   }
 
   return claims;
