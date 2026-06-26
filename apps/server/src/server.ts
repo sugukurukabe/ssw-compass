@@ -41,9 +41,16 @@ import {
 } from "./tools/validate-zairyu-compatibility/index.js";
 import { registerValidateZairyuCompatibilityUiResource } from "./tools/validate-zairyu-compatibility/ui.js";
 
+// T10 ③: serverInfo.version を Server Card の `version` (2.1.0) に統一する。
+// クライアントによっては initialize の serverInfo.version と Server Card version の
+// 不一致を検証エラー扱いにするため、製品現行版 2.1.0 に揃える
+// (apps/server/package.json と server/discover の serverInfo も同値)。
+// openapi.json の info.version (4.0.0) は OpenAPI ドキュメント版として別管理 (役割が異なる)。
+// T10 ③: unify serverInfo.version with the Server Card `version` (2.1.0).
+// T10 ③: samakan serverInfo.version dengan `version` Server Card (2.1.0).
 const SERVER_INFO = {
   name: "ssw-mcp",
-  version: "1.0.0",
+  version: "2.1.0",
 } as const;
 
 export function createMcpServer(): McpServer {
