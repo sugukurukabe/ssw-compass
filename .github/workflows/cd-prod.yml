@@ -97,7 +97,8 @@ jobs:
           curl -fsS --max-time 15 "$BASE/health" | tee /tmp/health.json
           jq -e '.status == "ok" and .service == "ssw-mcp"' /tmp/health.json
           curl -fsS --max-time 15 "$BASE/.well-known/mcp.json" | jq -e '.name == "SSW Compass"'
-          curl -fsS --max-time 15 "$BASE/privacy" | grep -q 'SSW Compass Privacy Policy'
+          curl -fsS --max-time 15 "$BASE/privacy" -o /tmp/privacy.txt
+          grep -q 'SSW Compass Privacy Policy' /tmp/privacy.txt
           curl -fsS --max-time 15 "$BASE/.well-known/ai-plugin.json" | jq -e '.name_for_human == "SSW Compass Japan"'
           curl -fsS --max-time 15 "$BASE/.well-known/openapi.json" | jq -e '.openapi == "3.1.0"'
 
