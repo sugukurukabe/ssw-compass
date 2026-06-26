@@ -138,3 +138,61 @@ Minimal verifikasi §3–§6 pada dua host berikut.
 - [ ] Claude (Web)
 
 任意 / Optional / Opsional: ChatGPT (Apps), MCP Inspector, その他の MCP Apps 対応ホスト。
+
+---
+
+## 8. T12 OpenAI Apps SDK widget CSP + レスポンス最小化
+
+## 8. T12 OpenAI Apps SDK widget CSP + response minimization
+
+## 8. CSP widget OpenAI Apps SDK T12 + minimisasi respons
+
+> 自動テスト (`apps/server/test/tools/widget-csp.test.ts`,
+> `apps/server/test/tools/response-minimization.test.ts`) が緑であることを前提に、
+> ChatGPT (Apps) 実機での描画と外部誘導の挙動を人間が確認する。ChatGPT 実描画は
+> 自動化できないため本節を手動チェックリストとする。
+> Assumes the T12 unit tests are green; this section is the manual checklist for the
+> parts that cannot be automated (real ChatGPT Apps rendering and external redirect).
+> Mengasumsikan unit test T12 hijau; bagian ini adalah daftar periksa manual untuk hal
+> yang tidak bisa diotomatiskan (render ChatGPT Apps nyata dan pengalihan eksternal).
+
+### 8.1 widget CSP の宣言 / widget CSP declaration / deklarasi CSP widget
+
+| # | 確認項目 / Check / Periksa | 期待 / Expected / Diharapkan |
+| - | --- | --- |
+| 8.1 | resource `_meta.ui.csp` (nested) | `connectDomains`/`resourceDomains`/`frameDomains`/`baseUriDomains` を宣言 (現状は空 = 外部接続なし)。MCP/Anthropic と OpenAI の双方が読む正本 |
+| 8.2 | resource `_meta["openai/widgetCSP"]` (flat) | `redirect_domains` に外部 Pro origin のみ (`COMPASS_PRO_UPGRADE_URL` の origin)。`connect_domains`/`resource_domains` は ui.csp と整合 (空)。両ホスト併記 |
+| 8.3 | 許可ドメイン | redirect は https の単一 origin のみ。ワイルドカード (`*`) や `http:` を含まない |
+| 8.4 | dist CSP hardening | `pnpm build` 後の各 `ui/*/dist/mcp-app.html` に `'unsafe-eval'` が無い (`CSP enforcing applied`) |
+
+- 8.1〜8.3 はサーバー側 `apps/server/src/tools/widget-csp.ts` と各 `tools/*/ui.ts` で実装。
+  ChatGPT devtools またはサーバーログでリソース応答の `_meta` を確認する。
+  Verify the resource `_meta` via ChatGPT devtools / server logs; implemented in `widget-csp.ts`.
+
+### 8.2 ChatGPT (Apps) 実描画 / Live ChatGPT rendering / Render ChatGPT langsung
+
+1. ChatGPT (Apps) で 5 ウィジェット (search/classify/timeline/checklist/validate) を描画。
+   期待: §3〜§6 と同様にライト/ダーク・テキストフォールバック・免責 (L1+L2) が表示される。
+2. 外部 Pro 誘導 (Phase 2a) のリンクをクリックしたとき:
+   期待: `redirect_domains` に宣言した外部 Pro origin への遷移のみ許可される。
+   **ChatGPT 内に決済 UI は一切表示されない** (外部チェックアウトへ誘導するのみ)。
+3. アップセルは非モーダル・1 回のみ (ダークパターン無し)。新たな煽り文言が増えていないこと。
+
+### 8.3 レスポンス最小化の監査結論 / Response-minimization audit / Audit minimisasi
+
+> 監査範囲: 全 9 ツールの `content` / `structuredContent` / `_meta`。
+> Audit scope: `content` / `structuredContent` / `_meta` of all 9 tools.
+
+- **結論: 非機能的な内部識別子の漏洩なし。** trace / session / span ID や内部 DB 行 ID は
+  応答に含まれない。OTel trace は span にのみ載り (`apps/server/src/otel.ts`)、応答へは出ない。
+  Vertex の `doc_id` は `search_visa` のログにのみ出力し、出力には含めない
+  (`apps/server/src/tools/search-visa/handler.ts`)。`withCacheMeta` は `ttlMs`/`cacheScope`/
+  `cacheGeneration` (機能的キャッシュヒント) のみを付与する。
+  **Conclusion: no non-functional internal IDs leak.** OTel traces live only on spans, and
+  Vertex `doc_id` is logged but never emitted; `withCacheMeta` adds only functional cache hints.
+- **保持する機能契約 ID (削除しない):** `prepare_document_package` / `get_package_status` の
+  `task_id` (ポーリング/再開)、MRTR の `requestState`。これらは利用者が次の操作に使うため必須。
+  呼び出し元入力の echo (`case_id` / `draft_document_id` / `idempotency_key` 等) も契約上保持。
+  **Preserved functional-contract IDs (never removed):** `task_id`, MRTR `requestState`, and
+  echoed caller inputs (`case_id` / `draft_document_id` / `idempotency_key`).
+- この契約は `response-minimization.test.ts` で回帰検証する (内部 ID 不在 + `task_id` 保持)。
