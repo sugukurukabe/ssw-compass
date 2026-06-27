@@ -93,6 +93,8 @@ describe("buildOpenAiWidgetCsp / buildWidgetResourceMeta (T12)", () => {
 
   it("co-declares the legacy MCP/Anthropic ui.csp shape (dual-host)", () => {
     const meta = buildWidgetResourceMeta();
+    expect(meta.ui.domain).toBe("https://mcp.ssw-compass.jp");
+    expect(meta["openai/widgetDomain"]).toBe("https://mcp.ssw-compass.jp");
     expect(meta.ui.prefersBorder).toBe(true);
     expect(meta.ui.csp).toEqual({
       connectDomains: [],
@@ -128,8 +130,15 @@ describe("UI resource registrations declare openai/widgetCSP (T12)", () => {
       expect(meta, `missing _meta for ${resource.name}`).toBeDefined();
 
       // MCP/Anthropic 系 ui.csp が温存されていること。
-      const ui = meta?.["ui"] as { csp?: Record<string, unknown> } | undefined;
+      const ui = meta?.["ui"] as { domain?: string; csp?: Record<string, unknown> } | undefined;
+      expect(ui?.domain, `missing ui.domain for ${resource.name}`).toBe(
+        "https://mcp.ssw-compass.jp",
+      );
       expect(ui?.csp, `missing ui.csp for ${resource.name}`).toBeDefined();
+      expect(
+        meta?.["openai/widgetDomain"],
+        `missing openai/widgetDomain for ${resource.name}`,
+      ).toBe("https://mcp.ssw-compass.jp");
 
       // OpenAI 系 widget CSP が宣言されていること。
       const openai = meta?.["openai/widgetCSP"] as

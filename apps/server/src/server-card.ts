@@ -26,7 +26,6 @@ export interface ServerCardCapabilities {
 
 export interface ServerCardAuth {
   type: "none" | "oauth2" | "bearer";
-  scopes?: readonly string[];
 }
 
 export interface ServerCardCompliance {
@@ -92,8 +91,7 @@ const SERVER_CARD: ServerCard = {
   },
   // Public connector submission path: anonymous read-only access is available.
   auth: {
-    type: "oauth2",
-    scopes: ["compass:read", "compass:draft", "compass:approve", "compass:execute"],
+    type: "none",
   },
   compliance: {
     dataResidency: "JP",

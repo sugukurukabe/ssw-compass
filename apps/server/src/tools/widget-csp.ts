@@ -29,6 +29,8 @@
 
 import { proRedirectDomains } from "../auth/upgrade-notice.js";
 
+const WIDGET_DOMAIN = "https://mcp.ssw-compass.jp";
+
 /**
  * MCP/Anthropic ext-apps と OpenAI の双方が読む nested CSP。
  * Nested CSP read by both the MCP/Anthropic ext-apps and OpenAI hosts.
@@ -58,7 +60,8 @@ export type OpenAiWidgetCspMeta = {
  * `_meta` resource UI lengkap (mendeklarasikan ui.csp + openai/widgetCSP bersama).
  */
 export type WidgetResourceMeta = {
-  ui: { prefersBorder: boolean; csp: UiCspMeta };
+  ui: { domain: string; prefersBorder: boolean; csp: UiCspMeta };
+  "openai/widgetDomain": string;
   "openai/widgetCSP": OpenAiWidgetCspMeta;
 };
 
@@ -107,9 +110,11 @@ export function buildOpenAiWidgetCsp(): OpenAiWidgetCspMeta {
 export function buildWidgetResourceMeta(): WidgetResourceMeta {
   return {
     ui: {
+      domain: WIDGET_DOMAIN,
       prefersBorder: true,
       csp: buildUiCsp(),
     },
+    "openai/widgetDomain": WIDGET_DOMAIN,
     "openai/widgetCSP": buildOpenAiWidgetCsp(),
   };
 }

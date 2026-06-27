@@ -17,7 +17,9 @@
 
 import type { Server } from "node:http";
 import type { AddressInfo } from "node:net";
-import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { ANONYMOUS_AUTH_CONTEXT, type AuthContextType } from "@ssw/shared-types";
+import { afterAll, afterEach, beforeAll, describe, expect, it } from "vitest";
+import { __setTokenVerifierForTesting } from "../src/auth/token-verifier.js";
 import { CACHE_TIERS } from "../src/cache.js";
 import { createApp } from "../src/index.js";
 import { buildServerCard } from "../src/server-card.js";
@@ -35,6 +37,15 @@ type JsonRpcResponse = {
   id: number | string | null;
   result?: Record<string, unknown>;
   error?: { code: number; message: string };
+};
+
+const PRO_AUTH_CONTEXT: AuthContextType = {
+  user_id: "reviewer-pro",
+  tier: "pro",
+  gyoseishoshi_verified: true,
+  gyoseishoshi_number: "Tokyo 00000",
+  auth_source: "jwt",
+  issued_at: 1,
 };
 
 /**
@@ -56,6 +67,22 @@ function parseJsonRpc(text: string): JsonRpcResponse {
     throw new Error(`no JSON-RPC payload found in response: ${text}`);
   }
   return JSON.parse(dataPayload) as JsonRpcResponse;
+}
+
+function toolNames(body: JsonRpcResponse): string[] {
+  const tools = body.result?.["tools"];
+  if (!Array.isArray(tools)) {
+    throw new Error(`tools/list response missing tools array: ${JSON.stringify(body)}`);
+  }
+  return tools
+    .map((tool) =>
+      typeof tool === "object" &&
+      tool !== null &&
+      typeof (tool as Record<string, unknown>)["name"] === "string"
+        ? ((tool as Record<string, string>)["name"] ?? "")
+        : "",
+    )
+    .filter((name) => name.length > 0);
 }
 
 type PostResult = { status: number; headers: Headers; body: JsonRpcResponse };
@@ -108,6 +135,10 @@ afterAll(async () => {
   await new Promise<void>((resolve, reject) => {
     server.close((err) => (err ? reject(err) : resolve()));
   });
+});
+
+afterEach(() => {
+  __setTokenVerifierForTesting(null);
 });
 
 describe("initialize negotiation (SDK-default fallback, current behavior locked)", () => {
@@ -206,6 +237,92 @@ describe("dual advertisement consistency (server/discover ↔ Server Card ↔ .w
     expect(primaryBody.protocolVersions).toEqual([STABLE_VERSION, RC_VERSION]);
     expect(primaryBody.capabilities.prompts).toBe(true);
     expect(primaryBody.version).toBe("2.1.0");
+    expect(primaryBody.auth).toEqual({ type: "none" });
+    expect(primaryBody.auth).not.toHaveProperty("scopes");
+  });
+});
+
+describe("POST /mcp Origin validation", () => {
+  it("allows native clients without an Origin header", async () => {
+    const { status, body } = await postMcp(baseUrl, {
+      jsonrpc: "2.0",
+      id: 10,
+      method: "tools/list",
+      params: {},
+    });
+    expect(status).toBe(200);
+    expect(toolNames(body).length).toBe(6);
+  });
+
+  it("allows Claude and ChatGPT web origins", async () => {
+    for (const origin of ["https://claude.ai", "https://chatgpt.com", "https://chat.openai.com"]) {
+      const { status } = await postMcp(
+        baseUrl,
+        { jsonrpc: "2.0", id: origin, method: "tools/list", params: {} },
+        { Origin: origin },
+      );
+      expect(status, origin).toBe(200);
+    }
+  });
+
+  it("rejects other web origins with 403", async () => {
+    const { status, body } = await postMcp(
+      baseUrl,
+      { jsonrpc: "2.0", id: 11, method: "tools/list", params: {} },
+      { Origin: "https://evil.example" },
+    );
+    expect(status).toBe(403);
+    expect(body.error?.message).toContain("Origin");
+  });
+
+  it("does not apply Origin validation to public non-MCP pages", async () => {
+    const res = await fetch(`${baseUrl}/pro`, { headers: { Origin: "https://evil.example" } });
+    expect(res.status).toBe(200);
+  });
+});
+
+describe("tools/list public and Pro visibility", () => {
+  it("lists only the six read-only tools for anonymous callers", async () => {
+    const { status, body } = await postMcp(baseUrl, {
+      jsonrpc: "2.0",
+      id: 20,
+      method: "tools/list",
+      params: {},
+    });
+    expect(status).toBe(200);
+    expect(toolNames(body)).toEqual([
+      "search_visa",
+      "classify_procedure",
+      "get_deadline_timeline",
+      "list_visa_documents",
+      "validate_zairyu_compatibility",
+      "list_law_updates",
+    ]);
+  });
+
+  it("lists read-only and Pro tools for authenticated Pro callers", async () => {
+    __setTokenVerifierForTesting({
+      verify: async (token) =>
+        token === "reviewer.pro.token" ? PRO_AUTH_CONTEXT : ANONYMOUS_AUTH_CONTEXT,
+    });
+
+    const { status, body } = await postMcp(
+      baseUrl,
+      { jsonrpc: "2.0", id: 21, method: "tools/list", params: {} },
+      { Authorization: "Bearer reviewer.pro.token" },
+    );
+    expect(status).toBe(200);
+    expect(toolNames(body)).toEqual([
+      "search_visa",
+      "classify_procedure",
+      "get_deadline_timeline",
+      "list_visa_documents",
+      "validate_zairyu_compatibility",
+      "list_law_updates",
+      "submit_gyoseishoshi_approval",
+      "prepare_document_package",
+      "get_package_status",
+    ]);
   });
 });
 
