@@ -140,6 +140,47 @@ export function createApp(): Express {
     res.status(200).json({ status: "ok", service: "ssw-mcp" });
   });
 
+  app.get("/", (_req: Request, res: Response) => {
+    res.redirect(302, "/pro");
+  });
+
+  app.get("/pro", (_req: Request, res: Response) => {
+    res
+      .status(200)
+      .set("Cache-Control", "public, max-age=300")
+      .set(
+        "Content-Security-Policy",
+        "default-src 'none'; base-uri 'self'; form-action 'none'; frame-ancestors 'none'",
+      )
+      .type("text/html; charset=utf-8")
+      .send(`<!doctype html>
+<html lang="ja">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SSW Compass Pro</title>
+</head>
+<body>
+  <main>
+    <h1>SSW Compass Pro</h1>
+    <p>行政書士・登録支援機関・派遣会社担当者向けに、特定技能手続きの確認作業を効率化するための Pro 機能です。</p>
+    <h2>Pro でできること</h2>
+    <ul>
+      <li>申請区分・分野に応じた書類パッケージの生成</li>
+      <li>行政書士承認の記録と監査証跡の保存</li>
+      <li>発行済みパッケージの状態確認と署名 URL の再発行</li>
+    </ul>
+    <h2>重要な前提</h2>
+    <p>SSW Compass は一般情報の提供を目的とした MCP アプリです。法律相談、行政書士業務の代理、当局への提出は行いません。</p>
+    <p>個人名、在留カード番号、パスポート番号、マイナンバー、完全な生年月日は入力しないでください。</p>
+    <h2>利用開始について</h2>
+    <p>Pro の利用には、契約と行政書士資格の確認が必要です。導入相談は a_kabe@sugu-kuru.co.jp までご連絡ください。</p>
+    <p><a href="https://mcp.ssw-compass.jp/privacy">Privacy Policy</a></p>
+  </main>
+</body>
+</html>`);
+  });
+
   // OpenAI Apps SDK: ai-plugin.json manifest
   app.get("/.well-known/ai-plugin.json", (_req: Request, res: Response) => {
     res
