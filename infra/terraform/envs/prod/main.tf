@@ -49,6 +49,9 @@ module "cloud_run" {
     # バケット未作成の間は空文字列のまま — prepare_document_package は PACKAGE_ARTIFACT_BUCKET
     # が空のとき起動時例外を throw して処理を止める（ハンドラ層で catch）。
     PACKAGE_ARTIFACT_BUCKET = "ssw-compass-packages-prod"
+    # Phase 2a: Pro ツール未認可時の外部アップグレード導線。
+    # DNS/HTTPS は module.lb + root_domain_cert で ssw-compass.jp を受ける。
+    COMPASS_PRO_UPGRADE_URL = "https://ssw-compass.jp/pro"
   }
   # ADR-013: SSW_JWT_SECRET from Secret Manager.
   # gcloud secrets create ssw-jwt-secret --project=PROJECT_ID
@@ -151,6 +154,18 @@ module "cloud_armor" {
   mcp_rate_limit_rpm = 600
 }
 
+# ssw-compass.jp root domain certificate.
+# Keep this separate from module.lb's existing mcp.ssw-compass.jp certificate to
+# avoid replacing the active MCP certificate and causing temporary TLS impact.
+resource "google_compute_managed_ssl_certificate" "root_domain_cert" {
+  project = var.project_id
+  name    = "ssw-prod-root-domain-cert"
+
+  managed {
+    domains = ["ssw-compass.jp"]
+  }
+}
+
 # Global HTTPS LB + Cloud Armor attach (ADR-012 §Decision 1)
 # ⚠️ Pre-apply checklist (see docs/deploy-runbook.md §Batch 11):
 #   1. DNS cut-over: mcp.ssw-compass.jp A → output.lb_ip_address
@@ -166,6 +181,9 @@ module "lb" {
   cloud_run_service_name = "ssw-mcp-prod"
   security_policy_id     = module.cloud_armor.policy_self_link
   domains                = ["mcp.ssw-compass.jp"]
+  extra_ssl_certificate_ids = [
+    google_compute_managed_ssl_certificate.root_domain_cert.id,
+  ]
 
-  depends_on = [module.cloud_run, module.cloud_armor]
+  depends_on = [module.cloud_run, module.cloud_armor, google_compute_managed_ssl_certificate.root_domain_cert]
 }

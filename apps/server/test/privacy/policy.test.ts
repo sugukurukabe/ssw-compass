@@ -87,4 +87,22 @@ describe("GET /privacy", () => {
       expect(body, `endpoint placeholder marker present: ${marker}`).not.toContain(marker);
     }
   });
+
+  it("redirects the root domain landing path to /pro", async () => {
+    const res = await fetch(`${baseUrl}/`, { redirect: "manual" });
+    expect(res.status).toBe(302);
+    expect(res.headers.get("location")).toBe("/pro");
+  });
+
+  it("serves a minimal Pro landing page without collecting PII", async () => {
+    const res = await fetch(`${baseUrl}/pro`);
+    expect(res.status).toBe(200);
+    expect(res.headers.get("content-type")).toContain("text/html");
+    expect(res.headers.get("content-security-policy")).toContain("default-src 'none'");
+    const body = await res.text();
+    expect(body).toContain("SSW Compass Pro");
+    expect(body).toContain("一般情報の提供");
+    expect(body).toContain("a_kabe@sugu-kuru.co.jp");
+    expect(body).not.toContain("決済");
+  });
 });

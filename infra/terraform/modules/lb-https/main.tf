@@ -88,9 +88,10 @@ resource "google_compute_target_https_proxy" "https_proxy" {
   name    = "${var.name_prefix}-https-proxy"
   project = var.project_id
   url_map = google_compute_url_map.url_map[0].id
-  ssl_certificates = var.enabled && length(var.domains) > 0 ? [
-    google_compute_managed_ssl_certificate.cert[0].id
-  ] : []
+  ssl_certificates = concat(
+    var.enabled && length(var.domains) > 0 ? [google_compute_managed_ssl_certificate.cert[0].id] : [],
+    var.extra_ssl_certificate_ids,
+  )
 }
 
 # HTTP target proxy (for redirect)

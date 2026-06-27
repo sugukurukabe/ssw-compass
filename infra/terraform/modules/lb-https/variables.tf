@@ -37,3 +37,9 @@ variable "domains" {
   type        = list(string)
   default     = []
 }
+
+variable "extra_ssl_certificate_ids" {
+  description = "Additional SSL certificate resource IDs to attach to the HTTPS proxy without replacing the primary managed certificate."
+  type        = list(string)
+  default     = []
+}
