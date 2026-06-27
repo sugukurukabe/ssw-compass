@@ -16,6 +16,11 @@
 
 価値 / Value: 現在資格・希望資格・分野から必要な申請種別を判定し、試験免除条件を一次情報に基づいて提示する。
 
+期待出力 / Expected output:
+- 必要な申請種別（国内変更・海外認定・同資格更新のいずれか）を、入力条件に基づいて明示する。
+- 技能実習2号を同一分野で良好に修了した場合の技能試験・日本語試験免除可能性を、一次情報に基づいて説明する。
+- 回答末尾に情報提供のみ・法的助言ではない旨の免責事項を含める。
+
 ---
 
 ## シナリオ 2: 必要書類の確認 / Scenario 2: Check the required documents / Skenario 2: Memeriksa dokumen yang diperlukan
@@ -28,6 +33,11 @@
 
 価値 / Value: 申請区分・分野別の必要書類を、省略条件適用後の形でグループ化して提示する。
 
+期待出力 / Expected output:
+- 申請人・所属機関・分野別資料などの書類群を分けて表示する。
+- 省略可能性がある書類は「省略候補」として通常の必須書類と区別する。
+- 公式様式・公式資料への参照を含め、個別案件の代理判断ではないことを明示する。
+
 ---
 
 ## シナリオ 3: 期限タイムライン / Scenario 3: Deadline timeline / Skenario 3: Lini masa tenggat
@@ -39,6 +49,11 @@
 - **Bahasa Indonesia**: "Saya ingin memeriksa tenggat pemberitahuan dan formulir saat rencana dukungan berubah. Tolong rangkum juga periode pemberitahuan berkala, waktu perpanjangan visa, dan batas kumulatif 5 tahun."
 
 価値 / Value: 14 日以内の随時届出・定期届出（4/1〜5/31）・更新申請（期限3ヶ月前）・通算5年上限を、法定期限タイムラインとして可視化する。
+
+期待出力 / Expected output:
+- 支援計画変更に関する届出期限（事由発生から14日以内）と関連様式を示す。
+- 定期届出期間、在留期間更新の目安、特定技能1号の通算5年上限を時系列で整理する。
+- 期限管理のための一般情報として回答し、提出代行や法律判断を行わない。
 
 ---
 

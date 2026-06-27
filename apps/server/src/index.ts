@@ -1,11 +1,12 @@
 import { StreamableHTTPServerTransport } from "@modelcontextprotocol/sdk/server/streamableHttp.js";
 import {
   ANONYMOUS_AUTH_CONTEXT,
+  type AuthContextType,
   LAW_UPDATES_DATASET_REVIEWED_DATE,
   SUPPORTED_LANGUAGES,
   type SupportedLanguage,
 } from "@ssw/shared-types";
-import type { Express, Request, Response } from "express";
+import type { Express, NextFunction, Request, Response } from "express";
 import express from "express";
 import { runWithAuthContext } from "./auth/auth-store.js";
 import type { AuthedRequest } from "./auth/resolve-auth.js";
@@ -22,6 +23,11 @@ import { buildServerCard } from "./server-card.js";
 const DEFAULT_PORT = 8080;
 const MAX_BODY_BYTES = 1024 * 1024;
 const RC_PROTOCOL_VERSION = "2026-07-28";
+const ALLOWED_MCP_ORIGINS = new Set([
+  "https://claude.ai",
+  "https://chatgpt.com",
+  "https://chat.openai.com",
+]);
 
 function recordBody(body: unknown): Record<string, unknown> | null {
   return typeof body === "object" && body !== null ? (body as Record<string, unknown>) : null;
@@ -78,6 +84,23 @@ export function enforceScopes(req: Request, res: Response): boolean {
       }),
     );
   return false;
+}
+
+export function canListProTools(ctx: AuthContextType): boolean {
+  return ctx.tier === "pro" || ctx.tier === "business";
+}
+
+export function validateMcpOrigin(req: Request, res: Response, next: NextFunction): void {
+  const origin = req.header("Origin");
+  if (origin === undefined || ALLOWED_MCP_ORIGINS.has(origin)) {
+    next();
+    return;
+  }
+  res.status(403).json({
+    jsonrpc: "2.0",
+    error: { code: -32003, message: "Forbidden: Origin is not allowed for POST /mcp" },
+    id: recordBody(req.body)?.["id"] ?? null,
+  });
 }
 
 function rejectHeaderMismatch(res: Response, message: string): void {
@@ -158,25 +181,56 @@ export function createApp(): Express {
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>SSW Compass Pro</title>
+  <title>SSW Compass Pro | Information-only SSW support</title>
 </head>
 <body>
-  <main>
+  <header>
     <h1>SSW Compass Pro</h1>
-    <p>行政書士・登録支援機関・派遣会社担当者向けに、特定技能手続きの確認作業を効率化するための Pro 機能です。</p>
-    <h2>Pro でできること</h2>
-    <ul>
-      <li>申請区分・分野に応じた書類パッケージの生成</li>
-      <li>行政書士承認の記録と監査証跡の保存</li>
-      <li>発行済みパッケージの状態確認と署名 URL の再発行</li>
-    </ul>
-    <h2>重要な前提</h2>
-    <p>SSW Compass は一般情報の提供を目的とした MCP アプリです。法律相談、行政書士業務の代理、当局への提出は行いません。</p>
-    <p>個人名、在留カード番号、パスポート番号、マイナンバー、完全な生年月日は入力しないでください。</p>
-    <h2>利用開始について</h2>
-    <p>Pro の利用には、契約と行政書士資格の確認が必要です。導入相談は a_kabe@sugu-kuru.co.jp までご連絡ください。</p>
-    <p><a href="https://mcp.ssw-compass.jp/privacy">Privacy Policy</a></p>
+    <p>特定技能手続きの確認を補助する、契約ユーザー向けの Pro 機能案内ページです。</p>
+    <p lang="en">This page explains the contracted Pro features for checking Japanese Specified Skilled Worker procedure information.</p>
+    <nav aria-label="ページ内ナビゲーション">
+      <ul>
+        <li><a href="#overview">概要 / Overview</a></li>
+        <li><a href="#requirements">利用条件 / Requirements</a></li>
+        <li><a href="#contact">連絡先 / Contact</a></li>
+      </ul>
+    </nav>
+  </header>
+  <main id="content" tabindex="-1">
+    <section id="overview">
+      <h2>概要 / Overview</h2>
+      <p>SSW Compass Pro は、行政書士・登録支援機関・派遣会社担当者が、特定技能手続きの確認作業を一次情報に基づいて進めるための MCP 機能です。</p>
+      <p lang="en">SSW Compass Pro helps certified professionals and business operators review SSW procedure information with official-source grounding.</p>
+      <ul>
+        <li>申請区分・分野に応じた書類パッケージ準備 / Prepare document package drafts by procedure and industry.</li>
+        <li>行政書士承認の記録と監査証跡の保存 / Record gyoseishoshi approval with audit evidence.</li>
+        <li>発行済みパッケージの状態確認 / Check package status for contracted Pro workflows.</li>
+      </ul>
+    </section>
+    <section id="legal-boundary">
+      <h2>重要な前提 / Important Limits</h2>
+      <p>SSW Compass は一般情報の提供専用です。法律相談、行政書士業務の代理、官公署への提出は行いません。</p>
+      <p lang="en">SSW Compass provides information only. It does not provide legal advice, represent users as a gyoseishoshi, or file documents with authorities.</p>
+      <p>個人名、在留カード番号、パスポート番号、マイナンバー、完全な生年月日は入力しないでください。</p>
+      <p lang="en">Do not enter names, residence card numbers, passport numbers, My Number, or full dates of birth.</p>
+    </section>
+    <section id="requirements">
+      <h2>利用条件 / Pro Requirements</h2>
+      <ul>
+        <li>スグクル株式会社との Pro 契約 / A Pro agreement with Sugukuru Inc.</li>
+        <li>行政書士資格確認または組織内承認経路 / Gyoseishoshi verification or an approved organizational review path.</li>
+        <li>個人情報を入力しない運用への同意 / Agreement to operate without submitting personal identifiers.</li>
+      </ul>
+    </section>
+    <section id="contact">
+      <h2>連絡先 / Contact</h2>
+      <p>導入相談・審査連絡: <a href="mailto:a_kabe@sugu-kuru.co.jp">a_kabe@sugu-kuru.co.jp</a></p>
+      <p>プライバシーポリシー / Privacy Policy: <a href="https://mcp.ssw-compass.jp/privacy">https://mcp.ssw-compass.jp/privacy</a></p>
+    </section>
   </main>
+  <footer>
+    <p>© Sugukuru Inc. SSW Compass is an information-only MCP app.</p>
+  </footer>
 </body>
 </html>`);
   });
@@ -326,7 +380,7 @@ export function createApp(): Express {
   // — Claude's `initialize` and follow-up `tools/list` can land on different
   // instances. Stateless mode makes every request self-contained, which is the
   // correct model for serverless. No `mcp-session-id` is issued.
-  app.post("/mcp", resolveAuth, async (req: Request, res: Response) => {
+  app.post("/mcp", validateMcpOrigin, resolveAuth, async (req: Request, res: Response) => {
     if (!validateMcpRoutingHeaders(req, res)) {
       return;
     }
@@ -336,7 +390,8 @@ export function createApp(): Express {
     if (!enforceScopes(req, res)) {
       return;
     }
-    const server = createMcpServer();
+    const authCtx = (req as AuthedRequest).authContext ?? ANONYMOUS_AUTH_CONTEXT;
+    const server = createMcpServer({ includeProTools: canListProTools(authCtx) });
     // Stateless: the SDK requires sessionIdGenerator to be explicitly undefined.
     // Its type is `sessionIdGenerator?: () => string`, so exactOptionalPropertyTypes
     // rejects `{ sessionIdGenerator: undefined }`; use a narrow cast around the SDK
@@ -353,7 +408,6 @@ export function createApp(): Express {
       // but StreamableHTTPServerTransport implements onclose as (() => void) | undefined.
       // Under exactOptionalPropertyTypes:true these are incompatible. SDK type bug.
       await server.connect(transport);
-      const authCtx = (req as AuthedRequest).authContext ?? ANONYMOUS_AUTH_CONTEXT;
       await runWithAuthContext(authCtx, () => transport.handleRequest(req, res, req.body));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "unknown";

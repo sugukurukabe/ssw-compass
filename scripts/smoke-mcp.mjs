@@ -1,12 +1,15 @@
 import process from "node:process";
 
-const REQUIRED_TOOLS = [
+const READ_ONLY_TOOLS = [
   "search_visa",
   "classify_procedure",
   "get_deadline_timeline",
   "list_visa_documents",
   "list_law_updates",
   "validate_zairyu_compatibility",
+];
+
+const PRO_TOOLS = [
   "submit_gyoseishoshi_approval",
   "prepare_document_package",
   "get_package_status",
@@ -59,6 +62,11 @@ if (mcpUrl === undefined || mcpUrl.length === 0) {
   );
   process.exit(2);
 }
+const mcpAuthToken = process.env["MCP_AUTH_TOKEN"];
+const requiredTools =
+  mcpAuthToken === undefined || mcpAuthToken.length === 0
+    ? READ_ONLY_TOOLS
+    : [...READ_ONLY_TOOLS, ...PRO_TOOLS];
 
 function parseSse(text) {
   const line = text.split(/\r?\n/).find((candidate) => candidate.startsWith("data: "));
@@ -73,6 +81,9 @@ async function rpc(method, params, id, sessionId) {
     "Content-Type": "application/json",
     Accept: "application/json, text/event-stream",
   };
+  if (mcpAuthToken !== undefined && mcpAuthToken.length > 0) {
+    headers.Authorization = `Bearer ${mcpAuthToken}`;
+  }
   if (sessionId !== undefined) {
     headers["Mcp-Session-Id"] = sessionId;
   }
@@ -138,11 +149,16 @@ await fetch(mcpUrl, {
 const tools = await rpc("tools/list", {}, 2, sessionId);
 const toolList = tools.payload.result?.tools ?? [];
 const toolNames = toolList.map((tool) => tool.name);
-for (const toolName of REQUIRED_TOOLS) {
+for (const toolName of requiredTools) {
   expect(toolNames.includes(toolName), `tools/list includes ${toolName}`);
 }
+if (mcpAuthToken === undefined || mcpAuthToken.length === 0) {
+  for (const toolName of PRO_TOOLS) {
+    expect(!toolNames.includes(toolName), `anonymous tools/list hides ${toolName}`);
+  }
+}
 
-for (const tool of toolList.filter((candidate) => REQUIRED_TOOLS.includes(candidate.name))) {
+for (const tool of toolList.filter((candidate) => requiredTools.includes(candidate.name))) {
   expect(tool.annotations !== undefined, `${tool.name} has annotations`);
   expect(tool.inputSchema !== undefined, `${tool.name} has inputSchema`);
 }

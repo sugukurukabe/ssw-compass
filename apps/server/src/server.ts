@@ -53,7 +53,11 @@ const SERVER_INFO = {
   version: "2.1.0",
 } as const;
 
-export function createMcpServer(): McpServer {
+export interface CreateMcpServerOptions {
+  includeProTools?: boolean;
+}
+
+export function createMcpServer(options: CreateMcpServerOptions = {}): McpServer {
   const server = new McpServer(SERVER_INFO, {
     capabilities: {
       tools: {},
@@ -73,9 +77,11 @@ export function createMcpServer(): McpServer {
   registerValidateZairyuCompatibilityUiResource(server);
 
   registerListLawUpdatesTool(server);
-  registerSubmitGyoseishoshiApprovalTool(server);
-  registerPrepareDocumentPackageTool(server);
-  registerGetPackageStatusTool(server);
+  if (options.includeProTools === true) {
+    registerSubmitGyoseishoshiApprovalTool(server);
+    registerPrepareDocumentPackageTool(server);
+    registerGetPackageStatusTool(server);
+  }
   registerWorkflowPrompts(server);
   registerCatalogResources(server);
 
