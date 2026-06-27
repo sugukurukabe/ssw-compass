@@ -380,7 +380,12 @@ export function createApp(): Express {
   // — Claude's `initialize` and follow-up `tools/list` can land on different
   // instances. Stateless mode makes every request self-contained, which is the
   // correct model for serverless. No `mcp-session-id` is issued.
-  app.post("/mcp", validateMcpOrigin, resolveAuth, async (req: Request, res: Response) => {
+  // 同一の MCP ハンドラを複数パスで提供する。/mcp が正本、/v1/mcp は安定エイリアス。
+  // The same MCP handler is served on multiple paths; /mcp is canonical, /v1/mcp is a
+  // stable alias (clients may register either resource URL).
+  // Handler MCP yang sama disajikan di beberapa path; /mcp kanonik, /v1/mcp adalah alias.
+  const MCP_PATHS = ["/mcp", "/v1/mcp"];
+  const handleMcpPost = async (req: Request, res: Response): Promise<void> => {
     if (!validateMcpRoutingHeaders(req, res)) {
       return;
     }
@@ -411,7 +416,7 @@ export function createApp(): Express {
       await runWithAuthContext(authCtx, () => transport.handleRequest(req, res, req.body));
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "unknown";
-      logger.error({ err: message, path: "/mcp" }, "mcp_request_failed");
+      logger.error({ err: message, path: req.path }, "mcp_request_failed");
       if (!res.headersSent) {
         res.status(500).json({
           jsonrpc: "2.0",
@@ -420,7 +425,8 @@ export function createApp(): Express {
         });
       }
     }
-  });
+  };
+  app.post(MCP_PATHS, validateMcpOrigin, resolveAuth, handleMcpPost);
 
   // Stateless mode does not maintain server-initiated SSE streams or sessions,
   // so GET (stream) and DELETE (session teardown) are not applicable.
@@ -435,8 +441,8 @@ export function createApp(): Express {
       });
   };
 
-  app.get("/mcp", methodNotAllowed);
-  app.delete("/mcp", methodNotAllowed);
+  app.get(MCP_PATHS, methodNotAllowed);
+  app.delete(MCP_PATHS, methodNotAllowed);
 
   return app;
 }

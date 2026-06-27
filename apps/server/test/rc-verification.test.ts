@@ -352,6 +352,36 @@ describe("stateless transport (no hidden per-connection state)", () => {
   });
 });
 
+describe("/v1/mcp alias (same handler as /mcp)", () => {
+  it("POST /v1/mcp returns the same anonymous tools/list as /mcp", async () => {
+    const res = await fetch(`${baseUrl}/v1/mcp`, {
+      method: "POST",
+      headers: {
+        "content-type": "application/json",
+        accept: "application/json, text/event-stream",
+      },
+      body: JSON.stringify({ jsonrpc: "2.0", id: 31, method: "tools/list", params: {} }),
+    });
+    expect(res.status).toBe(200);
+    const body = parseJsonRpc(await res.text());
+    const tools = toolNames(body);
+    expect(tools).toEqual([
+      "search_visa",
+      "classify_procedure",
+      "get_deadline_timeline",
+      "list_visa_documents",
+      "validate_zairyu_compatibility",
+      "list_law_updates",
+    ]);
+  });
+
+  it("rejects GET /v1/mcp with 405 and Allow: POST", async () => {
+    const res = await fetch(`${baseUrl}/v1/mcp`, { method: "GET" });
+    expect(res.status).toBe(405);
+    expect(res.headers.get("allow")).toBe("POST");
+  });
+});
+
 describe("cache tier invariants (ttlMs / cacheScope)", () => {
   it("every cache tier declares a numeric ttlMs and a public/private scope", () => {
     for (const [name, tier] of Object.entries(CACHE_TIERS)) {
